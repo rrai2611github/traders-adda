@@ -33,6 +33,7 @@ import { MarketGateBanner } from "./MarketGateBanner";
 import { ShortSellingStatusBadge } from "./ShortSellingStatusBadge";
 import { PaRatingCard } from "./PriceActionRating";
 import { ProChart, type ChartLevel } from "./ProChart";
+import { StockQuickRead } from "./StockQuickRead";
 
 const HORIZONS: { key: BuyHorizon; label: string; holding: string }[] = [
   { key: "short", label: "Short term", holding: HORIZON_HOLDING.short },
@@ -396,6 +397,15 @@ export function StockDetailDrawer({
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3 sm:p-5">
           <MarketGateBanner label="Setup check" breadth={breadthPercent} healthy={setupStatus(breadthPercent).allowed} threshold={SETUP_BREADTH_MIN} allowedText="real buys allowed" blockedText="paper trade only" compact />
+          {row && (
+            <StockQuickRead
+              input={{ vs50, vs200, rs: row.rs ?? null, paScore: row.paRating?.score ?? null, rvol: row.rvol?.ratio ?? null, fromHigh, riskFlags: (row.riskFlags ?? []).map((flag) => flag.severity) }}
+              candles={candles}
+              price={price}
+              checks={signal?.status.checks ?? null}
+              flags={row.riskFlags ?? null}
+            />
+          )}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
             <Kpi label={reference?.rs != null ? "RS · reference" : "RS rating"} value={row?.rs != null ? String(Math.round(row.rs)) : reference?.rs != null ? String(reference.rs) : notRated} tone={row?.rs != null && row.rs >= 70 ? "text-emerald-700" : row?.rs != null && row.rs <= 30 ? "text-rose-700" : "text-slate-900"} hint={row ? "Relative strength percentile versus the NSE universe" : reference?.rs != null ? refHint : notRatedHint} />
             <Kpi

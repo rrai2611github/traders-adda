@@ -601,3 +601,8 @@ Every stock a real pre-open or hourly email lists is saved the first time it app
 - **Email track record:** a "Mix" bar per list (blue still open, amber exit signal, red stopped), sticky table headers inside a scroll box on wide screens, and stacked cards instead of the wide table under 640px.
 - **Phones:** buttons and fields are at least 44px tall (`globals.css`, under 640px).
 - Not done from the original list: sparkline/arrow tiles on the numbers, an animated stock drawer, and turning the Backtest/Live check tables into cards on phones (they scroll sideways inside their own box).
+
+## Stock drawer "Quick read" (UI, inspired by Tickertape/Groww/Screener layouts)
+- `src/components/StockQuickRead.tsx` sits at the top of `StockDetailDrawer` (rated stocks only): six one-word ratings with a one-line reason (Trend, Strength vs market, Price action, Volume, Near its high, Red flags), a 52-week low/high marker, and two lists ("What is working" = passed checks, "What is missing or risky" = failed checks + risk flags).
+- Logic is pure in `src/lib/screen/quickRead.ts` (tests: `scripts/quick-read.test.mjs`). It only restates numbers the drawer already has, using the drawer's own cut-offs (RS 70/30, PA 70/35, RVOL 1.5/1). No new data, no trading-rule change.
+- Next ideas from the same reference study: one-line "what this means" notes on Today/Positions cards, "Auto" theme option, units line above tables.
