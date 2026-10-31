@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ScalpNav } from "./ScalpNav";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ScalpDeskData } from "@/lib/scalp/desk";
 import type { ScalpIndex } from "@/lib/scalp/scalpLogic";
@@ -91,11 +92,11 @@ export function ScalpDesk({ notice }: { notice: { kind: "connected" | "error" | 
   return (
     <main className="min-h-screen bg-[#060b16] text-slate-200">
       <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-3 px-3 py-3 sm:px-5">
+        <ScalpNav current="desk" />
         <header className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-800 bg-[#0b1220] px-4 py-3">
           <div>
-            <Link href="/" className="text-xs font-bold text-sky-400 hover:underline">← Back to dashboard</Link>
-            <h1 className="mt-1 text-xl font-black tracking-tight text-white">Index Scalp Desk</h1>
-            <p className="text-xs text-slate-400">1-minute ATM Call · Spot · ATM Put, with VWAP, EMA 9/21 and opening range. Data: Fyers. <Link href="/scalp/backtest" className="font-bold text-sky-400 hover:underline">Setup backtests →</Link> <Link href="/scalp/paper" className="ml-2 font-bold text-amber-300 hover:underline">Paper straddle →</Link> <Link href="/scalp/index-paper" className="ml-2 font-bold text-emerald-300 hover:underline">Index Paper Desk →</Link></p>
+            <h1 className="text-xl font-black tracking-tight text-white">Index Scalp Desk</h1>
+            <p className="text-xs text-slate-400">1-minute ATM Call · Spot · ATM Put, with VWAP, EMA 9/21 and opening range. Data: Fyers.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex overflow-hidden rounded-lg border border-slate-700">

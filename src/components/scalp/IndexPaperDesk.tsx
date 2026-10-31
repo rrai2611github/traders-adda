@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { ScalpNav } from "./ScalpNav";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { IndexPaperSnapshot, frameworkSignal } from "@/lib/paper/indexPaperServer";
 import type { IndexKey, IndexSide, SquareOff } from "@/lib/paper/indexPaper";
@@ -109,13 +109,9 @@ export function IndexPaperDesk() {
   return (
     <main className="min-h-screen bg-[#060b16] text-slate-200">
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-3 px-3 py-3 sm:px-5">
+        <ScalpNav current="index-paper" />
         <header className="rounded-xl border border-slate-800 bg-[#0b1220] px-4 py-3">
-          <div className="flex flex-wrap gap-3 text-xs font-bold text-sky-400">
-            <Link href="/scalp" className="hover:underline">← Scalp Desk</Link>
-            <Link href="/scalp/paper" className="hover:underline">Paper straddle →</Link>
-            <Link href="/" className="hover:underline">Dashboard →</Link>
-          </div>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-black tracking-tight text-white">Index Paper Desk</h1>
             <span className="rounded-full bg-amber-900/60 px-2 py-0.5 text-[10px] font-bold text-amber-200">PAPER · NO REAL ORDERS</span>
           </div>

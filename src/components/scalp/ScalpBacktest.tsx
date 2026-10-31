@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ScalpNav } from "./ScalpNav";
 import { useEffect, useState } from "react";
 import type { IndexBacktest, ScalpBacktestReport, SetupGroup, SetupResult } from "@/lib/scalp/backtestRun";
 import type { TradeStats } from "@/lib/scalp/backtest";
@@ -47,9 +48,9 @@ export function ScalpBacktest() {
   return (
     <main className="min-h-screen bg-[#060b16] text-slate-200">
       <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-3 px-3 py-3 sm:px-5">
+        <ScalpNav current="backtest" />
         <header className="rounded-xl border border-slate-800 bg-[#0b1220] px-4 py-3">
-          <Link href="/scalp" className="text-xs font-bold text-sky-400 hover:underline">← Back to Scalp Desk</Link>
-          <h1 className="mt-1 text-xl font-black tracking-tight text-white">Index strategy backtest</h1>
+          <h1 className="text-xl font-black tracking-tight text-white">Index strategy backtest</h1>
           <p className="text-xs text-slate-400">
             Scalps, intraday holds and 1–3 day swings on Nifty and Bank Nifty, replayed on Fyers history and judged after every cost.
           </p>
