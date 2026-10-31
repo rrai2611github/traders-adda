@@ -355,3 +355,22 @@ test("with Top picks, the pre-open email leads with today's action and labels th
   const without = buildPreOpenEmail(brief(), table([]), "", Date.parse("2026-10-20T09:00:00+05:30"));
   assert.doesNotMatch(without.html, /older scanner ideas below/);
 });
+
+test("the pre-open email shows sector cues and key India headlines, and leaves both out when there is nothing to say", async () => {
+  const { buildPreOpenEmail } = await import("../src/lib/alerts/preOpenEmailFormat.ts");
+  const b = brief();
+  b.cues = [{ title: "Commodities", source: "", lines: [{ label: "Brent crude", value: "$100", changePercent: 3.2, inverseTone: true }, { label: "Gold", value: "$3,900", changePercent: 0.2, inverseTone: false }] }];
+  const headlines = [{ title: "RBI keeps repo rate unchanged & rupee gains", link: "https://example.com/rbi?a=1&b=2", source: "Economic Times", publishedAt: Date.parse("2026-10-20T08:00:00+05:30") }];
+  const full = buildPreOpenEmail(b, table([]), "", Date.parse("2026-10-20T09:00:00+05:30"), null, null, null, null, null, headlines);
+  assert.match(full.html, /Key India headlines/);
+  assert.match(full.html, /RBI keeps repo rate unchanged &amp; rupee gains/);
+  assert.match(full.html, /href="https:\/\/example\.com\/rbi\?a=1&amp;b=2"/);
+  assert.match(full.html, /Sector cues:/);
+  assert.match(full.html, /Crude \+3\.2%: ONGC and Oil India usually rise/);
+  assert.doesNotMatch(full.html, /Gold \+0\.2%/, "a small gold move is not a sector note");
+  assert.match(full.text, /KEY INDIA HEADLINES/);
+  assert.match(full.text, /- Crude \+3\.2%/);
+  const quiet = buildPreOpenEmail(brief({ cues: [] }), table([]), "", Date.parse("2026-10-20T09:00:00+05:30"));
+  assert.doesNotMatch(quiet.html, /Key India headlines|Sector cues/);
+  assert.doesNotMatch(quiet.text, /KEY INDIA HEADLINES|Sector cues/);
+});

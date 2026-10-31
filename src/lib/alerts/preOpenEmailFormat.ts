@@ -10,9 +10,11 @@ import { buildMarketOutlook, type MarketOutlook } from "../screen/marketOutlook.
 import { buildIndexEmailSection, shortLeadership, shortVix } from "./indexEmailFormat.ts";
 import { blockRow, blueHeading, esc, grid2, pill } from "./modernCards.ts";
 import { entryNoteHtml, entryNoteSuffix } from "./entryState.ts";
+import type { Headline } from "../market/indiaNews.ts";
+import { sectorCues } from "../screen/sectorCues.ts";
 import { decisionBarHtml, emailDecision, topPicksBlock, type TopPicksEmailInput } from "./topPicksEmail.ts";
 import { weeklyTop5Block, type Top5EmailInput } from "./weeklyTop5Email.ts";
-import { LABEL_STYLE, cueCards, indexOutlookTable, outlookHero, slimCard, type IndexRef } from "./preOpenSections.ts";
+import { LABEL_STYLE, card, cueCards, indexOutlookTable, outlookHero, slimCard, type IndexRef } from "./preOpenSections.ts";
 import {
   HIGH_BREAKOUT_RULES,
   highBreakoutsVisible,
@@ -73,6 +75,7 @@ export function buildPreOpenEmail(
   top5: Top5EmailInput | null = null,
   topPicks: TopPicksEmailInput | null = null,
   briefing: { lines: string[]; ai: boolean } | null = null,
+  headlines: ReadonlyArray<Headline> | null = null,
 ): PreOpenEmail {
   const time = new Intl.DateTimeFormat("en-IN", {
     timeZone: "Asia/Kolkata",
@@ -102,6 +105,19 @@ export function buildPreOpenEmail(
   const giftBit = o.gift ? ` · GIFT ${signed(o.gift.gapPercent)}%` : "";
   // The decision leads: a phone shows only the first words of a subject, so those words are what to do today.
   const decision = topPicks ? emailDecision(topPicks) : null;
+  // Crude, gold and Nasdaq do not move the Nifty as a whole but do carry into particular sectors, so say which.
+  const sectorNotes = sectorCues(brief.cues.flatMap((section) => section.lines));
+  // Market-wide India headlines, newest source and time shown so a reader can judge how fresh each one is.
+  const newsItems = (headlines ?? []).slice(0, 5);
+  const newsWhen = (at: number) => new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }).format(at);
+  const newsHtml = card(
+    newsItems
+      .map(
+        (h, i) => `<div style="${i ? "border-top:1px solid #eef2f6;" : ""}padding:7px 0"><a href="${esc(h.link)}" style="font:600 13px/1.45 ${FONT};color:#0f172a;text-decoration:none">${esc(h.title)}</a><div style="font:500 11px ${FONT};color:${MUTED};padding-top:2px">${esc(h.source)} · ${esc(newsWhen(h.publishedAt))} IST</div></div>`,
+      )
+      .join(""),
+    "4px 14px",
+  );
   // The rule-written glance only restates the action bar and the header, so it shows only when an AI wrote something new.
   const showGlance = !!briefing && briefing.lines.length > 0 && (briefing.ai || !decision);
   const subject = decision
@@ -257,7 +273,12 @@ ${showGlance ? `
   ${block(`${indexOutlookTable(o.indexes, refs)}${leadership}`)}
 
   ${brief.cues.length ? `${heading("Global cues", "Green helps India, red hurts")}
-  ${block(cueCards(brief.cues))}` : ""}
+  ${block(cueCards(brief.cues))}
+${sectorNotes.length ? `  ${spacer(6)}
+  ${block(noteLine(`<b>Sector cues:</b><br>${sectorNotes.map((n) => esc(n)).join("<br>")}`, "#f8fafc", "#e2e8f0", "#334155"))}` : ""}` : ""}
+
+${newsItems.length ? `  ${heading("Key India headlines", "headlines only · tap to read")}
+  ${block(newsHtml)}` : ""}
 
 ${picksBlock && topPicks ? `
   ${heading("Top picks", `${topPicks.picks.filter((p) => p.tag === "ready" || p.tag === "broke").length} to watch or buy`)}
@@ -329,7 +350,9 @@ ${hbSection ? `
       (section) =>
         `${section.title}: ${section.lines.map((line) => `${line.label} ${line.value} (${signed(line.changePercent)}%)`).join(" · ")}`,
     ),
+    ...(sectorNotes.length ? ["Sector cues:", ...sectorNotes.map((n) => `- ${n}`)] : []),
     "",
+    ...(newsItems.length ? ["KEY INDIA HEADLINES (headlines only)", ...newsItems.map((h) => `- ${h.title} (${h.source}, ${newsWhen(h.publishedAt)} IST) ${h.link}`), ""] : []),
     "KEY LEVELS (previous-session pivots, not option OI)",
     ...brief.levels.map(
       (level) => `${level.label} ${level.zone} zone · pivot ${whole(level.pivot)} · S1 ${whole(level.support1)} · R1 ${whole(level.resistance1)}`,

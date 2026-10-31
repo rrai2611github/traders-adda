@@ -27,13 +27,11 @@ test("opening bias weights the overnight tape and inverts crude and the rupee", 
   assert.equal(up.label, "Positive start likely");
   assert.equal(up.score, 1);
 
-  // Crude up 1% is a headwind, so it must drag an otherwise flat tape negative.
-  const oil = openingBias([cue("brent", "Brent crude", "commodity", 2)]);
-  assert.equal(oil.score, -2);
-  assert.equal(oil.key, "strong-down");
-
-  const rupee = openingBias([cue("usdinr", "USD/INR", "currency", 1)]);
-  assert.equal(rupee.score, -1);
+  // Crude and the rupee showed no link to Nifty in the 10-year test, so they do not score the opening call.
+  const withOil = openingBias([cue("sp500", "S&P 500", "us", 1), cue("nikkei", "Nikkei 225", "asia", 1), cue("brent", "Brent crude", "commodity", 5), cue("usdinr", "USD/INR", "currency", 3)]);
+  assert.equal(withOil.score, up.score);
+  assert.equal(withOil.components.length, 2);
+  assert.equal(openingBias([cue("brent", "Brent crude", "commodity", 2)]).score, null);
 });
 
 test("weighted score renormalises over the cues that loaded", () => {

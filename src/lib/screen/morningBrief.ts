@@ -121,8 +121,9 @@ export interface MorningBrief {
 }
 
 /**
- * Weights for the derived opening call. Oil and the rupee are inverted because
- * a stronger dollar or dearer crude is a headwind for Indian equities.
+ * Weights for the derived opening call: the US close and the Asian and European tape only. A 10-year test (about 2,470 Indian
+ * days) found these move the Nifty opening gap (correlation about 0.45), while crude oil and USD/INR showed no link to Nifty
+ * (about 0.05 and 0.03), so they are shown as cues and sector notes but do not score the index.
  */
 const BIAS_WEIGHTS: Record<string, { weight: number; invert?: boolean; note: string }> = {
   sp500: { weight: 3, note: "US close sets the overnight risk tone." },
@@ -131,8 +132,6 @@ const BIAS_WEIGHTS: Record<string, { weight: number; invert?: boolean; note: str
   hangseng: { weight: 2, note: "Asia is trading while India is pre-open." },
   kospi: { weight: 1, note: "Asia is trading while India is pre-open." },
   stoxxde: { weight: 1, note: "European close." },
-  brent: { weight: 1, invert: true, note: "Dearer crude is a headwind for an oil importer." },
-  usdinr: { weight: 1, invert: true, note: "A weaker rupee pressures FII flows." },
 };
 
 const BANDS: { min: number; key: BiasKey; label: string }[] = [

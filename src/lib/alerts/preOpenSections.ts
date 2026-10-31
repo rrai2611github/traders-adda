@@ -20,7 +20,7 @@ export const LABEL_STYLE: Record<OutlookLabel, { bg: string; fg: string; solid: 
   Neutral: { bg: "#e2e8f0", fg: "#475569", solid: "#64748b", icon: "◆" },
 };
 
-const card = (inner: string, pad = "14px", accent = "") =>
+export const card = (inner: string, pad = "14px", accent = "") =>
   `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${BRAND.line};${accent ? `border-top:3px solid ${accent};` : ""}border-radius:14px;background:#ffffff;margin-bottom:10px;${SHADOW}"><tr><td style="padding:${pad}">${inner}</td></tr></table>`;
 
 /** A horizontal bar of coloured zones with a dark dot at `pos` (same scale as the zones). */

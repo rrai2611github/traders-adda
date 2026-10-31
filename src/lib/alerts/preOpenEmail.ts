@@ -23,6 +23,7 @@ import type { BriefingResult } from "@/lib/ai/briefing";
 import { isFirstTradingDayOfWeek } from "./weeklyTop5Email";
 import { recordEmailedStocks } from "@/lib/radar/radarServer";
 import type { TopPickEmailItem } from "./topPicksEmail";
+import { fetchIndiaHeadlines } from "@/lib/market/indiaNews";
 import type { Top5Pick } from "@/lib/screen/weeklyTop5";
 
 export { preOpenSlotKey };
@@ -155,9 +156,12 @@ export async function buildPreOpenPreview(now: number = Date.now(), options: { f
     console.error("[email] briefing skipped:", error instanceof Error ? error.message : error);
   }
 
+  // Major India market headlines (public feeds, last 24 hours). Never blocks the email: a feed that fails just adds nothing.
+  const headlines = await fetchIndiaHeadlines(now);
+
   // What the email lists, kept for the email track record (never part of the message itself).
   const emailed = { topPicks: topPicks?.picks ?? null, top5: top5?.picks ?? null };
-  return { brief, outlook, table, emailed, ...buildPreOpenEmail(brief, table, regimeLine(table), now, state.payload.highBreakouts ?? null, outlook, top5, topPicks, briefing) };
+  return { brief, outlook, table, emailed, ...buildPreOpenEmail(brief, table, regimeLine(table), now, state.payload.highBreakouts ?? null, outlook, top5, topPicks, briefing, headlines) };
 }
 
 export function preOpenEmailStatus() {
