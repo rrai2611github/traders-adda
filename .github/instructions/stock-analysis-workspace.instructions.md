@@ -594,3 +594,10 @@ Every stock a real pre-open or hourly email lists is saved the first time it app
 ## Modernised UI, stages 2 and 3
 - **Calmer Today page:** `MarketStrip` is now a slim bar (coloured edge, headline, "n% of stocks above their 50-day average · buys need 35%", "Show details"); the what-to-do text, setup-check reason and extreme-market warning live in its details panel. `WorkspaceFrame` has a `bare` option, used by the Today view so its cards stand on the page without a big outer box. Order: market decision, `TodayStrip` (positions / live check / strategy health, now rendered by `Dashboard.tsx`), index snapshot (no box of its own), market overview.
 - **Polish:** tabular numbers everywhere, a gold keyboard focus ring, `.skeleton-card` / `.skeleton-line` shimmer placeholders (index strip, track record, positions), `Toaster` + `showToast()` (`src/lib/toast.ts`) for "Position added/sold/removed", `src/app/icon.svg` and `src/app/loading.tsx`, `--color-slate-400` darkened to #66789a for contrast, and the tiny text sizes raised one step (9→10.5, 10→11, 10.5→11.5px) everywhere except the scalp desk.
+
+## Modernised UI, stage 4 (pages)
+- **Live check:** the rules sit in a `<details>` (open before you start following, folded after), a three-step progress line (Started / First finished session / 30 closed trades) shows under it, and the results come before the strategy-health card.
+- **Backtest:** presets are cards (the first is marked "main plan"); eight basic settings are visible and the other eleven live under "More options" (same 24 form fields as before, just regrouped).
+- **Email track record:** a "Mix" bar per list (blue still open, amber exit signal, red stopped), sticky table headers inside a scroll box on wide screens, and stacked cards instead of the wide table under 640px.
+- **Phones:** buttons and fields are at least 44px tall (`globals.css`, under 640px).
+- Not done from the original list: sparkline/arrow tiles on the numbers, an animated stock drawer, and turning the Backtest/Live check tables into cards on phones (they scroll sideways inside their own box).

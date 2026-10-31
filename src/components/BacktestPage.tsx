@@ -282,9 +282,12 @@ export function BacktestPage() {
       </header>
 
       <section className="space-y-4 rounded-2xl border border-border bg-surface p-4" aria-label="Settings">
-        <div className="flex flex-wrap gap-2">
-          {PRESETS.map((p) => (
-            <button key={p.name} type="button" title={p.note} onClick={() => setForm({ ...RECOMMENDED, ...p.form })} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-emerald-500 hover:text-emerald-700">{p.name}</button>
+        <div role="group" aria-label="Starting points" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {PRESETS.map((p, index) => (
+            <button key={p.name} type="button" onClick={() => setForm({ ...RECOMMENDED, ...p.form })} className={`flex flex-col gap-1 rounded-xl border bg-white px-3.5 py-2.5 text-left transition hover:-translate-y-0.5 hover:shadow-md ${index === 0 ? "border-[#e6b53c] ring-1 ring-[#e6b53c]/40" : "border-slate-200 hover:border-slate-300"}`}>
+              <span className="flex items-center gap-2 text-[12.5px] font-extrabold text-slate-900">{p.name}{index === 0 && <span className="rounded-full bg-[#e6b53c]/20 px-1.5 py-0.5 text-[11px] font-black text-accent">main plan</span>}</span>
+              <span className="text-[11.5px] leading-4 text-slate-500">{p.note}</span>
+            </button>
           ))}
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -298,8 +301,6 @@ export function BacktestPage() {
             <Field label="Within % of high"><input className={inputCls} type="number" min={1} max={90} value={form.nearHigh} onChange={(e) => set("nearHigh", Number(e.target.value))} /></Field>
             <Field label="Needs breakout"><select className={inputCls} value={form.breakout ? "yes" : "no"} onChange={(e) => set("breakout", e.target.value === "yes")}><option value="no">No</option><option value="yes">Yes</option></select></Field>
           </>}
-          <Field label="Only this stock" hint="Optional symbol, e.g. TATAELXSI"><input className={inputCls} type="text" value={form.symbol} placeholder="all stocks" onChange={(e) => set("symbol", e.target.value)} /></Field>
-          {form.strategy !== "leaders" && <Field label="Minimum RS rank" hint="0 = the screen's own band. Higher skips weaker stocks"><input className={inputCls} type="number" min={0} max={99} value={form.minRs} onChange={(e) => set("minRs", Number(e.target.value))} /></Field>}
           <Field label="Stop loss">
             <select className={inputCls} value={form.stopKind} onChange={(e) => set("stopKind", e.target.value as Form["stopKind"])}><option value="percent">Fixed %</option><option value="atr">ATR multiple</option></select>
           </Field>
@@ -311,6 +312,18 @@ export function BacktestPage() {
           </Field>
           {form.exitKind === "ma" && <Field label="Average (days)"><input className={inputCls} type="number" min={5} max={200} value={form.maPeriod} onChange={(e) => set("maPeriod", Number(e.target.value))} /></Field>}
           {form.exitKind === "target" && <Field label="Target (R)"><input className={inputCls} type="number" min={0.5} max={20} step={0.5} value={form.targetR} onChange={(e) => set("targetR", Number(e.target.value))} /></Field>}
+          <Field label="From"><input className={inputCls} type="date" value={form.from} min="2016-12-01" onChange={(e) => set("from", e.target.value)} /></Field>
+          <Field label="To"><input className={inputCls} type="date" value={form.to} onChange={(e) => set("to", e.target.value)} /></Field>
+          <Field label="Capital ₹"><input className={inputCls} type="number" min={10000} step={100000} value={form.capital} onChange={(e) => set("capital", Number(e.target.value))} /></Field>
+        </div>
+        <details className="group rounded-xl border border-slate-200 bg-slate-50/60">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5 [&::-webkit-details-marker]:hidden">
+            <span className="text-[12.5px] font-extrabold text-slate-800">More options <span className="font-semibold text-slate-500">· one stock only, minimum RS, breadth and Nifty checks, extra screens, adding to winners, positions, risk and costs</span></span>
+            <span className="shrink-0 text-[11.5px] font-bold text-accent group-open:hidden">Show</span><span className="hidden shrink-0 text-[11.5px] font-bold text-accent group-open:inline">Hide</span>
+          </summary>
+          <div className="grid grid-cols-2 gap-3 border-t border-slate-200 p-3.5 md:grid-cols-4">
+          <Field label="Only this stock" hint="Optional symbol, e.g. TATAELXSI"><input className={inputCls} type="text" value={form.symbol} placeholder="all stocks" onChange={(e) => set("symbol", e.target.value)} /></Field>
+          {form.strategy !== "leaders" && <Field label="Minimum RS rank" hint="0 = the screen's own band. Higher skips weaker stocks"><input className={inputCls} type="number" min={0} max={99} value={form.minRs} onChange={(e) => set("minRs", Number(e.target.value))} /></Field>}
           <Field label="Sell after (days)" hint="0 = no time limit"><input className={inputCls} type="number" min={0} max={500} value={form.maxHold} onChange={(e) => set("maxHold", Number(e.target.value))} /></Field>
           <Field label="Buy only if breadth ≥ %" hint="Share of stocks above their 50-day average"><input className={inputCls} type="number" min={0} max={100} value={form.breadth} onChange={(e) => set("breadth", Number(e.target.value))} /></Field>
           <Field label="Buy only if Nifty above (days)" hint="Nifty 50 closes above its average of this many days. 0 = off"><input className={inputCls} type="number" min={0} max={400} value={form.niftyAbove} onChange={(e) => set("niftyAbove", Number(e.target.value))} /></Field>
@@ -328,13 +341,11 @@ export function BacktestPage() {
           )}
           <Field label="Add to winners at +%" hint="0 = never. Buys more once it is this far above your buy price"><input className={inputCls} type="number" min={0} max={200} value={form.addAfter} onChange={(e) => set("addAfter", Number(e.target.value))} /></Field>
           {form.addAfter > 0 && <Field label="Add size (% of first buy)"><input className={inputCls} type="number" min={10} max={200} value={form.addSize} onChange={(e) => set("addSize", Number(e.target.value))} /></Field>}
-          <Field label="From"><input className={inputCls} type="date" value={form.from} min="2016-12-01" onChange={(e) => set("from", e.target.value)} /></Field>
-          <Field label="To"><input className={inputCls} type="date" value={form.to} onChange={(e) => set("to", e.target.value)} /></Field>
           <Field label="Max positions"><input className={inputCls} type="number" min={1} max={50} value={form.positions} onChange={(e) => set("positions", Number(e.target.value))} /></Field>
           <Field label="Risk per trade %"><input className={inputCls} type="number" min={0.1} max={5} step={0.1} value={form.risk} onChange={(e) => set("risk", Number(e.target.value))} /></Field>
           <Field label="Cost per side %" hint="Brokerage, tax, slippage"><input className={inputCls} type="number" min={0} max={3} step={0.05} value={form.cost} onChange={(e) => set("cost", Number(e.target.value))} /></Field>
-          <Field label="Capital ₹"><input className={inputCls} type="number" min={10000} step={100000} value={form.capital} onChange={(e) => set("capital", Number(e.target.value))} /></Field>
-        </div>
+          </div>
+        </details>
         <p className="text-[12px] text-slate-500">Want to see these rules on today&apos;s real prices instead of the past? Follow them with paper money on the <Link href="/tracker" className="font-bold text-emerald-700 underline">Live strategy check</Link>.</p>
         <div className="flex flex-wrap items-center gap-3">
           <button type="button" onClick={run} disabled={job?.status === "running"} className="btn-gold h-10 rounded-xl px-5 text-sm font-extrabold">{job?.status === "running" ? "Running…" : "Run backtest"}</button>

@@ -22,18 +22,19 @@ const STATE: Record<ScoreState, { label: string; chip: string }> = {
   "no-data": { label: "No price file", chip: "bg-slate-100 text-slate-600" },
 };
 
-const th = "px-2.5 py-2 text-left text-[11px] font-black uppercase tracking-wide text-slate-500";
+const th = "sticky top-0 z-[1] bg-white px-2.5 py-2 text-left text-[11px] font-black uppercase tracking-wide text-slate-500";
 const td = "px-2.5 py-2 align-middle text-[12px]";
 
 function GroupTable({ rows, empty }: { rows: GroupSummary[]; empty: string }) {
   if (!rows.length) return <p className="px-3 py-4 text-[12px] text-slate-500">{empty}</p>;
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[760px] border-collapse">
+      <table className="w-full min-w-[860px] border-collapse">
         <thead>
           <tr className="border-b border-slate-200">
             <th className={th}>List</th>
             <th className={th}>Stocks</th>
+            <th className={th} title="Blue: still open. Amber: exit signal. Red: stopped out.">Mix</th>
             <th className={th}><Term k="winRate">Win rate</Term></th>
             <th className={th}><Term k="r">Avg R</Term></th>
             <th className={th} title="Average move from the email price to now (or to the exit)">Move so far</th>
@@ -51,6 +52,15 @@ function GroupTable({ rows, empty }: { rows: GroupSummary[]; empty: string }) {
                 {!g.enough && <span className="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-600" title={`Fewer than ${ENOUGH} stocks have had a finished session, so these numbers can easily be luck.`}>too few to judge</span>}
               </td>
               <td className={`${td} font-mono`}>{g.scored}<span className="text-slate-400"> / {g.count}</span></td>
+              <td className={td}>
+                <span className="flex h-2 w-24 overflow-hidden rounded-full bg-slate-200" role="img" aria-label={`${g.open} open, ${g.exited} exit signal, ${g.stopped} stopped out`}>
+                  {g.scored > 0 && <>
+                    <span className="bg-sky-500" style={{ width: `${(g.open / g.scored) * 100}%` }} />
+                    <span className="bg-amber-400" style={{ width: `${(g.exited / g.scored) * 100}%` }} />
+                    <span className="bg-rose-500" style={{ width: `${(g.stopped / g.scored) * 100}%` }} />
+                  </>}
+                </span>
+              </td>
               <td className={`${td} font-mono font-bold`}>{g.winRate == null ? "—" : `${g.winRate.toFixed(0)}%`}</td>
               <td className={`${td} font-mono font-bold ${tone(g.avgR)}`}>{signed(g.avgR, "R")}</td>
               <td className={`${td} font-mono font-bold ${tone(g.avgReturn)}`}>{signed(g.avgReturn)}</td>
@@ -161,7 +171,26 @@ export function RadarPage() {
                 ))}
               </div>
             </div>
-            <div className="overflow-x-auto">
+            <ul className="mt-2 divide-y divide-slate-100 border-t border-slate-100 sm:hidden" aria-label="Stocks we emailed">
+              {rows.map(({ entry, score }) => (
+                <li key={entry.id} className="space-y-2 px-3 py-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <StockSymbolButton symbol={entry.symbol} className="block text-left text-[13px] font-black text-slate-900">{entry.symbol}</StockSymbolButton>
+                      <span className="block truncate text-[11.5px] text-slate-500">{groupLabel(entry)}</span>
+                    </div>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11.5px] font-bold ${STATE[score.state].chip}`}>{STATE[score.state].label}</span>
+                  </div>
+                  <dl className="grid grid-cols-3 gap-2 text-[11.5px]">
+                    <div><dt className="text-slate-500">Price then</dt><dd className="font-mono font-bold text-slate-900">₹{px(entry.price)}</dd></div>
+                    <div><dt className="text-slate-500">Move so far</dt><dd className={`font-mono font-bold ${tone(score.returnPercent)}`}>{signed(score.returnPercent)}</dd></div>
+                    <div><dt className="text-slate-500">Result</dt><dd className={`font-mono font-bold ${tone(score.r)}`}>{signed(score.r, "R")}</dd></div>
+                  </dl>
+                  <p className="text-[11.5px] text-slate-500">First emailed {dayLabel(entry.firstDay)} · {entry.email === "pre-open" ? "pre-open" : "hourly"}{entry.mentions > 1 ? ` · listed ${entry.mentions} times` : ""}{score.exitDay ? ` · ended ${dayLabel(score.exitDay)}` : ""}{score.hitTarget1 ? " · reached target 1" : ""}</p>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden max-h-[70vh] overflow-auto sm:block">
               <table className="mt-2 w-full min-w-[860px] border-collapse">
                 <thead>
                   <tr className="border-y border-slate-200">

@@ -111,9 +111,15 @@ export function TrackerPage() {
       {message && <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-800">{message}</p>}
 
       <section className="space-y-3 rounded-2xl border border-border bg-surface p-4" aria-label="Rules">
-        <h2 className="text-[13px] font-extrabold text-slate-900">{data?.rules.name ?? "The rules"}</h2>
-        <ul className="list-disc space-y-1 pl-5 text-[12.5px] text-slate-700">{data?.rules.lines.map((line) => <li key={line}>{line}</li>)}</ul>
-        <p className="text-[11.5px] text-slate-500">In the 10-year backtest these rules made about 46% a year with a worst drop of about 21%, but only about 45% of trades win and the last few years were weaker. The history only includes stocks listed today, so real results are likely lower. A few weeks of live results prove nothing; judge it after at least 30 closed trades.</p>
+        <details key={config ? "following" : "setup"} open={!config} className="group">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+            <h2 className="text-[13px] font-extrabold text-slate-900">{data?.rules.name ?? "The rules"} <span className="ml-1 text-[11.5px] font-semibold text-slate-500">· the rules being followed</span></h2>
+            <span className="shrink-0 text-[11.5px] font-bold text-accent group-open:hidden">Show the rules</span>
+            <span className="hidden shrink-0 text-[11.5px] font-bold text-accent group-open:inline">Hide</span>
+          </summary>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-[12.5px] text-slate-700">{data?.rules.lines.map((line) => <li key={line}>{line}</li>)}</ul>
+          <p className="mt-2 text-[11.5px] text-slate-500">In the 10-year backtest these rules made about 46% a year with a worst drop of about 21%, but only about 45% of trades win and the last few years were weaker. The history only includes stocks listed today, so real results are likely lower. A few weeks of live results prove nothing; judge it after at least 30 closed trades.</p>
+        </details>
         {!config ? (
           <div className="flex flex-wrap items-end gap-4 border-t border-border pt-3">
             <label className="flex flex-col gap-1 text-[11px] font-bold uppercase tracking-[0.06em] text-slate-500">Paper capital ₹
@@ -139,11 +145,30 @@ export function TrackerPage() {
         )}
       </section>
 
+      {config && (
+        <section aria-label="Progress" className="rounded-2xl border border-border bg-surface px-4 py-3">
+          <ol className="grid gap-3 sm:grid-cols-3">
+            {[
+              { done: true, title: "Started", note: dayLabel(config.startDate) },
+              { done: sessions > 0, title: "First finished session", note: sessions > 0 ? `${sessions} session${sessions === 1 ? "" : "s"} followed` : "arrives after the next close" },
+              { done: closed.length >= 30, title: "Enough trades to judge", note: `${closed.length} of 30 closed trades` },
+            ].map((step, i) => (
+              <li key={step.title} className="flex items-start gap-2.5">
+                <span aria-hidden className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-black ${step.done ? "bg-emerald-600 text-white" : "border border-slate-300 bg-white text-slate-500"}`}>{step.done ? "\u2713" : i + 1}</span>
+                <span className="min-w-0">
+                  <span className="block text-[12.5px] font-extrabold text-slate-900">{step.title}</span>
+                  <span className="block text-[11.5px] text-slate-500">{step.note}</span>
+                  {i === 2 && <span className="mt-1.5 block h-1.5 w-full max-w-[200px] overflow-hidden rounded-full bg-slate-200"><span className="block h-full rounded-full bg-[#e6b53c]" style={{ width: `${Math.min(100, (closed.length / 30) * 100)}%` }} /></span>}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
       {config && data?.job.status === "waiting" && <p className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-slate-700">{data.job.message} Prices update automatically after the close, or press &quot;Update prices now&quot; once the market is closed.</p>}
       {config && data?.job.status === "running" && <p className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-slate-700">Working out the positions… {data.job.message}. The first calculation after a price update takes a minute or two.</p>}
       {config && data?.job.status === "failed" && <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">Could not calculate: {data.job.error}</p>}
-
-      <StrategyHealthCard />
 
       {config && result && (
         <>
@@ -215,6 +240,8 @@ export function TrackerPage() {
           </p>
         </>
       )}
+
+      <StrategyHealthCard />
     </div>
     </AppShell>
   );
