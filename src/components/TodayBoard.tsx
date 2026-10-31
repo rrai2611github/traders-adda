@@ -11,7 +11,7 @@ import { formatPercent, formatPrice } from "@/lib/format";
 import { OVERBOUGHT_PERCENT, OVERSOLD_PERCENT } from "@/lib/screen/breadthHistory";
 import type { SectorSummary } from "@/lib/screen/commandCenter";
 import { READY_RULES } from "@/lib/screen/readyToRun";
-import { topMovers } from "@/lib/screen/movers";
+import { isHeatingUp, topMovers } from "@/lib/screen/movers";
 import { analysePick, type PickVerdict } from "@/lib/screen/pickAnalysis";
 import { setupStatus } from "@/lib/screen/setupGate";
 import { STAT_TITLES, statItems, type StatItem, type StatKey } from "@/lib/screen/statLists";
@@ -446,7 +446,17 @@ function MoversCard({ rows }: { rows: ReadonlyArray<ScanRow> }) {
           {stocks.map((s) => (
             <li key={s.symbol} className="rounded-xl px-2 py-1.5 transition hover:bg-slate-50">
               <div className="flex items-baseline justify-between gap-3">
-                <StockSymbolButton symbol={s.symbol} className="min-w-0 truncate text-[13px] font-bold text-slate-900">{s.symbol}</StockSymbolButton>
+                <span className="flex min-w-0 items-center gap-2">
+                  <StockSymbolButton symbol={s.symbol} className="min-w-0 truncate text-[13px] font-bold text-slate-900">{s.symbol}</StockSymbolButton>
+                  {up && isHeatingUp(s) && (
+                    <span
+                      title="Up 3%+ on at least twice its usual volume, near its 52-week high and above its 50 and 200-day averages. Such stocks jump again about 5 times as often as an average one, but buying the next morning did not make money on average in the 10-year test. Watch only, not a buy signal."
+                      className="shrink-0 cursor-help rounded-full bg-amber-50 px-2 py-0.5 text-[10.5px] font-black text-amber-800 ring-1 ring-amber-200"
+                    >
+                      Heating up
+                    </span>
+                  )}
+                </span>
                 <span className="flex shrink-0 items-baseline gap-3">
                   <span className="font-mono text-xs tabular-nums text-slate-500">₹{formatPrice(s.price)}</span>
                   <span className={`rounded-md px-1.5 py-0.5 text-right font-mono text-xs font-black tabular-nums ${up ? "bg-emerald-50 text-emerald-800" : "bg-rose-50 text-rose-800"}`}>{formatPercent(s.changePercent)}</span>
@@ -464,10 +474,15 @@ function MoversCard({ rows }: { rows: ReadonlyArray<ScanRow> }) {
   return (
     <Card title="Top movers" hint="Biggest moves since yesterday's close, among the stocks that trade enough to matter. Tap a name for its chart.">
       {rows.length === 0 ? <div className="skeleton h-40 rounded-xl" /> : (
-        <div className="grid gap-x-8 gap-y-5 md:grid-cols-2">
-          {column("Top gainers", true, gainers)}
-          {column("Top losers", false, losers)}
-        </div>
+        <>
+          <div className="grid gap-x-8 gap-y-5 md:grid-cols-2">
+            {column("Top gainers", true, gainers)}
+            {column("Top losers", false, losers)}
+          </div>
+          <p className="mt-3 text-[11px] leading-4 text-slate-500">
+            &quot;Heating up&quot; marks a big-volume jump near the 52-week high. It is for watching only: in 10 years of history, buying such stocks the next morning did not make money on average.
+          </p>
+        </>
       )}
     </Card>
   );
