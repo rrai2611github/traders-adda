@@ -39,3 +39,17 @@ test("missing numbers never make a stock heat up", () => {
   assert.equal(isHeatingUp({ ...hot, rvol: null }), false);
   assert.equal(isHeatingUp({ ...hot, fromHigh: null }), false);
 });
+
+import { heatingUpList } from "../src/lib/screen/movers.ts";
+
+test("the heating-up list holds every qualifying stock, biggest move first, and nothing else", () => {
+  const list = heatingUpList([
+    { symbol: "A", price: 100, ...hot, changePercent: 4 },
+    { symbol: "B", price: 100, ...hot, changePercent: 9 },
+    { symbol: "C", price: 100, ...hot, changePercent: 2 },
+    { symbol: "D", price: 100, ...hot, vs200: -5 },
+    { symbol: "E", price: NaN, ...hot },
+  ]);
+  assert.deepEqual(list.map((r) => r.symbol), ["B", "A"]);
+  assert.equal(heatingUpList([{ symbol: "A", price: 1, ...hot }, { symbol: "B", price: 1, ...hot }], 1).length, 1);
+});

@@ -11,7 +11,7 @@ import { formatPercent, formatPrice } from "@/lib/format";
 import { OVERBOUGHT_PERCENT, OVERSOLD_PERCENT } from "@/lib/screen/breadthHistory";
 import type { SectorSummary } from "@/lib/screen/commandCenter";
 import { READY_RULES } from "@/lib/screen/readyToRun";
-import { isHeatingUp, topMovers } from "@/lib/screen/movers";
+import { heatingUpList, isHeatingUp, topMovers } from "@/lib/screen/movers";
 import { analysePick, type PickVerdict } from "@/lib/screen/pickAnalysis";
 import { setupStatus } from "@/lib/screen/setupGate";
 import { STAT_TITLES, statItems, type StatItem, type StatKey } from "@/lib/screen/statLists";
@@ -434,6 +434,7 @@ function SectorCard({ sectors, onAll }: { sectors: ReadonlyArray<SectorSummary>;
 
 function MoversCard({ rows }: { rows: ReadonlyArray<ScanRow> }) {
   const { gainers, losers } = useMemo(() => topMovers(rows, 5), [rows]);
+  const heating = useMemo(() => heatingUpList(rows, 8), [rows]);
   // One shared bar scale so a +20% bar is visibly longer than a +9% bar, on either side.
   const scale = Math.max(1, ...gainers.map((s) => s.changePercent), ...losers.map((s) => Math.abs(s.changePercent)));
   const column = (title: string, up: boolean, stocks: ReadonlyArray<ScanRow>) => (
@@ -479,9 +480,20 @@ function MoversCard({ rows }: { rows: ReadonlyArray<ScanRow> }) {
             {column("Top gainers", true, gainers)}
             {column("Top losers", false, losers)}
           </div>
-          <p className="mt-3 text-[11px] leading-4 text-slate-500">
-            &quot;Heating up&quot; marks a big-volume jump near the 52-week high. It is for watching only: in 10 years of history, buying such stocks the next morning did not make money on average.
-          </p>
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2.5">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs">
+              <span className="font-black text-amber-900">Heating up today{heating.length ? ` (${heating.length})` : ""}:</span>
+              {heating.length === 0 ? <span className="text-slate-600">no stock matches right now.</span> : heating.map((s) => (
+                <span key={s.symbol} className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 ring-1 ring-amber-200">
+                  <StockSymbolButton symbol={s.symbol} className="font-bold text-slate-900">{s.symbol}</StockSymbolButton>
+                  <span className="font-mono text-[11px] font-black tabular-nums text-emerald-700">{formatPercent(s.changePercent)}</span>
+                </span>
+              ))}
+            </div>
+            <p className="mt-1.5 text-[11px] leading-4 text-slate-600">
+              A big-volume jump (up 3%+ on twice the usual volume) near the 52-week high with the trend up. For watching only: in 10 years of history, buying such stocks the next morning did not make money on average.
+            </p>
+          </div>
         </>
       )}
     </Card>

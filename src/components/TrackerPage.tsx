@@ -10,6 +10,7 @@ import { useResultsDates } from "@/hooks/useResultsDates";
 import { daysUntil } from "@/lib/market/boardMeetings";
 import { checkBatch, RISK_LIMITS, verdictLine, type RiskVerdict } from "@/lib/risk/riskGate";
 import { Term } from "./Term";
+import { TradeCards } from "./TradeCards";
 
 interface TrackerPayload {
   config: { startDate: string; startedAt: number; capital: number; niftyGate: boolean; stopPercent: 8 | 12 } | null;
@@ -200,7 +201,24 @@ export function TrackerPage() {
             <h3 className="text-[13px] font-extrabold text-slate-900">Open positions</h3>
             <p className="mb-2 text-[11.5px] text-slate-500">If every holding fell to its sell level at once (the higher of its stop and its 50-day line) the account would lose <b className={openRiskPercent > RISK_LIMITS.maxOpenRiskPercent ? "text-rose-700" : "text-slate-800"}>{openRiskPercent.toFixed(1)}%</b> (limit {RISK_LIMITS.maxOpenRiskPercent}%).</p>
             {result.openPositions.length === 0 ? <p className="text-sm text-slate-600">Nothing is held right now.</p> : (
-              <div className="overflow-x-auto">
+              <>
+              <TradeCards label="Open positions" items={result.openPositions.map((p) => {
+                const gain = (p.last / (p.spent / p.quantity) - 1) * 100;
+                const profit = p.quantity * p.last - p.spent;
+                return {
+                  key: p.symbol,
+                  title: <StockSymbolButton symbol={p.symbol} className="font-black text-slate-900">{p.symbol}</StockSymbolButton>,
+                  headline: <span className={tone(gain)}>{signedPct(gain)} · {profit >= 0 ? "+" : "−"}{money(Math.abs(profit))}</span>,
+                  facts: [
+                    { label: "Bought", value: dayLabel(p.entryDay) },
+                    { label: "Buy price", value: `₹${px(p.spent / p.quantity)}` },
+                    { label: "Now", value: `₹${px(p.last)}` },
+                    { label: "Stop", value: `₹${px(p.stop)}` },
+                    { label: "Sell under", value: p.exitLevel != null ? `₹${px(p.exitLevel)}` : "—" },
+                  ],
+                };
+              })} />
+              <div className="hidden overflow-x-auto sm:block">
                 <p className="mb-1 text-[11px] text-slate-500">Prices and profit in rupees (₹). Gain is the move since the buy price.</p>
                 <table className="w-full min-w-[720px] text-left text-[12.5px]"><thead className="text-[11.5px] uppercase tracking-[0.06em] text-slate-500"><tr><th className="py-1">Stock</th><th>Bought</th><th className="text-right">Buy price</th><th className="text-right">Now</th><th className="text-right">Gain</th><th className="text-right">Profit</th><th className="text-right">Stop</th><th className="text-right">Sell if it closes under</th></tr></thead><tbody>
                   {result.openPositions.map((p) => {
@@ -220,6 +238,7 @@ export function TrackerPage() {
                   })}
                 </tbody></table>
               </div>
+              </>
             )}
           </section>
 
@@ -228,12 +247,24 @@ export function TrackerPage() {
           <section className="rounded-xl border border-border bg-surface p-4" aria-label="Closed trades">
             <h3 className="mb-2 text-[13px] font-extrabold text-slate-900">Closed trades</h3>
             {closed.length === 0 ? <p className="text-sm text-slate-600">No trade has closed yet. The backtest averaged about 30 trades a year, so expect this list to fill slowly, and most of the profit to come from a few long holds.</p> : (
-              <div className="overflow-x-auto">
+              <>
+              <TradeCards label="Closed trades" items={[...closed].reverse().map((t, i) => ({
+                key: `${t.symbol}${t.entryDay}${i}`,
+                title: t.symbol,
+                headline: <span className={tone(t.pnl)}>{signedMoney(t.pnl)} · {t.r.toFixed(2)}R</span>,
+                facts: [
+                  { label: "Bought", value: `${t.entryDay} @ ${t.entryPrice.toFixed(1)}` },
+                  { label: "Sold", value: `${t.exitDay} @ ${t.exitPrice.toFixed(1)}` },
+                  { label: "Why", value: t.exitReason },
+                ],
+              }))} />
+              <div className="hidden overflow-x-auto sm:block">
                 <p className="mb-1 text-[11px] text-slate-500">Prices and profit in rupees (₹). R is the profit as a multiple of the amount risked on the trade (+2R means twice the risk).</p>
                 <table className="w-full min-w-[700px] text-left text-[12px] [&_td]:px-2 [&_th]:px-2"><thead className="text-[11.5px] uppercase tracking-[0.06em] text-slate-500"><tr><th className="py-1">Stock</th><th>Bought</th><th className="text-right">Price</th><th>Sold</th><th className="text-right">Price</th><th>Why</th><th className="text-right">R</th><th className="text-right">Profit</th></tr></thead><tbody>
                   {[...closed].reverse().map((t, i) => <tr key={`${t.symbol}${t.entryDay}${i}`} className="border-t border-border"><td className="py-1 font-bold">{t.symbol}</td><td>{t.entryDay}</td><td className="text-right tabular-nums">{t.entryPrice.toFixed(1)}</td><td>{t.exitDay}</td><td className="text-right tabular-nums">{t.exitPrice.toFixed(1)}</td><td>{t.exitReason}</td><td className={`text-right tabular-nums ${tone(t.r)}`}>{t.r.toFixed(2)}</td><td className={`text-right tabular-nums ${tone(t.pnl)}`}>{signedMoney(t.pnl)}</td></tr>)}
                 </tbody></table>
               </div>
+              </>
             )}
           </section>
 

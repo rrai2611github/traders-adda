@@ -39,3 +39,11 @@ export function isHeatingUp(row: HeatInput): boolean {
     row.vs200 != null && row.vs200 >= 0
   );
 }
+
+/** Every stock that is heating up, biggest move first. */
+export function heatingUpList<T extends MoverInput & HeatInput>(rows: ReadonlyArray<T>, count = 8): T[] {
+  return rows
+    .filter((row) => Number.isFinite(row.changePercent) && Number.isFinite(row.price) && isHeatingUp(row))
+    .sort((a, b) => b.changePercent - a.changePercent)
+    .slice(0, count);
+}
