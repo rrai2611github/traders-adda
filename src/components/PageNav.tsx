@@ -13,7 +13,7 @@ export type PageKey = (typeof PAGES)[number]["key"];
 /** The four pages you use every week, one tap apart, on the pages that have no sidebar. */
 export function PageNav({ current }: { current: PageKey }) {
   return (
-    <nav aria-label="Main pages" className="flex flex-wrap gap-1.5">
+    <nav aria-label="Main pages" className="flex flex-wrap gap-1.5 max-sm:hidden">
       {PAGES.map((page) => (
         <Link
           key={page.key}

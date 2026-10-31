@@ -508,6 +508,28 @@ a {
   .dashboard-header { gap: 8px; }
 }
 
+/* Bottom tab bar for the five weekly pages, phones only. The page keeps room under its content and the sidebar rail stops above it. */
+.tabbar { display: none; }
+@media (max-width: 639px) {
+  :root { --tabbar-h: calc(58px + env(safe-area-inset-bottom, 0px)); }
+  body:has(.tabbar) { padding-bottom: var(--tabbar-h); }
+  .dashboard-shell > .sidenav { height: calc(100dvh - var(--tabbar-h)); }
+  .tabbar {
+    position: fixed; inset: auto 0 0 0; z-index: 30; display: flex; height: var(--tabbar-h);
+    padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+    background: linear-gradient(180deg, #0f2144, #0a1630); border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 -6px 20px rgba(7, 16, 38, 0.25);
+  }
+  .tabbar-item {
+    position: relative; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    color: rgba(255, 255, 255, 0.62); font-size: 10px; font-weight: 700; letter-spacing: 0.01em; text-decoration: none;
+  }
+  .tabbar-item span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tabbar-item[aria-current="page"] { color: #f0c14b; }
+  .tabbar-item[aria-current="page"]::before { content: ""; position: absolute; top: 0; left: 24%; right: 24%; height: 2px; border-radius: 0 0 2px 2px; background: #f0c14b; }
+  .tabbar-item:focus-visible { outline: 2px solid #f0c14b; outline-offset: -3px; border-radius: 8px; }
+}
+
 /* The main action on a page (Add position, Run backtest, Start following): gold with dark navy text, which reads on both themes. */
 .btn-gold {
   background: linear-gradient(180deg, #f0c552, #dca626);

@@ -70,6 +70,14 @@ try {
       const missing = p.expect.filter((t) => !text.includes(t));
       if (missing.length) fail(where, `missing text: ${missing.join(", ")}`); else ok(where, "key text present");
       if (await sideways()) fail(where, "the page scrolls sideways"); else ok(where, "no sideways scrolling");
+      // The bottom tab bar: on phones only, with this page's tab marked as current.
+      const bar = page.locator('nav[aria-label="Main tabs"]');
+      const barShown = await bar.isVisible();
+      if (barShown !== (wname === "phone")) fail(where, wname === "phone" ? "the bottom tab bar is missing" : "the bottom tab bar shows on a wide screen");
+      else if (barShown) {
+        const current = await bar.locator('a[aria-current="page"]').getAttribute("href");
+        if (current !== p.path) fail(where, `the bottom tab bar marks "${current}" instead of "${p.path}"`); else ok(where, "bottom tab bar shows the right tab");
+      }
       if (problems.length) fail(where, [...new Set(problems)].slice(0, 4).join(" | "));
       await page.screenshot({ path: join(OUT, `${p.name}-${wname}.png`) });
     }
