@@ -1,0 +1,37 @@
+{
+  "name": "stock-analysis",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node --use-system-ca node_modules/next/dist/bin/next dev",
+    "build": "next build",
+    "start": "node --use-system-ca node_modules/next/dist/bin/next start",
+    "lint": "eslint",
+    "update-universe": "node --use-system-ca scripts/update-universe.mjs",
+    "update-index-membership": "node --use-system-ca scripts/update-index-membership.mjs",
+    "fetch-history": "node --use-system-ca scripts/fetch-history.mjs",
+    "fetch-market-caps": "node --use-system-ca --no-warnings scripts/fetch-market-caps.mjs",
+    "refresh-data": "npm run update-universe && npm run fetch-market-caps && npm run fetch-history",
+    "check:ui": "node scripts/check-ui.mjs"
+  },
+  "dependencies": {
+    "lightweight-charts": "^5.2.1",
+    "next": "16.3.5",
+    "nodemailer": "^10.0.11",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/nodemailer": "^8.0.2",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.5",
+    "playwright-core": "^1.49.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

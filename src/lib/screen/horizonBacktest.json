@@ -1,0 +1,85 @@
+{
+  "generated": "2026-10-04",
+  "from": "2022-11-22",
+  "to": "2026-10-01",
+  "costPercent": 0.25,
+  "maxHoldSessions": {
+    "short": 30,
+    "mid": 63,
+    "long": 250
+  },
+  "horizons": {
+    "short": {
+      "buyReady": {
+        "trades": 168,
+        "t1HitPercent": 33.9,
+        "t1MedianDays": 6,
+        "t2HitPercent": 10.7,
+        "t2MedianDays": 17,
+        "stopFirstPercent": 48.8,
+        "timeExitPercent": 24.4,
+        "avgR": -0.09,
+        "winPercent": 46
+      },
+      "stockChecks": {
+        "trades": 359,
+        "t1HitPercent": 34.8,
+        "t1MedianDays": 6,
+        "t2HitPercent": 10.6,
+        "t2MedianDays": 16,
+        "stopFirstPercent": 51.8,
+        "timeExitPercent": 20.9,
+        "avgR": -0.12,
+        "winPercent": 43
+      }
+    },
+    "mid": {
+      "buyReady": {
+        "trades": 242,
+        "t1HitPercent": 32.6,
+        "t1MedianDays": 20,
+        "t2HitPercent": 17.8,
+        "t2MedianDays": 29,
+        "stopFirstPercent": 55.8,
+        "timeExitPercent": 17.8,
+        "avgR": 0.02,
+        "winPercent": 40
+      },
+      "stockChecks": {
+        "trades": 369,
+        "t1HitPercent": 33.3,
+        "t1MedianDays": 20,
+        "t2HitPercent": 17.3,
+        "t2MedianDays": 28,
+        "stopFirstPercent": 54.7,
+        "timeExitPercent": 18.4,
+        "avgR": 0.03,
+        "winPercent": 41
+      }
+    },
+    "long": {
+      "buyReady": {
+        "trades": 32,
+        "t1HitPercent": 34.4,
+        "t1MedianDays": 54,
+        "t2HitPercent": 28.1,
+        "t2MedianDays": 122,
+        "stopFirstPercent": 53.1,
+        "timeExitPercent": 12.5,
+        "avgR": 0.32,
+        "winPercent": 34
+      },
+      "stockChecks": {
+        "trades": 65,
+        "t1HitPercent": 38.5,
+        "t1MedianDays": 54,
+        "t2HitPercent": 21.5,
+        "t2MedianDays": 122,
+        "stopFirstPercent": 49.2,
+        "timeExitPercent": 20,
+        "avgR": 0.35,
+        "winPercent": 40
+      }
+    }
+  }
+}

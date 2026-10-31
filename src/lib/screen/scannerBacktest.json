@@ -1,0 +1,1157 @@
+{
+  "generatedAt": "2026-09-30T07:19:50.513Z",
+  "from": "2022-10-25",
+  "to": "2026-09-30",
+  "split": "2025-10-29",
+  "costPercent": 0.25,
+  "exits": {
+    "targets": "Half at 2R (SL to cost), rest at 3R, 30-day time stop",
+    "highwin": "Target +0.5R, SL -2R, 30-day time stop"
+  },
+  "scanners": {
+    "ANY": {
+      "raw": {
+        "targets": {
+          "all": null,
+          "firstHalf": null,
+          "secondHalf": null
+        },
+        "highwin": {
+          "all": null,
+          "firstHalf": null,
+          "secondHalf": null
+        }
+      },
+      "ready": {
+        "targets": {
+          "all": {
+            "trades": 260,
+            "winRate": 35.4,
+            "avgR": -0.03,
+            "profitFactor": 0.96
+          },
+          "firstHalf": {
+            "trades": 142,
+            "winRate": 35.2,
+            "avgR": -0.04,
+            "profitFactor": 0.95
+          },
+          "secondHalf": {
+            "trades": 118,
+            "winRate": 35.6,
+            "avgR": -0.01,
+            "profitFactor": 0.98
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 267,
+            "winRate": 81.6,
+            "avgR": 0,
+            "profitFactor": 1.01
+          },
+          "firstHalf": {
+            "trades": 148,
+            "winRate": 79.7,
+            "avgR": -0.05,
+            "profitFactor": 0.87
+          },
+          "secondHalf": {
+            "trades": 119,
+            "winRate": 84,
+            "avgR": 0.07,
+            "profitFactor": 1.24
+          }
+        }
+      }
+    },
+    "ath": {
+      "raw": {
+        "targets": {
+          "all": {
+            "trades": 414,
+            "winRate": 37.9,
+            "avgR": -0.1,
+            "profitFactor": 0.83
+          },
+          "firstHalf": {
+            "trades": 34,
+            "winRate": 44.1,
+            "avgR": 0.06,
+            "profitFactor": 1.11
+          },
+          "secondHalf": {
+            "trades": 380,
+            "winRate": 37.4,
+            "avgR": -0.12,
+            "profitFactor": 0.81
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 494,
+            "winRate": 70,
+            "avgR": -0.07,
+            "profitFactor": 0.82
+          },
+          "firstHalf": {
+            "trades": 34,
+            "winRate": 79.4,
+            "avgR": 0.11,
+            "profitFactor": 1.39
+          },
+          "secondHalf": {
+            "trades": 460,
+            "winRate": 69.3,
+            "avgR": -0.09,
+            "profitFactor": 0.8
+          }
+        }
+      },
+      "ready": {
+        "targets": {
+          "all": {
+            "trades": 31,
+            "winRate": 45.2,
+            "avgR": 0.13,
+            "profitFactor": 1.23
+          },
+          "firstHalf": {
+            "trades": 8,
+            "winRate": 50,
+            "avgR": 0.38,
+            "profitFactor": 1.72
+          },
+          "secondHalf": {
+            "trades": 23,
+            "winRate": 43.5,
+            "avgR": 0.05,
+            "profitFactor": 1.08
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 34,
+            "winRate": 70.6,
+            "avgR": -0.16,
+            "profitFactor": 0.66
+          },
+          "firstHalf": {
+            "trades": 8,
+            "winRate": 75,
+            "avgR": 0.04,
+            "profitFactor": 1.15
+          },
+          "secondHalf": {
+            "trades": 26,
+            "winRate": 69.2,
+            "avgR": -0.23,
+            "profitFactor": 0.58
+          }
+        }
+      }
+    },
+    "ema21": {
+      "raw": {
+        "targets": {
+          "all": {
+            "trades": 9808,
+            "winRate": 36,
+            "avgR": -0.13,
+            "profitFactor": 0.79
+          },
+          "firstHalf": {
+            "trades": 5294,
+            "winRate": 35.3,
+            "avgR": -0.16,
+            "profitFactor": 0.74
+          },
+          "secondHalf": {
+            "trades": 4514,
+            "winRate": 36.8,
+            "avgR": -0.08,
+            "profitFactor": 0.86
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 10887,
+            "winRate": 72.5,
+            "avgR": -0.08,
+            "profitFactor": 0.82
+          },
+          "firstHalf": {
+            "trades": 5753,
+            "winRate": 73.1,
+            "avgR": -0.07,
+            "profitFactor": 0.83
+          },
+          "secondHalf": {
+            "trades": 5134,
+            "winRate": 71.9,
+            "avgR": -0.09,
+            "profitFactor": 0.8
+          }
+        }
+      },
+      "ready": {
+        "targets": {
+          "all": {
+            "trades": 425,
+            "winRate": 37.6,
+            "avgR": -0.02,
+            "profitFactor": 0.98
+          },
+          "firstHalf": {
+            "trades": 216,
+            "winRate": 32.4,
+            "avgR": -0.14,
+            "profitFactor": 0.81
+          },
+          "secondHalf": {
+            "trades": 209,
+            "winRate": 43.1,
+            "avgR": 0.11,
+            "profitFactor": 1.16
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 457,
+            "winRate": 81,
+            "avgR": -0.02,
+            "profitFactor": 0.94
+          },
+          "firstHalf": {
+            "trades": 241,
+            "winRate": 76.3,
+            "avgR": -0.15,
+            "profitFactor": 0.69
+          },
+          "secondHalf": {
+            "trades": 216,
+            "winRate": 86.1,
+            "avgR": 0.12,
+            "profitFactor": 1.46
+          }
+        }
+      }
+    },
+    "fall4": {
+      "raw": {
+        "targets": {
+          "all": {
+            "trades": 1242,
+            "winRate": 32.8,
+            "avgR": -0.15,
+            "profitFactor": 0.79
+          },
+          "firstHalf": {
+            "trades": 630,
+            "winRate": 33.8,
+            "avgR": -0.14,
+            "profitFactor": 0.8
+          },
+          "secondHalf": {
+            "trades": 612,
+            "winRate": 31.7,
+            "avgR": -0.16,
+            "profitFactor": 0.76
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 1243,
+            "winRate": 76,
+            "avgR": -0.08,
+            "profitFactor": 0.82
+          },
+          "firstHalf": {
+            "trades": 637,
+            "winRate": 77.2,
+            "avgR": -0.07,
+            "profitFactor": 0.84
+          },
+          "secondHalf": {
+            "trades": 606,
+            "winRate": 74.8,
+            "avgR": -0.09,
+            "profitFactor": 0.79
+          }
+        }
+      },
+      "ready": {
+        "targets": {
+          "all": {
+            "trades": 79,
+            "winRate": 41.8,
+            "avgR": 0.16,
+            "profitFactor": 1.25
+          },
+          "firstHalf": {
+            "trades": 43,
+            "winRate": 37.2,
+            "avgR": 0.07,
+            "profitFactor": 1.1
+          },
+          "secondHalf": {
+            "trades": 36,
+            "winRate": 47.2,
+            "avgR": 0.26,
+            "profitFactor": 1.46
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 80,
+            "winRate": 80,
+            "avgR": -0.04,
+            "profitFactor": 0.91
+          },
+          "firstHalf": {
+            "trades": 44,
+            "winRate": 72.7,
+            "avgR": -0.21,
+            "profitFactor": 0.6
+          },
+          "secondHalf": {
+            "trades": 36,
+            "winRate": 88.9,
+            "avgR": 0.18,
+            "profitFactor": 1.77
+          }
+        }
+      }
+    },
+    "high52": {
+      "raw": {
+        "targets": {
+          "all": {
+            "trades": 1162,
+            "winRate": 39.8,
+            "avgR": -0.06,
+            "profitFactor": 0.89
+          },
+          "firstHalf": {
+            "trades": 496,
+            "winRate": 38.3,
+            "avgR": -0.11,
+            "profitFactor": 0.8
+          },
+          "secondHalf": {
+            "trades": 666,
+            "winRate": 41,
+            "avgR": -0.03,
+            "profitFactor": 0.95
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 1421,
+            "winRate": 71.3,
+            "avgR": -0.04,
+            "profitFactor": 0.91
+          },
+          "firstHalf": {
+            "trades": 595,
+            "winRate": 69.1,
+            "avgR": -0.12,
+            "profitFactor": 0.73
+          },
+          "secondHalf": {
+            "trades": 826,
+            "winRate": 72.9,
+            "avgR": 0.03,
+            "profitFactor": 1.09
+          }
+        }
+      },
+      "ready": {
+        "targets": {
+          "all": {
+            "trades": 45,
+            "winRate": 37.8,
+            "avgR": -0.21,
+            "profitFactor": 0.63
+          },
+          "firstHalf": {
+            "trades": 22,
+            "winRate": 31.8,
+            "avgR": -0.42,
+            "profitFactor": 0.33
+          },
+          "secondHalf": {
+            "trades": 23,
+            "winRate": 43.5,
+            "avgR": -0.01,
+            "profitFactor": 0.98
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 47,
+            "winRate": 74.5,
+            "avgR": -0.04,
+            "profitFactor": 0.9
+          },
+          "firstHalf": {
+            "trades": 23,
+            "winRate": 73.9,
+            "avgR": -0.09,
+            "profitFactor": 0.8
+          },
+          "secondHalf": {
+            "trades": 24,
+            "winRate": 75,
+            "avgR": 0.01,
+            "profitFactor": 1.04
+          }
+        }
+      }
+    },
+    "inside": {
+      "raw": {
+        "targets": {
+          "all": {
+            "trades": 13989,
+            "winRate": 34,
+            "avgR": -0.14,
+            "profitFactor": 0.79
+          },
+          "firstHalf": {
+            "trades": 7363,
+            "winRate": 34.3,
+            "avgR": -0.15,
+            "profitFactor": 0.78
+          },
+          "secondHalf": {
+            "trades": 6626,
+            "winRate": 33.7,
+            "avgR": -0.13,
+            "profitFactor": 0.8
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 17658,
+            "winRate": 74.5,
+            "avgR": -0.07,
+            "profitFactor": 0.84
+          },
+          "firstHalf": {
+            "trades": 9203,
+            "winRate": 75.6,
+            "avgR": -0.05,
+            "profitFactor": 0.87
+          },
+          "secondHalf": {
+            "trades": 8455,
+            "winRate": 73.3,
+            "avgR": -0.08,
+            "profitFactor": 0.8
+          }
+        }
+      },
+      "ready": {
+        "targets": {
+          "all": {
+            "trades": 44,
+            "winRate": 38.6,
+            "avgR": 0.01,
+            "profitFactor": 1.02
+          },
+          "firstHalf": {
+            "trades": 24,
+            "winRate": 33.3,
+            "avgR": -0.12,
+            "profitFactor": 0.83
+          },
+          "secondHalf": {
+            "trades": 20,
+            "winRate": 45,
+            "avgR": 0.17,
+            "profitFactor": 1.3
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 44,
+            "winRate": 79.5,
+            "avgR": -0.06,
+            "profitFactor": 0.86
+          },
+          "firstHalf": {
+            "trades": 24,
+            "winRate": 75,
+            "avgR": -0.21,
+            "profitFactor": 0.61
+          },
+          "secondHalf": {
+            "trades": 20,
+            "winRate": 85,
+            "avgR": 0.13,
+            "profitFactor": 1.49
+          }
+        }
+      }
+    },
+    "leader": {
+      "raw": {
+        "targets": {
+          "all": {
+            "trades": 1104,
+            "winRate": 42.1,
+            "avgR": 0,
+            "profitFactor": 1
+          },
+          "firstHalf": {
+            "trades": 498,
+            "winRate": 39.8,
+            "avgR": -0.05,
+            "profitFactor": 0.91
+          },
+          "secondHalf": {
+            "trades": 606,
+            "winRate": 44.1,
+            "avgR": 0.04,
+            "profitFactor": 1.08
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 1662,
+            "winRate": 73.9,
+            "avgR": 0.01,
+            "profitFactor": 1.02
+          },
+          "firstHalf": {
+            "trades": 728,
+            "winRate": 71.4,
+            "avgR": -0.07,
+            "profitFactor": 0.83
+          },
+          "secondHalf": {
+            "trades": 934,
+            "winRate": 75.8,
+            "avgR": 0.07,
+            "profitFactor": 1.24
+          }
+        }
+      },
+      "ready": {
+        "targets": {
+          "all": {
+            "trades": 27,
+            "winRate": 55.6,
+            "avgR": 0.42,
+            "profitFactor": 1.95
+          },
+          "firstHalf": {
+            "trades": 13,
+            "winRate": 46.2,
+            "avgR": 0.11,
+            "profitFactor": 1.2
+          },
+          "secondHalf": {
+            "trades": 14,
+            "winRate": 64.3,
+            "avgR": 0.72,
+            "profitFactor": 2.91
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 34,
+            "winRate": 85.3,
+            "avgR": 0.23,
+            "profitFactor": 2.48
+          },
+          "firstHalf": {
+            "trades": 17,
+            "winRate": 76.5,
+            "avgR": 0.04,
+            "profitFactor": 1.15
+          },
+          "secondHalf": {
+            "trades": 17,
+            "winRate": 94.1,
+            "avgR": 0.42,
+            "profitFactor": 65.22
+          }
+        }
+      }
+    },
+    "nr7": {
+      "raw": {
+        "targets": {
+          "all": {
+            "trades": 4186,
+            "winRate": 33.4,
+            "avgR": -0.11,
+            "profitFactor": 0.84
+          },
+          "firstHalf": {
+            "trades": 2021,
+            "winRate": 31.8,
+            "avgR": -0.16,
+            "profitFactor": 0.78
+          },
+          "secondHalf": {
+            "trades": 2165,
+            "winRate": 35,
+            "avgR": -0.07,
+            "profitFactor": 0.9
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 4832,
+            "winRate": 79.4,
+            "avgR": -0.05,
+            "profitFactor": 0.87
+          },
+          "firstHalf": {
+            "trades": 2312,
+            "winRate": 80.1,
+            "avgR": -0.04,
+            "profitFactor": 0.89
+          },
+          "secondHalf": {
+            "trades": 2520,
+            "winRate": 78.7,
+            "avgR": -0.06,
+            "profitFactor": 0.86
+          }
+        }
+      },
+      "ready": {
+        "targets": {
+          "all": {
+            "trades": 167,
+            "winRate": 33.5,
+            "avgR": -0.06,
+            "profitFactor": 0.92
+          },
+          "firstHalf": {
+            "trades": 92,
+            "winRate": 35.9,
+            "avgR": -0.03,
+            "profitFactor": 0.96
+          },
+          "secondHalf": {
+            "trades": 75,
+            "winRate": 30.7,
+            "avgR": -0.1,
+            "profitFactor": 0.87
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 171,
+            "winRate": 83.6,
+            "avgR": 0.03,
+            "profitFactor": 1.09
+          },
+          "firstHalf": {
+            "trades": 95,
+            "winRate": 83.2,
+            "avgR": 0,
+            "profitFactor": 0.99
+          },
+          "secondHalf": {
+            "trades": 76,
+            "winRate": 84.2,
+            "avgR": 0.07,
+            "profitFactor": 1.22
+          }
+        }
+      }
+    },
+    "pocket": {
+      "raw": {
+        "targets": {
+          "all": {
+            "trades": 2820,
+            "winRate": 33.4,
+            "avgR": -0.19,
+            "profitFactor": 0.71
+          },
+          "firstHalf": {
+            "trades": 1381,
+            "winRate": 30,
+            "avgR": -0.28,
+            "profitFactor": 0.6
+          },
+          "secondHalf": {
+            "trades": 1439,
+            "winRate": 36.6,
+            "avgR": -0.11,
+            "profitFactor": 0.82
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 3375,
+            "winRate": 70.2,
+            "avgR": -0.12,
+            "profitFactor": 0.74
+          },
+          "firstHalf": {
+            "trades": 1627,
+            "winRate": 68.9,
+            "avgR": -0.17,
+            "profitFactor": 0.66
+          },
+          "secondHalf": {
+            "trades": 1748,
+            "winRate": 71.3,
+            "avgR": -0.06,
+            "profitFactor": 0.84
+          }
+        }
+      },
+      "ready": {
+        "targets": {
+          "all": {
+            "trades": 234,
+            "winRate": 38.9,
+            "avgR": 0,
+            "profitFactor": 1
+          },
+          "firstHalf": {
+            "trades": 130,
+            "winRate": 34.6,
+            "avgR": -0.15,
+            "profitFactor": 0.78
+          },
+          "secondHalf": {
+            "trades": 104,
+            "winRate": 44.2,
+            "avgR": 0.19,
+            "profitFactor": 1.33
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 265,
+            "winRate": 74,
+            "avgR": -0.11,
+            "profitFactor": 0.74
+          },
+          "firstHalf": {
+            "trades": 146,
+            "winRate": 68.5,
+            "avgR": -0.29,
+            "profitFactor": 0.52
+          },
+          "secondHalf": {
+            "trades": 119,
+            "winRate": 80.7,
+            "avgR": 0.1,
+            "profitFactor": 1.36
+          }
+        }
+      }
+    },
+    "pullback20": {
+      "raw": {
+        "targets": {
+          "all": {
+            "trades": 3400,
+            "winRate": 33.6,
+            "avgR": -0.14,
+            "profitFactor": 0.81
+          },
+          "firstHalf": {
+            "trades": 1616,
+            "winRate": 30.5,
+            "avgR": -0.22,
+            "profitFactor": 0.71
+          },
+          "secondHalf": {
+            "trades": 1784,
+            "winRate": 36.3,
+            "avgR": -0.06,
+            "profitFactor": 0.91
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 4129,
+            "winRate": 78.6,
+            "avgR": -0.07,
+            "profitFactor": 0.83
+          },
+          "firstHalf": {
+            "trades": 1923,
+            "winRate": 77.3,
+            "avgR": -0.12,
+            "profitFactor": 0.74
+          },
+          "secondHalf": {
+            "trades": 2206,
+            "winRate": 79.7,
+            "avgR": -0.03,
+            "profitFactor": 0.91
+          }
+        }
+      },
+      "ready": {
+        "targets": {
+          "all": {
+            "trades": 1216,
+            "winRate": 35.8,
+            "avgR": -0.05,
+            "profitFactor": 0.93
+          },
+          "firstHalf": {
+            "trades": 568,
+            "winRate": 28,
+            "avgR": -0.29,
+            "profitFactor": 0.63
+          },
+          "secondHalf": {
+            "trades": 648,
+            "winRate": 42.6,
+            "avgR": 0.15,
+            "profitFactor": 1.24
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 1465,
+            "winRate": 81,
+            "avgR": -0.03,
+            "profitFactor": 0.91
+          },
+          "firstHalf": {
+            "trades": 671,
+            "winRate": 76.6,
+            "avgR": -0.16,
+            "profitFactor": 0.68
+          },
+          "secondHalf": {
+            "trades": 794,
+            "winRate": 84.8,
+            "avgR": 0.07,
+            "profitFactor": 1.24
+          }
+        }
+      }
+    },
+    "range": {
+      "raw": {
+        "targets": {
+          "all": {
+            "trades": 5926,
+            "winRate": 35.8,
+            "avgR": -0.14,
+            "profitFactor": 0.78
+          },
+          "firstHalf": {
+            "trades": 3151,
+            "winRate": 34,
+            "avgR": -0.2,
+            "profitFactor": 0.69
+          },
+          "secondHalf": {
+            "trades": 2775,
+            "winRate": 37.9,
+            "avgR": -0.07,
+            "profitFactor": 0.88
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 6739,
+            "winRate": 71.9,
+            "avgR": -0.07,
+            "profitFactor": 0.84
+          },
+          "firstHalf": {
+            "trades": 3503,
+            "winRate": 71.6,
+            "avgR": -0.08,
+            "profitFactor": 0.81
+          },
+          "secondHalf": {
+            "trades": 3236,
+            "winRate": 72.1,
+            "avgR": -0.05,
+            "profitFactor": 0.86
+          }
+        }
+      },
+      "ready": {
+        "targets": {
+          "all": {
+            "trades": 25,
+            "winRate": 32,
+            "avgR": -0.18,
+            "profitFactor": 0.73
+          },
+          "firstHalf": {
+            "trades": 15,
+            "winRate": 33.3,
+            "avgR": -0.09,
+            "profitFactor": 0.86
+          },
+          "secondHalf": {
+            "trades": 10,
+            "winRate": 30,
+            "avgR": -0.32,
+            "profitFactor": 0.57
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 25,
+            "winRate": 60,
+            "avgR": -0.3,
+            "profitFactor": 0.46
+          },
+          "firstHalf": {
+            "trades": 15,
+            "winRate": 66.7,
+            "avgR": -0.13,
+            "profitFactor": 0.7
+          },
+          "secondHalf": {
+            "trades": 10,
+            "winRate": 50,
+            "avgR": -0.56,
+            "profitFactor": 0.25
+          }
+        }
+      }
+    },
+    "rsidiv": {
+      "raw": {
+        "targets": {
+          "all": {
+            "trades": 1597,
+            "winRate": 33.2,
+            "avgR": -0.17,
+            "profitFactor": 0.75
+          },
+          "firstHalf": {
+            "trades": 911,
+            "winRate": 32.5,
+            "avgR": -0.17,
+            "profitFactor": 0.76
+          },
+          "secondHalf": {
+            "trades": 686,
+            "winRate": 34.1,
+            "avgR": -0.18,
+            "profitFactor": 0.74
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 1621,
+            "winRate": 75.5,
+            "avgR": -0.08,
+            "profitFactor": 0.81
+          },
+          "firstHalf": {
+            "trades": 922,
+            "winRate": 76.6,
+            "avgR": -0.07,
+            "profitFactor": 0.82
+          },
+          "secondHalf": {
+            "trades": 699,
+            "winRate": 74.1,
+            "avgR": -0.09,
+            "profitFactor": 0.79
+          }
+        }
+      },
+      "ready": {
+        "targets": {
+          "all": {
+            "trades": 63,
+            "winRate": 33.3,
+            "avgR": -0.05,
+            "profitFactor": 0.93
+          },
+          "firstHalf": {
+            "trades": 32,
+            "winRate": 34.4,
+            "avgR": -0.06,
+            "profitFactor": 0.92
+          },
+          "secondHalf": {
+            "trades": 31,
+            "winRate": 32.3,
+            "avgR": -0.05,
+            "profitFactor": 0.93
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 63,
+            "winRate": 76.2,
+            "avgR": -0.14,
+            "profitFactor": 0.71
+          },
+          "firstHalf": {
+            "trades": 32,
+            "winRate": 75,
+            "avgR": -0.15,
+            "profitFactor": 0.69
+          },
+          "secondHalf": {
+            "trades": 31,
+            "winRate": 77.4,
+            "avgR": -0.12,
+            "profitFactor": 0.74
+          }
+        }
+      }
+    },
+    "swing": {
+      "raw": {
+        "targets": {
+          "all": {
+            "trades": 6822,
+            "winRate": 36.1,
+            "avgR": -0.12,
+            "profitFactor": 0.81
+          },
+          "firstHalf": {
+            "trades": 3342,
+            "winRate": 33.7,
+            "avgR": -0.19,
+            "profitFactor": 0.71
+          },
+          "secondHalf": {
+            "trades": 3480,
+            "winRate": 38.4,
+            "avgR": -0.05,
+            "profitFactor": 0.92
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 10271,
+            "winRate": 71.8,
+            "avgR": -0.07,
+            "profitFactor": 0.83
+          },
+          "firstHalf": {
+            "trades": 4825,
+            "winRate": 71,
+            "avgR": -0.1,
+            "profitFactor": 0.77
+          },
+          "secondHalf": {
+            "trades": 5446,
+            "winRate": 72.5,
+            "avgR": -0.05,
+            "profitFactor": 0.88
+          }
+        }
+      },
+      "ready": {
+        "targets": {
+          "all": {
+            "trades": 886,
+            "winRate": 38.1,
+            "avgR": -0.02,
+            "profitFactor": 0.97
+          },
+          "firstHalf": {
+            "trades": 443,
+            "winRate": 33.9,
+            "avgR": -0.15,
+            "profitFactor": 0.78
+          },
+          "secondHalf": {
+            "trades": 443,
+            "winRate": 42.4,
+            "avgR": 0.12,
+            "profitFactor": 1.19
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 1116,
+            "winRate": 79.8,
+            "avgR": -0.01,
+            "profitFactor": 0.98
+          },
+          "firstHalf": {
+            "trades": 547,
+            "winRate": 76.6,
+            "avgR": -0.08,
+            "profitFactor": 0.82
+          },
+          "secondHalf": {
+            "trades": 569,
+            "winRate": 83,
+            "avgR": 0.06,
+            "profitFactor": 1.2
+          }
+        }
+      }
+    },
+    "up3": {
+      "raw": {
+        "targets": {
+          "all": {
+            "trades": 467,
+            "winRate": 40.3,
+            "avgR": -0.05,
+            "profitFactor": 0.92
+          },
+          "firstHalf": {
+            "trades": 262,
+            "winRate": 39.7,
+            "avgR": -0.1,
+            "profitFactor": 0.83
+          },
+          "secondHalf": {
+            "trades": 205,
+            "winRate": 41,
+            "avgR": 0.02,
+            "profitFactor": 1.04
+          }
+        },
+        "highwin": {
+          "all": {
+            "trades": 484,
+            "winRate": 69.6,
+            "avgR": -0.04,
+            "profitFactor": 0.9
+          },
+          "firstHalf": {
+            "trades": 271,
+            "winRate": 67.9,
+            "avgR": -0.06,
+            "profitFactor": 0.84
+          },
+          "secondHalf": {
+            "trades": 213,
+            "winRate": 71.8,
+            "avgR": -0.01,
+            "profitFactor": 0.98
+          }
+        }
+      },
+      "ready": {
+        "targets": {
+          "all": null,
+          "firstHalf": null,
+          "secondHalf": null
+        },
+        "highwin": {
+          "all": null,
+          "firstHalf": null,
+          "secondHalf": null
+        }
+      }
+    }
+  }
+}
