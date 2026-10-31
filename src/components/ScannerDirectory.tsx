@@ -14,7 +14,11 @@ import {
   type DirectoryTarget,
 } from "@/lib/screen/scannerDirectory";
 
-const FAMILY_ORDER: DirectoryFamily[] = ["Core Setups", "RPCI & Oscillators", "Trade Triggers", "RSI Edge", "Monthly Setups", "Reversals"];
+/** The same two groups as the "Research & older tools" menu: tools that find stocks, then tools that time an entry. */
+const GROUPS: Array<{ title: string; note: string; families: DirectoryFamily[] }> = [
+  { title: "Stock lists", note: "Setups that find stocks worth a closer look.", families: ["Core Setups", "Monthly Setups", "Reversals"] },
+  { title: "Signals", note: "Momentum readings and entry triggers on stocks already moving.", families: ["Trade Triggers", "RSI Edge", "RPCI & Oscillators"] },
+];
 
 const DIRECTION_STYLES: Record<DirectoryDirection, { label: string; chip: string; accent: string }> = {
   bull: { label: "Bullish", chip: "border-emerald-200 bg-emerald-50 text-emerald-800", accent: "bg-emerald-500" },
@@ -63,42 +67,58 @@ export function ScannerDirectory({
           </p>
         </div>
       </header>
-      <div className="space-y-4 p-4">
-        {FAMILY_ORDER.map((family) => (
-          <div key={family}>
-            <div className="mb-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">{family}</div>
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              {SCANNER_DIRECTORY.filter((entry) => entry.family === family).map((entry) => {
-                const count = counts.get(entry.id);
-                const direction = DIRECTION_STYLES[entry.direction];
-                return (
-                  <button
-                    key={entry.id}
-                    type="button"
-                    onClick={() => onOpen(entry.target)}
-                    className="group relative flex min-h-[9.5rem] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-3 pl-4 text-left transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
-                  >
-                    <span className={`absolute inset-y-0 left-0 w-1 ${direction.accent}`} aria-hidden />
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="text-sm font-black leading-5 text-slate-900">{entry.name}</span>
-                      <span className="text-right">
-                        <span className="block font-mono text-xl font-black leading-6 tabular-nums text-slate-900">{count?.count ?? "—"}</span>
-                      </span>
-                    </div>
-                    <div className="mt-1.5 flex flex-wrap gap-1">
-                      <StyleTag horizon={entry.horizon} />
-                      <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-black ${direction.chip}`}>{direction.label}</span>
-                    </div>
-                    <p className="mt-2 flex-1 text-[11px] leading-4 text-slate-600">{entry.rule}</p>
-                    <div className="mt-2 flex items-center justify-between gap-2 text-[10px]">
-                      <span className="truncate font-semibold text-slate-400">{count?.detail ?? (count?.count == null ? "Loading…" : "\u00a0")}</span>
-                      <span className="shrink-0 font-black text-emerald-700 opacity-70 transition group-hover:opacity-100">Open →</span>
-                    </div>
-                  </button>
-                );
-              })}
+      <div className="space-y-6 p-4">
+        {GROUPS.map((group) => (
+          <section key={group.title} aria-label={group.title} className="space-y-3">
+            <div className="border-b border-slate-100 pb-1.5">
+              <h4 className="text-[12px] font-black uppercase tracking-[0.12em] text-slate-700">{group.title}</h4>
+              <p className="text-[11px] text-slate-500">{group.note}</p>
             </div>
-          </div>
+            {group.families.map((family) => {
+              const entries = SCANNER_DIRECTORY.filter((entry) => entry.family === family);
+              if (!entries.length) return null;
+              const hits = entries.reduce((sum, entry) => sum + (counts.get(entry.id)?.count ?? 0), 0);
+              return (
+                <div key={family}>
+                  <div className="mb-2 flex items-baseline gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">
+                    <span>{family}</span>
+                    <span className="font-semibold normal-case tracking-normal text-slate-400">{entries.length} scanner{entries.length === 1 ? "" : "s"} · {hits} hit{hits === 1 ? "" : "s"} today</span>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    {entries.map((entry) => {
+                      const count = counts.get(entry.id);
+                      const direction = DIRECTION_STYLES[entry.direction];
+                      return (
+                        <button
+                          key={entry.id}
+                          type="button"
+                          onClick={() => onOpen(entry.target)}
+                          className="group relative flex min-h-[9.5rem] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-3 pl-4 text-left transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+                        >
+                          <span className={`absolute inset-y-0 left-0 w-1 ${direction.accent}`} aria-hidden />
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-sm font-black leading-5 text-slate-900">{entry.name}</span>
+                            <span className="text-right">
+                              <span className="block font-mono text-xl font-black leading-6 tabular-nums text-slate-900">{count?.count ?? "—"}</span>
+                            </span>
+                          </div>
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            <StyleTag horizon={entry.horizon} />
+                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-black ${direction.chip}`}>{direction.label}</span>
+                          </div>
+                          <p className="mt-2 flex-1 text-[11px] leading-4 text-slate-600">{entry.rule}</p>
+                          <div className="mt-2 flex items-center justify-between gap-2 text-[10px]">
+                            <span className="truncate font-semibold text-slate-400">{count?.detail ?? (count?.count == null ? "Loading…" : " ")}</span>
+                            <span className="shrink-0 font-black text-emerald-700 opacity-70 transition group-hover:opacity-100">Open →</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </section>
         ))}
       </div>
     </section>
