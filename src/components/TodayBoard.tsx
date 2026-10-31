@@ -295,14 +295,14 @@ function TopPicksSection({ rows, onAll }: { rows: ReadonlyArray<ScanRow>; onAll:
       <header className="mb-3 flex flex-wrap items-start justify-between gap-2">
         <div>
           <h3 className="text-[15px] font-black text-slate-900">Top picks</h3>
-          <p className="text-[11px] text-slate-500">Strong stocks (RS {READY_RULES.minRs}+) in an uptrend. Stocks that just broke out on the Blue sky or Multi-year screens come first (the tested buy), then ones about to break out (tomorrow&apos;s watchlist); extended stocks are greyed so you do not chase them. Click one for the checklist and trade plan.</p>
+          <p className="text-[11px] text-slate-500">Strong stocks (RS {READY_RULES.minRs}+) in an uptrend. Just-broke-out stocks come first, then ones about to break out; greyed ones have run too far. Click one for its checklist and plan.</p>
         </div>
         <button type="button" onClick={onAll} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50">All picks →</button>
       </header>
       {(data?.breadth50 != null || nifty) && (
         <p className={`mb-3 flex items-start gap-2 rounded-xl border px-3 py-2 text-xs leading-5 ${gate.allowed ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-rose-200 bg-rose-50 text-rose-900"}`}>
           <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${gate.allowed ? "bg-emerald-500" : "bg-rose-500"}`} aria-hidden />
-          <span><b>Setup check {gate.allowed ? "passed" : "not passed"}.</b> {gate.reason.charAt(0).toUpperCase() + gate.reason.slice(1)}. {gate.allowed ? "Real buys are allowed for the stocks marked Buy now or Buy on breakout." : "Paper trade only until it passes: in the 10-year test the rules stayed out of exactly these markets."}</span>
+          <span><b>Setup check {gate.allowed ? "passed" : "not passed"}.</b> {gate.reason.charAt(0).toUpperCase() + gate.reason.slice(1)}. {gate.allowed ? "Real buys are allowed for the stocks marked Buy now or Buy on breakout." : "Paper trade only until it passes, so any buy plan below is for practice."}</span>
         </p>
       )}
       {rows.length === 0 || (!data && !failed) ? (
@@ -329,7 +329,7 @@ function TopPicksSection({ rows, onAll }: { rows: ReadonlyArray<ScanRow>; onAll:
                     </div>
                   </div>
                   <div className="mt-1.5"><LivePrice symbol={p.symbol} fallbackPrice={p.price} fallbackChange={null} /></div>
-                  <p className="mt-2 text-[11.5px] font-bold leading-4 text-slate-800"><span className={`mr-1.5 rounded px-1.5 py-0.5 text-[11px] font-black uppercase tracking-wide ${VERDICT_STYLE[analysis.verdict].chip}`}>{analysis.status}</span>{analysis.headline}</p>
+                  <p className="mt-2 text-[11.5px] font-bold leading-4 text-slate-800"><span title={analysis.headline} className={`mr-1.5 rounded px-1.5 py-0.5 text-[11px] font-black uppercase tracking-wide ${VERDICT_STYLE[analysis.verdict].chip}`}>{analysis.status}</span>{analysis.verdict === "paper" ? "Good setup" : analysis.headline}</p>
                   {p.ext != null && (
                     <p className="mt-1 text-[11px] text-slate-600">
                       <b className={p.ext <= 0 ? "text-emerald-700" : p.ext <= PICK_RULES.brokeMaxExt ? "text-sky-700" : "text-amber-700"}>{Math.abs(p.ext).toFixed(1)}%</b> {p.ext <= 0 ? "under" : "past"} its breakout level{p.pivotPrice != null ? ` (₹${formatPrice(p.pivotPrice)})` : ""}
