@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { BacktestResult } from "@/lib/backtest/types";
 import { EquityChart, Stat, money, num } from "./BacktestPage";
 import { StockSymbolButton } from "./StockDetailContext";
-import { PageNav } from "./PageNav";
+import { AppShell } from "./AppShell";
 import { StrategyHealthCard } from "./StrategyHealthCard";
 import { useResultsDates } from "@/hooks/useResultsDates";
 import { daysUntil } from "@/lib/market/boardMeetings";
@@ -99,8 +99,8 @@ export function TrackerPage() {
     : [];
 
   return (
-    <main className="mx-auto w-full min-w-0 max-w-[1180px] space-y-5 px-4 py-6 lg:px-6">
-      <PageNav current="tracker" />
+    <AppShell current="tracker">
+    <div className="mx-auto w-full min-w-0 max-w-[1180px] space-y-5 px-4 py-6 lg:px-6">
       <header className="flex flex-wrap items-center gap-3">
         <div>
           <h1 className="text-[20px] font-extrabold tracking-[-0.02em] text-slate-900">Live strategy check</h1>
@@ -215,6 +215,7 @@ export function TrackerPage() {
           </p>
         </>
       )}
-    </main>
+    </div>
+    </AppShell>
   );
 }

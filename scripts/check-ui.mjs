@@ -55,7 +55,7 @@ try {
   // Fyers answers 401 when it is not logged in; the charts then use Yahoo, so that is normal, not a fault.
   const expected401 = (url) => url.includes("/api/fyers/");
   page.on("console", (m) => { if (m.type() === "error" && !/favicon/i.test(m.text()) && !/status of 401/.test(m.text())) problems.push(`console error: ${m.text().slice(0, 140)}`); });
-  page.on("requestfailed", (r) => { if (r.url().startsWith(BASE)) problems.push(`request failed: ${r.url().replace(BASE, "")}`); });
+  page.on("requestfailed", (r) => { if (r.failure()?.errorText?.includes("ERR_ABORTED")) return; /* cancelled because the page moved on */ if (r.url().startsWith(BASE)) problems.push(`request failed: ${r.url().replace(BASE, "")}`); });
   page.on("response", (r) => { if (r.status() >= 400 && r.url().startsWith(BASE) && !r.url().includes("/_next/") && !/favicon/.test(r.url()) && !(r.status() === 401 && expected401(r.url()))) problems.push(`HTTP ${r.status()}: ${r.url().replace(BASE, "")}`); });
   const sideways = () => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 2);
 
@@ -100,6 +100,24 @@ try {
         else ok(listWhere, `opens with ${shown} stocks, matching the tile`);
       }
       if (problems.length) fail(listWhere, [...new Set(problems)].slice(0, 4).join(" | "));
+    }
+
+    // The shared frame on the standalone pages: the dark-mode switch is there, and (on a wide screen) a sidebar link lands on the right Dashboard view.
+    {
+      const shellWhere = `shared frame @ ${wname}`;
+      problems = [];
+      await page.goto(`${BASE}/tracker`, { waitUntil: "domcontentloaded" });
+      await page.waitForTimeout(2500);
+      if (!(await page.getByRole("button", { name: /Switch to (dark|light) theme/ }).count())) fail(shellWhere, "the light/dark switch is missing on the Live check page");
+      else if (wname === "desktop") {
+        await page.locator('summary[aria-label="Research and older tools"]').click();
+        await page.getByRole("button", { name: "Scanner directory" }).first().click();
+        await page.waitForURL(/\/#scanner-directory/, { timeout: 15_000 }).catch(() => {});
+        await page.waitForTimeout(4000);
+        const text = (await page.evaluate(() => document.body.innerText)).toLowerCase();
+        if (!text.includes("find a scanner")) fail(shellWhere, "the sidebar link did not open the Scanner directory"); else ok(shellWhere, "switch present; sidebar link opens the Scanner directory");
+      } else if (await sideways()) fail(shellWhere, "the page scrolls sideways"); else ok(shellWhere, "switch present");
+      if (problems.length) fail(shellWhere, [...new Set(problems)].slice(0, 4).join(" | "));
     }
 
     // The glossary on About & risk, and a tap-to-explain word: the note must open fully on screen, never widen the page, and close again.

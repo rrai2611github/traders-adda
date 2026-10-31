@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { LivePrice } from "./LivePrice";
-import { PageNav } from "./PageNav";
+import { AppShell } from "./AppShell";
 import { Stat, money, num } from "./BacktestPage";
 import { StockSymbolButton } from "./StockDetailContext";
 import { useAccountSize } from "@/hooks/useAccountSize";
@@ -229,8 +229,8 @@ export function PositionsPage() {
   const j = view?.journal;
 
   return (
-    <main className="mx-auto w-full min-w-0 max-w-[1180px] space-y-5 px-4 py-6 lg:px-6">
-      <PageNav current="positions" />
+    <AppShell current="positions">
+    <div className="mx-auto w-full min-w-0 max-w-[1180px] space-y-5 px-4 py-6 lg:px-6">
       <header className="flex flex-wrap items-center gap-3">
         <div>
           <h1 className="text-[20px] font-extrabold tracking-[-0.02em] text-slate-900">My positions</h1>
@@ -371,6 +371,7 @@ export function PositionsPage() {
           </>
         )}
       </section>
-    </main>
+    </div>
+    </AppShell>
   );
 }

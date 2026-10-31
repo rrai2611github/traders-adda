@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { RealityCheck } from "./RealityCheck";
-import { PageNav } from "./PageNav";
+import { AppShell } from "./AppShell";
 import type { BacktestResult, BacktestSettings, TradeStats } from "@/lib/backtest/types";
 import { Term } from "./Term";
 
@@ -272,8 +272,8 @@ export function BacktestPage() {
   };
 
   return (
-    <main className="mx-auto w-full min-w-0 max-w-[1180px] space-y-5 px-4 py-6 lg:px-6">
-      <PageNav current="backtest" />
+    <AppShell current="backtest">
+    <div className="mx-auto w-full min-w-0 max-w-[1180px] space-y-5 px-4 py-6 lg:px-6">
       <header className="flex flex-wrap items-center gap-3">
         <div>
           <h1 className="text-[20px] font-extrabold tracking-[-0.02em] text-slate-900">Backtest</h1>
@@ -345,6 +345,7 @@ export function BacktestPage() {
       </section>
 
       {job?.status === "done" && <Results result={job.result} />}
-    </main>
+    </div>
+    </AppShell>
   );
 }

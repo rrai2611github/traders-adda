@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { PageNav } from "./PageNav";
+import { AppShell } from "./AppShell";
 import { Stat } from "./BacktestPage";
 import { StockSymbolButton } from "./StockDetailContext";
 import { ENOUGH, LIST_LABEL, TAG_LABEL, groupLabel, type GroupSummary, type RadarList, type ScoreState } from "@/lib/radar/radar";
@@ -89,8 +89,8 @@ export function RadarPage() {
   const overall = view?.overall ?? null;
 
   return (
-    <main className="mx-auto w-full min-w-0 max-w-[1180px] space-y-5 px-4 py-6 lg:px-6">
-      <PageNav current="radar" />
+    <AppShell current="radar">
+    <div className="mx-auto w-full min-w-0 max-w-[1180px] space-y-5 px-4 py-6 lg:px-6">
       <header>
         <h1 className="text-[20px] font-extrabold tracking-[-0.02em] text-slate-900">Email track record</h1>
         <p className="mt-0.5 max-w-3xl text-[12.5px] text-slate-500">
@@ -203,6 +203,7 @@ export function RadarPage() {
           </section>
         </>
       )}
-    </main>
+    </div>
+    </AppShell>
   );
 }
