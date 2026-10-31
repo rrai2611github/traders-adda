@@ -8,12 +8,20 @@ const pick = (symbol, tag = "ready") => ({
 });
 const input = (picks, breadth50) => ({ breadth50, size: { key: "paper", label: "", detail: "" }, nifty: null, picks });
 
-test("weak market with candidates: do not buy, watch only", () => {
+test("weak market with candidates: do not buy, with the reason but not the stock names (Top picks lists them)", () => {
   const d = emailDecision(input([pick("AAA"), pick("BBB")], 18));
   assert.equal(d.kind, "paper");
-  assert.match(d.headline, /^Do not buy today\./);
-  assert.match(d.headline, /Watch only: AAA, BBB/);
+  assert.equal(d.title, "Do not buy today");
+  assert.match(d.detail, /^Market check not passed: 18% of stocks are above their 50-day average/);
+  assert.match(d.headline, /^Do not buy today\. Market check not passed/);
+  assert.doesNotMatch(d.headline, /AAA|BBB/);
   assert.equal(d.subjectBit, "No new buys (market weak)");
+});
+
+test("the bar is a title and one reason, without repeating the title in the reason", () => {
+  const html = decisionBarHtml(emailDecision(input([pick("AAA")], 18)));
+  assert.equal((html.match(/Do not buy today/g) ?? []).length, 1);
+  assert.match(html, /Market check not passed/);
 });
 
 test("healthy market with candidates: buy candidates, named", () => {

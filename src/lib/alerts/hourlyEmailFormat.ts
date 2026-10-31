@@ -287,7 +287,7 @@ ${buyNow.length || ch.lostBuy.length ? `
   ${buyNow.length ? `<tr><td class="pad" style="padding:12px 26px 0 26px">${rulesCard("How to trade these swing setups", SWING_RULES)}</td></tr>` : ""}` : ""}
 ${watchNow.length || ch.droppedWatch.length ? `
   ${heading("◉", "Strong stocks on watch — do not buy yet", `${watchNow.length} ${watchNow.length === 1 ? "stock" : "stocks"} · ${watchChanges} ${watchChanges === 1 ? "change" : "changes"}`, "amber")}
-  ${block(`${doNotBuyLine(table)}${spacer(8)}${watchTable}<div style="font:400 10px/1.5 ${FONT};color:${BRAND.muted};padding-top:6px">Filters: ${esc(WATCH_CRITERIA)}</div>`)}` : ""}
+  ${block(`${decision?.kind === "paper" ? "" : `${doNotBuyLine(table)}${spacer(8)}`}${watchTable}<div style="font:400 10px/1.5 ${FONT};color:${BRAND.muted};padding-top:6px">Filters: ${esc(WATCH_CRITERIA)}</div>`)}` : ""}
 ${ideas ? `
   ${heading("≋", "Bullish confluence — where the scanners agree", `${ideas.length} ${ideas.length === 1 ? "stock" : "stocks"} · not a buy`, "blue")}
   ${block(`${

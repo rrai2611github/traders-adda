@@ -106,6 +106,8 @@ export function buildPreOpenEmail(
   // The decision leads: a phone shows only the first words of a subject, so those words are what to do today.
   const decision = topPicks ? emailDecision(topPicks) : null;
   // Crude, gold and Nasdaq do not move the Nifty as a whole but do carry into particular sectors, so say which.
+  // With today's action stating there is nothing to buy, an empty "Swing trades — Buy ready" section only repeats it.
+  const showSwing = rows.length > 0 || !decision;
   const sectorNotes = sectorCues(brief.cues.flatMap((section) => section.lines));
   // Market-wide India headlines, newest source and time shown so a reader can judge how fresh each one is.
   const newsItems = (headlines ?? []).slice(0, 5);
@@ -179,7 +181,8 @@ export function buildPreOpenEmail(
         "#713f12",
       );
   const watchCards = watchRows.length
-    ? `${doNotBuyLine(table)}${spacer(10)}${grid2(watchRows.map((row, i) => rowCard(row, i + 1, "Trigger", `close ${px(row.close)}`)))}`
+    // The action bar already says "do not buy" on a weak-market day, so the orange line is only for days it does not.
+    ? `${decision?.kind === "paper" ? "" : `${doNotBuyLine(table)}${spacer(10)}`}${grid2(watchRows.map((row, i) => rowCard(row, i + 1, "Trigger", `close ${px(row.close)}`)))}`
     : "";
 
   const hb = highBreakouts;
@@ -224,8 +227,8 @@ export function buildPreOpenEmail(
         <div style="font:400 13px/1.5 ${FONT};color:#94a3b8;padding-top:5px">${esc(time)} IST · based on ${esc(brief.sessionLabel)}</div></td>
       <td width="96" align="right" style="vertical-align:middle"><img class="logo" src="cid:${LOGO_CID}" width="96" alt="Traders Adda" style="display:block;width:96px;height:auto;border:0"></td></tr></table>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:12px"><tr><td style="background:${style.solid}22;border:1px solid ${style.solid}66;border-radius:12px;padding:8px 12px">
-      <div style="font:800 12px ${FONT};letter-spacing:1.2px;color:${style.bg}">${style.icon} OUTLOOK: ${o.label.toUpperCase()} · ${o.conviction.toUpperCase()} CONVICTION</div>
-      <div style="font:500 13px ${FONT};color:#cbd5e1;padding-top:3px">${esc(brief.bias.label)}${biasPercent} · breadth ${table.breadth ?? "—"}%</div></td></tr></table>
+      <div style="font:800 12px ${FONT};letter-spacing:1.2px;color:${style.bg}">${style.icon} ${o.conviction.toUpperCase()} CONVICTION</div>
+      <div style="font:500 13px ${FONT};color:#cbd5e1;padding-top:3px">${esc(brief.bias.label)}${biasPercent}</div></td></tr></table>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:12px -4px 0 -4px;width:calc(100% + 8px)"><tr>
       ${kpi(gapText, "GIFT Nifty gap", o.gift ? (o.gift.gapPercent > 0.15 ? "#4ade80" : o.gift.gapPercent < -0.15 ? "#f87171" : "#ffffff") : "#94a3b8")}
       ${kpi(`${table.breadth ?? "—"}%`, "Market breadth", table.healthy ? BRAND.green : "#fbbf24")}
@@ -281,7 +284,7 @@ ${newsItems.length ? `  ${heading("Key India headlines", "headlines only · tap 
   ${block(newsHtml)}` : ""}
 
 ${picksBlock && topPicks ? `
-  ${heading("Top picks", `${topPicks.picks.filter((p) => p.tag === "ready" || p.tag === "broke").length} to watch or buy`)}
+  ${heading("Top picks", `${topPicks.picks.filter((p) => p.tag === "ready" || p.tag === "broke").length} ${decision?.kind === "paper" ? "· watch only" : "to watch or buy"}`)}
   ${block(picksBlock.html)}` : ""}
 
 ${top5Block && top5 ? `
@@ -289,8 +292,8 @@ ${top5Block && top5 ? `
   ${block(top5Block.html)}` : ""}
 
 ${scannerNote ? `  ${block(noteLine(esc(scannerNote), "#f8fafc", "#e2e8f0", "#475569"))}
-` : ""}  ${heading("Swing trades — Buy ready", rows.length ? `${rows.length} ${rows.length === 1 ? "stock" : "stocks"} · ${SWING_LABEL}` : SWING_LABEL)}
-  ${block(ideaCards)}
+` : ""}${showSwing ? `  ${heading("Swing trades — Buy ready", rows.length ? `${rows.length} ${rows.length === 1 ? "stock" : "stocks"} · ${SWING_LABEL}` : SWING_LABEL)}
+  ${block(ideaCards)}` : ""}
 ${rows.length ? `  <tr><td class="pad" style="padding:6px 22px 0 22px;font:400 11px/1.5 ${FONT};color:${MUTED}">${esc(SWING_HOLDING)}</td></tr>` : ""}
 ${rows.length ? `
   <tr><td class="pad" style="padding:12px 22px 0 22px">${rulesCard("How to trade these swing setups", SWING_RULES)}</td></tr>` : ""}
@@ -366,15 +369,15 @@ ${hbSection ? `
     ...(picksBlock ? ["TOP PICKS", ...picksBlock.text, ""] : []),
     ...(top5Block ? ["WEEKLY TOP 5", ...top5Block.text, ""] : []),
     ...(scannerNote ? [scannerNote] : []),
-    "SWING TRADES — BUY READY",
+    ...(showSwing ? ["SWING TRADES — BUY READY"] : []),
     ...(rows.length ? [SWING_HOLDING] : []),
-    table.summary,
+    ...(showSwing ? [table.summary] : []),
     ...(rows.length
       ? rows.flatMap((row) => [
           `${row.n}. ${row.symbol} · ${priceWord.toUpperCase()} ${inr(row.close)}${entryNoteSuffix(row.entryState)} · ${SWING_LABEL} · ${row.source} · ${row.statusLabel}`,
           `   ${topSet.has(row.symbol) ? SEE_TOP : `Buy > ${inr(row.entry)} (skip > ${inr(row.buyZoneHigh)}) · SL ${inr(row.stop)} (−${row.riskPercent.toFixed(1)}%)${row.riskPercent > 6 ? " ⚠ wide" : ""} · T1 ${inr(row.target1)} · T2 ${inr(row.target2)}`} · RS ${row.rs ?? "—"} · PA ${paText(row.pa)}`,
         ])
-      : ["No stock is Buy ready on yesterday's close. Watchlist day, not an entry day."]),
+      : showSwing ? ["No stock is Buy ready on yesterday's close. Watchlist day, not an entry day."] : []),
     ...watchText(watchRows, table, null, topSet),
     ...(rows.length
       ? ["", "HOW TO TRADE THESE SWING SETUPS", ...SWING_RULES.map((rule, i) => `${i + 1}. ${rule}`)]

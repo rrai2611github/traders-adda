@@ -72,7 +72,11 @@ const waitText = (p: TopPickEmailItem) => `${p.symbol} (RS ${Math.round(p.rs)}):
 /** What today is for, in one decision the email can lead with (and put in its subject). */
 export interface EmailDecision {
   kind: "buy" | "paper" | "none";
-  /** The bold sentence at the top of the email. */
+  /** The big words at the top of the email, with no reasons and (on a no-buy day) no stock names. */
+  title: string;
+  /** The one reason, in small type under the title. */
+  detail: string;
+  /** Title and detail as one sentence, for the plain-text version. */
   headline: string;
   /** A few words for the subject line. */
   subjectBit: string;
@@ -83,21 +87,15 @@ export function emailDecision(input: TopPicksEmailInput): EmailDecision {
   const names = candidates.slice(0, 4).map((p) => p.symbol).join(", ");
   const more = candidates.length > 4 ? ` and ${candidates.length - 4} more` : "";
   const gate = setupStatus(input.breadth50, input.nifty ?? null);
+  const make = (kind: EmailDecision["kind"], title: string, detail: string, subjectBit: string): EmailDecision => ({ kind, title, detail, headline: `${title}. ${detail}`, subjectBit });
   if (!candidates.length) {
-    return { kind: "none", headline: "No new buys today: no stock is at a breakout level right now.", subjectBit: "No new buys today" };
+    return make("none", "No new buys today", "No stock is at a breakout level right now.", "No new buys today");
   }
+  // The stock names are in Top picks right below, so a no-buy day does not repeat them here.
   if (!gate.allowed) {
-    return {
-      kind: "paper",
-      headline: `Do not buy today. Market check not passed: ${gate.reason}. Watch only: ${names}${more}.`,
-      subjectBit: "No new buys (market weak)",
-    };
+    return make("paper", "Do not buy today", `Market check not passed: ${gate.reason}.`, "No new buys (market weak)");
   }
-  return {
-    kind: "buy",
-    headline: `Buy candidates today: ${names}${more}. Market check passed: ${gate.reason}.`,
-    subjectBit: `Buy candidates: ${candidates.slice(0, 3).map((p) => p.symbol).join(", ")}`,
-  };
+  return make("buy", `Buy candidates today: ${names}${more}`, `Market check passed: ${gate.reason}.`, `Buy candidates: ${candidates.slice(0, 3).map((p) => p.symbol).join(", ")}`);
 }
 
 const DECISION_COLORS = {
@@ -106,10 +104,10 @@ const DECISION_COLORS = {
   none: ["#fffbeb", "#fde68a", "#713f12", "#f59e0b"],
 } as const;
 
-/** The bold bar at the top of an email: one label, one sentence, coloured by what to do. */
+/** The bar at the top of an email: a tiny label, the decision in big words, and the one reason in small type. */
 export function decisionBarHtml(decision: EmailDecision): string {
   const [bg, border, color, bar] = DECISION_COLORS[decision.kind];
-  return `<div style="background:${bg};border:1px solid ${border};border-left:5px solid ${bar};border-radius:10px;padding:10px 14px"><div style="font:800 10px ${FONT};letter-spacing:1px;text-transform:uppercase;color:${color};opacity:0.8">Today's action</div><div style="font:800 15px/1.4 ${FONT};color:${color};padding-top:2px">${esc(decision.headline)}</div></div>`;
+  return `<div style="background:${bg};border:1px solid ${border};border-left:5px solid ${bar};border-radius:10px;padding:9px 14px"><div style="font:800 9.5px ${FONT};letter-spacing:1px;text-transform:uppercase;color:${color};opacity:0.75">Today's action</div><div style="font:800 18px/1.3 ${FONT};color:${color};padding-top:1px">${esc(decision.title)}</div><div style="font:500 12.5px/1.5 ${FONT};color:${color};padding-top:2px;opacity:0.9">${esc(decision.detail)}</div></div>`;
 }
 
 /** The one line that tells you what today is for. */

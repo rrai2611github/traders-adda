@@ -374,3 +374,25 @@ test("the pre-open email shows sector cues and key India headlines, and leaves b
   assert.doesNotMatch(quiet.html, /Key India headlines|Sector cues/);
   assert.doesNotMatch(quiet.text, /KEY INDIA HEADLINES|Sector cues/);
 });
+
+test("on a no-buy day the email says it once: no empty Buy ready section, no second weak-market line, no repeated outlook or breadth in the header pill", async () => {
+  const { buildPreOpenEmail } = await import("../src/lib/alerts/preOpenEmailFormat.ts");
+  const analysis = { verdict: "paper", status: "Paper trade", headline: "x", why: [], watchOut: [], chips: [], flags: [], plan: null };
+  const topPicks = {
+    breadth50: 18, size: { key: "paper", label: "Paper trade only", detail: "Breadth is low." }, nifty: null,
+    picks: [{ symbol: "AAA", name: "AAA Ltd", sector: null, tag: "ready", rs: 95, price: 100, ext: -1.2, analysis }],
+  };
+  const weak = { ...table([]), breadth: 18, healthy: false, watch: [row(1, "WWW")] };
+  const mail = buildPreOpenEmail(brief(), weak, "Risk-off", Date.parse("2026-10-20T09:00:00+05:30"), null, null, null, topPicks);
+  assert.equal((mail.html.match(/Do not buy today/g) ?? []).length, 1);
+  assert.doesNotMatch(mail.html, /Swing trades — Buy ready|No stock is Buy ready/);
+  assert.doesNotMatch(mail.text, /SWING TRADES — BUY READY|No stock is Buy ready/);
+  assert.doesNotMatch(mail.html, /Weak market \(breadth/, "the orange second line is left out");
+  assert.doesNotMatch(mail.html, /OUTLOOK: /, "the header pill no longer repeats the outlook word");
+  assert.match(mail.html, /CONVICTION/);
+  assert.match(mail.html, /· watch only/);
+  // Without the Top picks input the email keeps its older sections exactly as before.
+  const old = buildPreOpenEmail(brief(), weak, "Risk-off", Date.parse("2026-10-20T09:00:00+05:30"));
+  assert.match(old.html, /No stock is Buy ready on yesterday/);
+  assert.match(old.html, /Weak market \(breadth 18%/);
+});
