@@ -23,14 +23,15 @@ test("hourly email: the latest price, where it sits against the trigger, and whe
   assert.match(html, /Now above the skip level, do not chase/);
   assert.match(html, /2\.0% below the trigger/);
   assert.match(text, /AAA · CMP ₹105 \(\+2\.50%\) · now above the skip level, do not chase/);
-  assert.match(text, /Prices fetched at 11:15:05 IST from Fyers live quotes · Yahoo history \(live\)/);
-  assert.match(html, /Prices fetched at 11:15:05 IST/);
+  // Where the prices came from is not shown: it means nothing to a reader.
+  assert.doesNotMatch(text, /Prices fetched|Yahoo|Fyers live quotes/);
+  assert.doesNotMatch(html, /Prices fetched|Yahoo|Fyers live quotes/);
 });
 
 test("hourly email: when the live refresh fails it says the prices come from the scan", () => {
   const { text, html } = buildHourlyEmail(table({ rows: [baseRow], priceSource: source({ refreshed: false, live: false, covered: 0 }) }), at("2026-10-14T11:15:30"), null);
-  assert.match(text, /Prices are from the latest scan because the live price refresh failed/);
-  assert.match(html, /live price refresh failed/);
+  assert.match(text, /Live price refresh failed: prices are from the latest scan/);
+  assert.match(html, /Live price refresh failed/);
   assert.doesNotMatch(text, /now above|trigger reached|below the trigger/);
 });
 
@@ -52,7 +53,7 @@ test("pre-open email: before the open the price is labelled as the last price an
   assert.match(html, />LAST PRICE</);
   assert.match(html, /Trigger reached/);
   assert.match(text, /1\. AAA · LAST PRICE ₹102 · trigger reached/);
-  assert.match(text, /Prices fetched 09:00 IST from Fyers live quotes · Yahoo history \(market not open: last traded prices\)/);
+  assert.doesNotMatch(text, /Prices fetched|Yahoo|Fyers live quotes/);
   const live = buildPreOpenEmail(brief(), table({ rows, priceSource: source() }), "", at("2026-10-14T09:00:30"));
   assert.match(live.html, />CMP</);
 });

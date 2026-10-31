@@ -148,7 +148,7 @@ export function buildHourlyEmail(
     : setupNew.length || setupDropped.length
       ? `Since the last update: ${setupNew.length ? `new ${setupNew.join(", ")}` : "no new stocks"}${setupDropped.length ? `; no longer listed ${setupDropped.join(", ")}` : ""}.`
       : "No change in this list since the last update.";
-  const scannerNote = setupBlock ? "Scanner ideas below are an older, separate rule set with its own stricter 50% breadth gate. The tested setup is the section above." : "";
+  const scannerNote = setupBlock ? "The older scanner ideas below use a separate, stricter rule set." : "";
   const watchChanges = ch.addedWatch.length + ch.droppedWatch.length;
   const subject = `Traders Adda hourly · ${
     ch.newBuys.length
@@ -161,10 +161,10 @@ export function buildHourlyEmail(
   const footerLines = [SWING_HOLDING, ...planFooter.filter((line) => !/no sure shots/i.test(line))];
   const since = previous ? "since the last update" : "today";
   const ps = table.priceSource;
-  const priceSourceText = ps && ps.refreshed
-    ? `Prices fetched at ${new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(ps.at)} IST from ${ps.label}${ps.live ? " (live)" : " (market not in continuous trading: last prices)"}${ps.covered < ps.total ? `; ${ps.total - ps.covered} of ${ps.total} stocks kept their scan price` : ""}. Levels are built on the forming daily candle and can change before the close.`
-    : `Prices are from the latest scan${ps ? " because the live price refresh failed" : ""}, up to about a minute old. Levels are built on the forming daily candle and can change before the close.`;
-  const priceSourceHtml = `🕒 Generated <b>${esc(time)} IST</b>. ${esc(priceSourceText)}`;
+  // Where prices came from is not news to a reader; only stale prices (a failed refresh, or stocks with no live quote) are worth a line.
+  const priceSourceText = !ps ? "" : !ps.refreshed
+    ? "Live price refresh failed: prices are from the latest scan, up to about a minute old."
+    : ps.covered < ps.total ? `${ps.total - ps.covered} of ${ps.total} stocks kept their scan price (no live quote).` : "";
   const hasConfluence = [...table.rows.slice(0, 10), ...(table.watch ?? []).slice(0, 5)].some((row) => row.confluence);
 
   const heading = (icon: string, title: string, right = "", tone: Tone | "navy" = "navy") => `<tr><td class="pad" style="padding:26px 26px 10px 26px">
@@ -265,7 +265,7 @@ ${BRAND_STYLE}</head>
       : changed
         ? "Watch list changed"
         : indexSection ? "Index update · stock lists unchanged" : "No change this hour",
-    subtitle: `${time} IST · Status shows changes ${since} · ${SWING_LABEL}s, not intraday`,
+    subtitle: `${time} IST · changes ${since}`,
     stats: [
       { label: "Breadth", value: `${table.breadth ?? "—"}%`, color: table.healthy ? BRAND.green : "#fbbf24" },
       { label: "New buys", value: String(ch.newBuys.length), color: ch.newBuys.length ? BRAND.green : "#ffffff" },
@@ -301,10 +301,10 @@ ${showBottomed ? `
 ${hasConfluence ? `<tr><td class="pad" style="padding:8px 26px 0 26px;font:400 10px/1.5 ${FONT};color:${BRAND.muted}">${esc(CONFLUENCE_NOTE)}</td></tr>` : ""}
 ${changed ? "" : `
   <tr><td class="pad" style="padding:22px 26px 0 26px">${noteLine(indexSection
-    ? `🛡️ <b>Stock lists unchanged ${since}.</b> Review the index update separately; market conditions can change without new stock picks. Not buying is a valid plan.`
-    : `🛡️ <b>Nothing new ${since}.</b> The plan from the morning brief still stands. Not buying is a valid plan.`, "#f0fdf4", "#bbf7d0", "#14532d")}</td></tr>`}
+    ? `🛡️ <b>Stock lists unchanged ${since}.</b>`
+    : `🛡️ <b>Nothing new ${since}.</b> The morning plan stands.`, "#f0fdf4", "#bbf7d0", "#14532d")}</td></tr>`}
   <tr><td class="pad" style="padding:16px 26px 22px 26px">
-    ${noteLine(priceSourceHtml, "#fefce8", "#fde68a", "#713f12")}
+    ${priceSourceText ? noteLine(esc(priceSourceText), "#fefce8", "#fde68a", "#713f12") : ""}
   </td></tr>
   ${brandFooter(footerLines, `© ${new Date(generatedAt).getFullYear()} ${table.brand}`)}
 </table>
@@ -316,7 +316,7 @@ ${changed ? "" : `
     `${time} IST · Breadth ${table.breadth ?? "—"}%`,
     ...(decision ? [`TODAY'S ACTION: ${decision.headline}`] : []),
     sessionNote,
-    priceSourceText,
+    ...(priceSourceText ? [priceSourceText] : []),
     `${SWING_LABEL}s, not intraday: ${SWING_HOLDING}`,
     ...(indexSection ? ["", "HOURLY INDEX ANALYSIS — LATEST AVAILABLE / PROVISIONAL", ...indexSection.text] : []),
     ...(setupBlock ? ["", "TESTED SETUP — TOP PICKS NOW", ...(setupChangeLine ? [setupChangeLine] : []), ...setupBlock.text, scannerNote] : []),
@@ -368,8 +368,8 @@ ${changed ? "" : `
       : []),
     ...(hasConfluence ? ["", CONFLUENCE_NOTE] : []),
     ...(changed ? [] : ["", indexSection
-      ? `Stock lists unchanged ${since}. Review the index update separately; market conditions can change without new stock picks.`
-      : `Nothing new ${since}. The plan from the morning brief still stands.`]),
+      ? `Stock lists unchanged ${since}.`
+      : `Nothing new ${since}. The morning plan stands.`]),
     "",
     ...planFooter,
   ].join("\n");

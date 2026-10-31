@@ -70,7 +70,7 @@ test("hourly watch table lists every stock with Added, Unchanged and Removed sta
   assert.equal(hasChanges, true);
   assert.match(subject, /watch list changed/);
   assert.match(html, /Strong stocks on watch — do not buy yet[\s\S]*KEEP[\s\S]*?>Unchanged<[\s\S]*NEWONE&lt;[\s\S]*?>Added<[\s\S]*<s>GONE<\/s>[\s\S]*?>Removed</);
-  assert.match(html, /Market breadth is 30%/);
+  assert.match(html, /Weak market \(breadth 30%, needs 50%\+\): wait\./);
   assert.doesNotMatch(html, /<s>KEEP/);
   assert.match(text, /^2\. \[Added\] NEWONE< · CMP ₹100 \(\+1\.00%\) · Swing Trading SPECIAL · trigger ₹101 · SL ₹95 \(−5\.9%\) · T1 ₹113 · T2 ₹119 · RS 90$/m);
   assert.match(text, /^1\. \[Unchanged\] KEEP /m);
@@ -276,7 +276,7 @@ test("the hourly email carries the tested-setup section, what is new since the l
   assert.match(mail.html, /Tested setup — Top picks now/);
   assert.match(mail.html, /Since the last update: new BBB; no longer listed OLD\./);
   assert.match(mail.text, /TESTED SETUP — TOP PICKS NOW/);
-  assert.match(mail.text, /Scanner ideas below are an older, separate rule set with its own stricter 50% breadth gate/);
+  assert.match(mail.text, /The older scanner ideas below use a separate, stricter rule set./);
   assert.ok(mail.html.indexOf("Tested setup — Top picks now") < mail.html.indexOf("Buy ready now"));
   const first = buildHourlyEmail(table, Date.parse("2026-10-20T11:00:00+05:30"), null, undefined, setup);
   assert.doesNotMatch(first.html, /Since the last update/);

@@ -44,7 +44,7 @@ test("hourly compares fresh emailed snapshots with frozen morning levels, not mo
     assert.match(body, /Above R · weak breadth/);
     assert.match(body, /Caution: Nifty above resistance on weak breadth/);
     assert.match(body, /\+10pp since last/);
-    assert.match(body, /not exchange-verified real time/);
+    assert.doesNotMatch(body, /not exchange-verified|via yahoo/i);
     assert.match(body, /not hourly candles/);
   }
   assert.match(section.html, /BANKNIFTY &lt;check&gt;/);
@@ -207,7 +207,7 @@ test("each index is a card: bias badge, price, support/resistance/20 DMA/50 DMA 
   assert.match(text, /A break below 90 opens the way to a lower range\./);
   // No saved levels at all: no invented plan.
   const bare = buildIndexEmailSection({ context: context({ analysis: {} }) }, now).text.join("\n");
-  assert.match(bare, /No morning support\/resistance levels are available today, so no plan levels are shown\./);
+  assert.match(bare, /No morning support\/resistance levels today, so no plan levels\./);
   assert.doesNotMatch(bare, /Plan for today/);
   // It must not claim no index broke its morning levels when there are none to break.
   assert.doesNotMatch(bare, /No index has broken its morning levels/);

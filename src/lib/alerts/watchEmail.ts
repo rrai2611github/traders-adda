@@ -33,7 +33,7 @@ const pct = pctFrom;
 export function watchReason(table: Pick<AlertTable, "healthy" | "breadth">): string {
   if (table.healthy) return "They pass every check but a risk flag is open. Wait for it to clear.";
   const breadth = table.breadth != null ? `${table.breadth.toFixed(0)}%` : "unavailable";
-  return `Market breadth is ${breadth} (needs ${HEALTHY_BREADTH_PERCENT}%+). Buying in a weak market lost money in our backtest, so wait.`;
+  return `Weak market (breadth ${breadth}, needs ${HEALTHY_BREADTH_PERCENT}%+): wait.`;
 }
 
 const TAG = {

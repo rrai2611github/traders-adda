@@ -72,7 +72,7 @@ export function regimeLine(table: AlertTable): string {
   const breadth = table.breadth;
   if (breadth == null) return "Market breadth unavailable — treat every level as reference only.";
   const stance = breadth >= 60 ? "Risk-on" : breadth >= 50 ? "Selective" : breadth >= 40 ? "Cautious" : "Risk-off";
-  return `${stance} · ${breadth}% of liquid NSE stocks are above their 50-day average · ${table.scanned.toLocaleString("en-IN")} stocks scanned.`;
+  return `${stance} · ${breadth}% of liquid NSE stocks are above their 50-day average.`;
 }
 
 export interface PreOpenPreview {

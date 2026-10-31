@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { analysePick } from "../src/lib/screen/pickAnalysis.ts";
 import { buildTopPicks } from "../src/lib/screen/topPicks.ts";
-import { topPicksBlock } from "../src/lib/alerts/topPicksEmail.ts";
+import { emailDecision, topPicksBlock } from "../src/lib/alerts/topPicksEmail.ts";
 
 const row = (symbol, over = {}) => ({
   symbol, stage: "forming", liquid: true, series: "EQ", rs: 92, ext: -3, vs50: 12, vs200: 40, fromHigh: 4, dry: 0.7, turnoverCr: 20,
@@ -58,12 +58,14 @@ test("the email block has an analysed card per buyable stock and a line per stoc
   assert.match(html, /Strong, but wait/);
   assert.ok(text.some((l) => /1\. AAA · BUY ON BREAKOUT · RS 92 · buy ₹103/.test(l)));
   assert.ok(text.some((l) => /Strong, but wait: RAN \(RS 99\): 25% past its level/.test(l)));
-  assert.ok(text[0].startsWith("Market check passed"));
+  assert.ok(text[0].startsWith("1. AAA"));
+  assert.match(emailDecision({ breadth50: 62, size: { key: "full", label: "Normal size", detail: "Risk about 1%." }, picks }).headline, /^Buy candidates today: AAA. Market check passed/);
 });
 
 test("with nothing buyable the email says so instead of listing cards", () => {
-  const { html } = topPicksBlock({ breadth50: 30, size: { key: "paper", label: "Paper trade only", detail: "Breadth is low." }, picks: [] });
-  assert.match(html, /Not picking is a valid answer/);
+  const input = { breadth50: 30, size: { key: "paper", label: "Paper trade only", detail: "Breadth is low." }, picks: [] };
+  assert.match(emailDecision(input).headline, /^No new buys today/);
+  assert.doesNotMatch(topPicksBlock(input).html, /Paper trade<\/span>/);
 });
 
 test("the plan carries the targets with an honest note, and the email shows them", () => {
@@ -99,11 +101,14 @@ test("the email's one-line summary is about breadth only: the Nifty under its 20
   const p = pickOf(row("AAA"));
   const picks = [{ ...p, analysis: analysePick(p, { breadth50: 62, resultsInDays: null, niftyAbove200: false, niftyPercent: -3.1 }) }];
   const { html, text } = topPicksBlock({ breadth50: 62, size: { key: "full", label: "Normal size", detail: "Risk about 1%." }, nifty: { above: false, percent: -3.1 }, picks });
-  assert.doesNotMatch(text[0], /200-day average/);
-  assert.doesNotMatch(text[0], /Paper trade only/);
+  const strong = emailDecision({ breadth50: 62, size: { key: "full", label: "Normal size", detail: "Risk about 1%." }, nifty: { above: false, percent: -3.1 }, picks }).headline;
+  assert.doesNotMatch(strong, /200-day average/);
+  assert.doesNotMatch(strong, /Do not buy/);
   const weak = topPicksBlock({ breadth50: 20, size: { key: "paper", label: "Paper trade only", detail: "Breadth is low." }, nifty: { above: true, percent: 4 }, picks: [{ ...p, analysis: analysePick(p, { breadth50: 20, resultsInDays: null, niftyAbove200: true, niftyPercent: 4 }) }] });
-  assert.match(weak.text[0], /20% of stocks are above their 50-day average/);
-  assert.match(weak.text[0], /Paper trade only/);
+  const weakHeadline = emailDecision({ breadth50: 20, size: { key: "paper", label: "Paper trade only", detail: "Breadth is low." }, nifty: { above: true, percent: 4 }, picks: [{ ...p, analysis: analysePick(p, { breadth50: 20, resultsInDays: null, niftyAbove200: true, niftyPercent: 4 }) }] }).headline;
+  assert.match(weakHeadline, /20% of stocks are above their 50-day average/);
+  assert.match(weakHeadline, /^Do not buy today/);
+  assert.ok(weak.text.length > 0);
   assert.match(html, /Blue sky or Multi-year breakout/);
 });
 
@@ -118,14 +123,16 @@ test("the setup needs 35% breadth, not 50%: at 40% a good setup is a buy, at 30%
 test("the email's summary line follows the same market check", () => {
   const p = pickOf(row("AAA"));
   const make = (breadth50) => topPicksBlock({ breadth50, size: { key: "paper", label: "x", detail: "y" }, nifty: { above: true, percent: 2 }, picks: [{ ...p, analysis: analysePick(p, { breadth50, resultsInDays: null, niftyAbove200: true, niftyPercent: 2 }) }] });
-  assert.match(make(40).text[0], /^Market check passed/);
-  assert.match(make(30).text[0], /^Market check not passed: .*Paper trade only/);
+  const decide = (breadth50) => emailDecision({ breadth50, size: { key: "paper", label: "x", detail: "y" }, nifty: { above: true, percent: 2 }, picks: [{ ...p, analysis: analysePick(p, { breadth50, resultsInDays: null, niftyAbove200: true, niftyPercent: 2 }) }] }).headline;
+  assert.match(decide(40), /^Buy candidates today: .*Market check passed/);
+  assert.match(decide(30), /^Do not buy today. Market check not passed: /);
+  assert.ok(make(40).text.length > 0);
 });
 
 test("the email's caveat tells readers the backtest only covers stocks listed today", () => {
   const p = pickOf(row("AAA"));
   const picks = [{ ...p, analysis: analysePick(p, { breadth50: 62, resultsInDays: null }) }];
   const { text, html } = topPicksBlock({ breadth50: 62, size: { key: "full", label: "Normal size", detail: "Risk about 1%." }, nifty: null, picks });
-  assert.match(text.join("\n"), /The history only includes stocks listed today, so real results are likely lower\./);
+  assert.match(text.join("\n"), /only includes stocks listed today, so real results are likely lower\./);
   assert.match(html, /stocks listed today/);
 });

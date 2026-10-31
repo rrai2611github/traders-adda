@@ -1,5 +1,5 @@
 import { esc, pill } from "./modernCards.ts";
-import { noteLine, px, spacer } from "./compactEmail.ts";
+import { px, spacer } from "./compactEmail.ts";
 import type { PickAnalysis, PickVerdict } from "../screen/pickAnalysis.ts";
 import type { PickTag } from "../screen/topPicks.ts";
 import type { NewsNote } from "../ai/newsCheck.ts";
@@ -29,11 +29,6 @@ export interface TopPicksEmailInput {
 }
 
 const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
-const SIZE_NOTE = {
-  full: ["#f0fdf4", "#bbf7d0", "#14532d"],
-  quarter: ["#fffbeb", "#fde68a", "#713f12"],
-  paper: ["#fef2f2", "#fecaca", "#7f1d1d"],
-} as const;
 const VERDICT: Record<PickVerdict, { label: string; bg: string; fg: string; bar: string }> = {
   buy: { label: "Buy plan ready", bg: "#dcfce7", fg: "#15803d", bar: "#16a34a" },
   paper: { label: "Paper trade", bg: "#fee2e2", fg: "#b91c1c", bar: "#ef4444" },
@@ -41,7 +36,7 @@ const VERDICT: Record<PickVerdict, { label: string; bg: string; fg: string; bar:
   skip: { label: "Do not chase", bg: "#e2e8f0", fg: "#475569", bar: "#94a3b8" },
 };
 
-const CAVEAT = "The tested rule: buy a Blue sky or Multi-year breakout on the day it breaks out, only while at least 35% of stocks are above their 50-day average. Stop about 12% below the buy price, with a smaller position so the money at risk stays the same. Exit when it closes under its 50-day average, not when it first goes up; targets are only places to book part profit. Hold at most 10 positions and add at most 3 a day. 10-year backtest of this approach: about 46% a year with a worst drop of about 21%; only about 45% of trades win. The history only includes stocks listed today, so real results are likely lower. Check results dates before buying. Research output, not advice.";
+const CAVEAT = "Tested rule: buy a Blue sky or Multi-year breakout on the day it breaks out, only while 35%+ of stocks are above their 50-day average. Stop about 12% below, exit on a close under the 50-day average; targets only mark places to book part profit. 10-year test: about 46% a year, worst drop about 21%, about 45% of trades win; it only includes stocks listed today, so real results are likely lower. Check results dates before buying.";
 
 const NEWS_COLOR = { clear: "#475569", watch: "#b45309", caution: "#b42318" } as const;
 const NEWS_NOTE = "News check: an AI-written one-line summary of each stock's NSE announcements from the last 14 days. It can miss or misread a filing, so open the announcements before you trade.";
@@ -130,8 +125,6 @@ export function todayLine(input: TopPicksEmailInput): string {
 
 /** The email section: the market note, one short card per buyable stock, one line for the stocks to wait on. */
 export function topPicksBlock(input: TopPicksEmailInput): { html: string; text: string[] } {
-  const [bg, border, color] = SIZE_NOTE[setupStatus(input.breadth50, input.nifty ?? null).allowed ? "full" : "paper"];
-  const note = noteLine(`<b>${esc(todayLine(input))}</b>`, bg, border, color);
   const buy = input.picks.filter(buyable);
   const waits = input.picks.filter((p) => !buyable(p));
   const blocked = !setupStatus(input.breadth50, input.nifty ?? null).allowed;
@@ -145,9 +138,8 @@ export function topPicksBlock(input: TopPicksEmailInput): { html: string; text: 
     ? `<div style="font:400 12px/1.5 ${FONT};color:#475569;padding:2px 0 4px"><b>Strong, but wait:</b> ${esc(waits.map(waitText).join(" · "))}</div>`
     : "";
   const hasNews = input.picks.some((p) => p.news);
-  const html = `${note}${spacer(8)}${cards}${restHtml}${waitHtml}${spacer(2)}<div style="font:400 11px/1.5 ${FONT};color:#64748b">${esc(CAVEAT)}${hasNews ? ` ${esc(NEWS_NOTE)}` : ""}</div>`;
+  const html = `${cards}${restHtml}${waitHtml}${spacer(2)}<div style="font:400 11px/1.5 ${FONT};color:#64748b">${esc(CAVEAT)}${hasNews ? ` ${esc(NEWS_NOTE)}` : ""}</div>`;
   const text = [
-    todayLine(input),
     ...shown.map((p, i) => {
       const a = p.analysis;
       const levels = a.plan ? `buy ${px(a.plan.buy)} · stop ${px(a.plan.stop)} (−${a.plan.stopPercent}%)` : `last ${px(p.price)}`;

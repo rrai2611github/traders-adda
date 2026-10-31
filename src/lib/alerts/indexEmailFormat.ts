@@ -387,11 +387,10 @@ function liveIndexSection(input: IndexEmailInput, context: IndexContext, now: nu
 
   const context2 = [shortLeadership(context.leadership), shortVix(context.volatility)];
   const footnote = [
-    `Quotes ${hm(context.generatedAt)} IST via ${context.source}, not exchange-verified real time.`,
     noLevels.length === reads.length ? "" : `Support/Resistance = ${anySaved && savedAt ? `frozen pre-open plan (${hm(savedAt)})` : "morning reference levels"}.`,
     reads.some((r) => r.hourly) ? "" : "Forming daily candle, not hourly candles (hourly candles unavailable).",
     noLevels.length === reads.length
-      ? "No morning support/resistance levels are available today, so no plan levels are shown."
+      ? "No morning support/resistance levels today, so no plan levels."
       : noLevels.length ? `No morning support/resistance for ${noLevels.join(", ")}, so no plan levels are shown for ${noLevels.length === 1 ? "it" : "them"}.` : "",
     ...(input.error ? [input.error] : []),
     ...unavailableNote(context.unavailable),

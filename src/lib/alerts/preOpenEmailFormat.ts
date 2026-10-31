@@ -1,6 +1,5 @@
 import { isTradingDay } from "../market/marketHours.ts";
 import type { AlertTable, AlertTableRow } from "./scannerAlert.ts";
-import { HEALTHY_BREADTH_PERCENT } from "../screen/breadth.ts";
 import { SWING_HOLDING, SWING_LABEL, SWING_RULES, isPlanFooterLine } from "./swingTrade.ts";
 import { paText } from "../screen/priceActionRating.ts";
 import { doNotBuyLine, watchText } from "./watchEmail.ts";
@@ -90,9 +89,6 @@ export function buildPreOpenEmail(
   // The latest price on every stock; before the open that is the last traded price, and the email says so.
   const ps = table.priceSource;
   const priceWord = ps && !ps.live ? "Last price" : "CMP";
-  const priceNote = ps?.refreshed
-    ? `Prices fetched ${new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }).format(ps.at)} IST from ${ps.label}${ps.live ? " (live)" : " (market not open: last traded prices)"}.`
-    : "";
   const rows = table.rows.slice(0, 10);
   const watchRows = (table.watch ?? []).slice(0, 5);
   // The shared footer repeats the risk and advice caveats this email states in its own words.
@@ -106,6 +102,8 @@ export function buildPreOpenEmail(
   const giftBit = o.gift ? ` · GIFT ${signed(o.gift.gapPercent)}%` : "";
   // The decision leads: a phone shows only the first words of a subject, so those words are what to do today.
   const decision = topPicks ? emailDecision(topPicks) : null;
+  // The rule-written glance only restates the action bar and the header, so it shows only when an AI wrote something new.
+  const showGlance = !!briefing && briefing.lines.length > 0 && (briefing.ai || !decision);
   const subject = decision
     ? `Traders Adda · ${decision.subjectBit} · pre-open ${o.label.toLowerCase()} outlook${giftBit} · ${brief.sessionLabel}`
     : `Traders Adda pre-open · ${o.label} outlook${giftBit} · ${brief.bias.label}${biasPercent} · ${pickCount}${
@@ -135,12 +133,7 @@ export function buildPreOpenEmail(
   /** One plan per stock: a stock already in Top picks is not given a second, different buy and stop further down. */
   const topSet = new Set((topPicks?.picks ?? []).filter((p) => p.tag === "ready" || p.tag === "broke").map((p) => p.symbol));
   const SEE_TOP = "Trade plan: see Top picks above";
-  // Recipients get a short heads-up for the first two weeks, and the older scanner sections are labelled for what they are.
-  const NEW_FORMAT_NOTICE_UNTIL = Date.parse("2026-11-02T00:00:00+05:30");
-  const newFormatNotice = picksBlock && generatedAt < NEW_FORMAT_NOTICE_UNTIL
-    ? "New in this email: the Top picks section follows a rule that was tested on ten years of prices (Blue sky and Multi-year breakouts, bought on the breakout day, only while the market check passes). The older scanner ideas further down are a separate rule set with a stricter 50% breadth gate."
-    : "";
-  const scannerNote = picksBlock ? "Scanner ideas below are an older, separate rule set with its own stricter 50% breadth gate. The tested setup is the Top picks section above." : "";
+  const scannerNote = picksBlock ? "The older scanner ideas below use a separate, stricter rule set." : "";
   const heading = (title: string, right = "") => blueHeading(title, right);
   const block = blockRow;
 
@@ -176,12 +169,8 @@ export function buildPreOpenEmail(
   const hb = highBreakouts;
   const hbVisible = hb != null && gate;
   const hbPicks = hbVisible ? hb.breakouts.slice(0, HIGH_BREAKOUT_TOP) : [];
-  const hbBreadth = table.breadth != null ? `${table.breadth.toFixed(0)}%` : "unavailable";
   const hbNote = hb
     ? `Jaynesh Kasliwal's "near 52-week high" screen: ${hb.screened} liquid stocks pass it. A breakout here means a close above the 20-day high on at least ${HIGH_BREAKOUT_RULES.minVolumeRatio}× average volume, with a 65-day return above Nifty's${hb.niftyReturn65Percent != null ? ` (${signed(hb.niftyReturn65Percent, 1)}%)` : ""}.`
-    : "";
-  const hbHiddenLine = hb && !hbVisible
-    ? `Hidden today: market breadth is ${hbBreadth}, below ${HEALTHY_BREADTH_PERCENT}%. ${hb.breakouts.length} stock${hb.breakouts.length === 1 ? "" : "s"} broke out, but these breakouts lost money in weak markets in our backtest, so none are listed.`
     : "";
   const HB_CAVEAT = `Experimental and separate from Buy ready. In our 2-year backtest only tight bases (≤ ${HIGH_BREAKOUT_RULES.tightBasePercent}%) with the 21-EMA exit made money (+0.09R a trade), and only in 2026.`;
   const HB_PLAN = `Swing plan: buy near the open, stop ${HIGH_BREAKOUT_RULES.stopPercent}% below your fill, exit at the next open after a daily close below the 21 EMA; 60-session time limit.`;
@@ -195,11 +184,10 @@ export function buildPreOpenEmail(
       ["Exit below", px(p.ema21), "21 EMA close", "#12814c"],
     ],
   })));
-  const hbSection = !hb
+  // The experimental list is left out entirely on a weak-breadth day: a section that only says "hidden today" is noise.
+  const hbSection = !hb || !hbVisible
     ? ""
-    : !hbVisible
-      ? noteLine(esc(hbHiddenLine))
-      : hbPicks.length
+    : hbPicks.length
         ? `${noteLine(`${esc(HB_CAVEAT)} ${esc(HB_PLAN)}`, "#fffbeb", "#fde68a", "#7a4d00")}${spacer(10)}${hbCards}`
         : noteLine("No stock broke out with volume on the last session.");
 
@@ -255,10 +243,10 @@ ${decision ? `  ${spacer(10)}
   ${block(decisionBarHtml(decision))}
   ${spacer(10)}` : ""}
   <tr><td class="pad" style="background:#f0fdf4;border-bottom:1px solid #bbf7d0;padding:6px 22px;font:400 11px/1.5 ${FONT};color:#14532d">
-    <b>✓ Levels and ideas are final</b> — from the ${esc(brief.sessionLabel)} close.${regimeLine ? ` <span style="color:#3f6212">${esc(regimeLine)}</span>` : ""}${priceNote ? ` <span style="color:#3f6212">${esc(priceNote)}</span>` : ""}
+    <b>✓ Based on the ${esc(brief.sessionLabel)} close.</b> Levels and ideas are final.
   </td></tr>
 
-${briefing && briefing.lines.length ? `
+${showGlance ? `
   ${heading("Today at a glance", briefing.ai ? "written by AI from the facts below" : "")}
   ${block(noteLine(briefing.lines.map((l) => `• ${esc(l)}`).join("<br>"), "#f8fafc", "#e2e8f0", "#0f172a"))}` : ""}
 
@@ -273,7 +261,7 @@ ${briefing && briefing.lines.length ? `
 
 ${picksBlock && topPicks ? `
   ${heading("Top picks", `${topPicks.picks.filter((p) => p.tag === "ready" || p.tag === "broke").length} to watch or buy`)}
-  ${block(`${newFormatNotice ? `${noteLine(esc(newFormatNotice), "#eff6ff", "#bfdbfe", "#1e3a8a")}${spacer(8)}` : ""}${picksBlock.html}`)}` : ""}
+  ${block(picksBlock.html)}` : ""}
 
 ${top5Block && top5 ? `
   ${heading("Weekly Top 5", `${top5.picks.length} of ${top5.qualifying} qualify · ${SWING_LABEL}`)}
@@ -282,7 +270,7 @@ ${top5Block && top5 ? `
 ${scannerNote ? `  ${block(noteLine(esc(scannerNote), "#f8fafc", "#e2e8f0", "#475569"))}
 ` : ""}  ${heading("Swing trades — Buy ready", rows.length ? `${rows.length} ${rows.length === 1 ? "stock" : "stocks"} · ${SWING_LABEL}` : SWING_LABEL)}
   ${block(ideaCards)}
-  <tr><td class="pad" style="padding:6px 22px 0 22px;font:400 11px/1.5 ${FONT};color:${MUTED}">${esc(SWING_HOLDING)}</td></tr>
+${rows.length ? `  <tr><td class="pad" style="padding:6px 22px 0 22px;font:400 11px/1.5 ${FONT};color:${MUTED}">${esc(SWING_HOLDING)}</td></tr>` : ""}
 ${rows.length ? `
   <tr><td class="pad" style="padding:12px 22px 0 22px">${rulesCard("How to trade these swing setups", SWING_RULES)}</td></tr>` : ""}
 ${watchCards ? `
@@ -294,7 +282,7 @@ ${hbSection ? `
 
   <tr><td class="pad" style="padding:18px 22px 20px 22px">
     <div style="border-top:1px solid ${LINE};padding-top:10px;font:400 11px/1.6 ${FONT};color:${MUTED}">
-      The outlook adds point scores from GIFT Nifty, the overnight tape, completed-session trend and breadth; it describes conditions and is not a forecast. GIFT Nifty comes from an unofficial feed (${o.gift ? esc(o.gift.quote.source) : "unavailable today"}). Key levels are classic floor pivots from the last session's range, not option-chain OI. ${hbNote ? esc(hbNote) : ""}
+      The outlook describes conditions and is not a forecast. GIFT Nifty is from an unofficial feed; verify before trading. Levels are floor pivots from the last session, not option OI. ${hb && hbVisible && hbNote ? esc(hbNote) : ""}
       ${unavailableLine}
     </div>
   </td></tr>
@@ -327,11 +315,10 @@ ${hbSection ? `
 
   const text = [
     `${table.brand} · Pre-open brief · ${time} IST`,
-    regimeLine,
     ...(decision ? [`TODAY'S ACTION: ${decision.headline}`, ""] : []),
-    `Levels and ideas are final — from the completed session on ${brief.sessionLabel}.${priceNote ? ` ${priceNote}` : ""}`,
+    `Based on the ${brief.sessionLabel} close. Levels and ideas are final.`,
     "",
-    ...(briefing && briefing.lines.length ? ["TODAY AT A GLANCE" + (briefing.ai ? " (written by AI from the facts in this email)" : ""), ...briefing.lines.map((l) => `- ${l}`), ""] : []),
+    ...(showGlance && briefing ? ["TODAY AT A GLANCE" + (briefing.ai ? " (written by AI from the facts in this email)" : ""), ...briefing.lines.map((l) => `- ${l}`), ""] : []),
     ...outlookText,
     "OPENING BIAS",
     `${brief.bias.label}${biasPercent}`,
@@ -353,11 +340,11 @@ ${hbSection ? `
       ...(indexSection?.text ?? []),
       "",
     ] : []),
-    ...(picksBlock ? ["TOP PICKS", ...(newFormatNotice ? [newFormatNotice] : []), ...picksBlock.text, ""] : []),
+    ...(picksBlock ? ["TOP PICKS", ...picksBlock.text, ""] : []),
     ...(top5Block ? ["WEEKLY TOP 5", ...top5Block.text, ""] : []),
     ...(scannerNote ? [scannerNote] : []),
     "SWING TRADES — BUY READY",
-    SWING_HOLDING,
+    ...(rows.length ? [SWING_HOLDING] : []),
     table.summary,
     ...(rows.length
       ? rows.flatMap((row) => [
@@ -369,14 +356,12 @@ ${hbSection ? `
     ...(rows.length
       ? ["", "HOW TO TRADE THESE SWING SETUPS", ...SWING_RULES.map((rule, i) => `${i + 1}. ${rule}`)]
       : []),
-    ...(hb
+    ...(hb && hbVisible
       ? [
           "",
           "52-WEEK-HIGH BREAKOUTS — EXPERIMENTAL",
           hbNote,
-          ...(!hbVisible
-            ? [hbHiddenLine]
-            : hbPicks.length
+          ...(hbPicks.length
               ? [
                   HB_CAVEAT,
                   HB_PLAN,
@@ -390,7 +375,7 @@ ${hbSection ? `
       : []),
     "",
     ...footerLines,
-    "The outlook adds point scores from GIFT Nifty, the overnight tape, trend and breadth; it describes conditions and is not a forecast.",
+    "The outlook describes conditions and is not a forecast. GIFT Nifty is from an unofficial feed; verify before trading.",
     ...(brief.unavailable.length ? [`Unavailable this morning: ${brief.unavailable.join(", ")}.`] : []),
     "No sure shots. Risk no more than 1% of capital per trade.",
     "Automated, rule-based research output — not investment advice. Markets carry risk; please do your own diligence.",

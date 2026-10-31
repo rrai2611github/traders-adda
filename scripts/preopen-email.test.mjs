@@ -220,7 +220,7 @@ test("watch stocks get their own do-not-buy section, never counted as buys", () 
   assert.match(subject, /no Buy ready stocks · 1 on watch/);
   assert.match(html, /No stock is Buy ready on yesterday/);
   assert.match(html, /Strong stocks on watch[\s\S]*DO NOT BUY YET/);
-  assert.match(html, /Market breadth is 36%/);
+  assert.match(html, /Weak market \(breadth 36%, needs 50%\+\): wait\./);
   assert.match(html, /Trigger/);
   assert.match(text, /STRONG STOCKS WAITING FOR THE MARKET — DO NOT BUY/);
   assert.match(text, /PAYTM · Financial Services · Range breakout · trigger ₹1,220 · SL ₹1,160 \(−4\.9%\) · T1 ₹1,300 \(\+6\.6%\) · T2 ₹1,380 \(\+13\.1%\)/);
@@ -299,7 +299,9 @@ test("52-week-high breakouts show only when breadth is healthy", () => {
   const weak = buildPreOpenEmail(brief(), { ...table(), breadth: 30, healthy: false }, "Risk-off", now, hb);
   assert.doesNotMatch(weak.html, /WELSPUNLIV/);
   assert.doesNotMatch(weak.text, /WELSPUNLIV/);
-  assert.match(weak.html, /Hidden today: market breadth is 30%, below 50%\. 1 stock broke out/);
+  // A section that only says "hidden today" is noise, so the experimental list is simply left out.
+  assert.doesNotMatch(weak.html, /Hidden today|52-week-high breakouts/);
+  assert.doesNotMatch(weak.text, /Hidden today|52-WEEK-HIGH/);
   assert.doesNotMatch(weak.subject, /52W/);
 
   const none = buildPreOpenEmail(brief(), table(), "Selective", now, null);
@@ -333,20 +335,23 @@ test("pre-open shows the market outlook, the GIFT Nifty comparison and per-index
   assert.doesNotMatch(noGift.subject, /GIFT/);
 });
 
-test("with Top picks, the pre-open email puts a heads-up first, and labels the older scanner sections as a separate rule set", async () => {
+test("with Top picks, the pre-open email leads with today's action and labels the older scanner sections as a separate rule set", async () => {
   const { buildPreOpenEmail } = await import("../src/lib/alerts/preOpenEmailFormat.ts");
   const topPicks = {
     breadth50: 30, size: { key: "paper", label: "Paper trade only", detail: "Breadth is low." }, nifty: { above: false, percent: -4.9 },
     picks: [{ symbol: "AAA", name: "AAA Ltd", sector: null, tag: "broke", rs: 95, price: 100, ext: 1.2, analysis: { verdict: "paper", status: "Paper trade", headline: "x", why: [], watchOut: [], plan: { buy: 100, stop: 92, stopPercent: 8, exit: "e", targets: null, steadier: { stop: 88, percent: 12, note: "n" }, example: null }, checklist: [], chips: ["Uptrend"], flags: [] } }],
   };
   const early = buildPreOpenEmail(brief(), table([]), "", Date.parse("2026-10-20T09:00:00+05:30"), null, null, null, topPicks);
-  assert.match(early.html, /New in this email: the Top picks section follows a rule that was tested/);
-  assert.match(early.html, /Scanner ideas below are an older, separate rule set with its own stricter 50% breadth gate/);
-  assert.match(early.text, /Scanner ideas below are an older, separate rule set with its own stricter 50% breadth gate/);
-  assert.ok(early.html.indexOf("New in this email") < early.html.indexOf("Scanner ideas below"));
+  assert.doesNotMatch(early.html, /New in this email/);
+  assert.match(early.html, /Today(&#39;|')s action/);
+  assert.match(early.text, /^TODAY'S ACTION: Do not buy today/m);
+  assert.match(early.subject, /^Traders Adda · No new buys \(market weak\) · pre-open /);
+  assert.match(early.html, /The older scanner ideas below use a separate, stricter rule set\./);
+  assert.match(early.text, /The older scanner ideas below use a separate, stricter rule set\./);
+  assert.ok(early.html.indexOf("action") < early.html.indexOf("The older scanner ideas below"));
   const later = buildPreOpenEmail(brief(), table([]), "", Date.parse("2026-11-05T09:00:00+05:30"), null, null, null, topPicks);
   assert.doesNotMatch(later.html, /New in this email/);
-  assert.match(later.html, /Scanner ideas below/);
+  assert.match(later.html, /The older scanner ideas below/);
   const without = buildPreOpenEmail(brief(), table([]), "", Date.parse("2026-10-20T09:00:00+05:30"));
-  assert.doesNotMatch(without.html, /Scanner ideas below/);
+  assert.doesNotMatch(without.html, /older scanner ideas below/);
 });
