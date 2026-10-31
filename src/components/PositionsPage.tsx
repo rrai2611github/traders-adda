@@ -355,6 +355,7 @@ export function PositionsPage() {
               </div>
             )}
             <div className="overflow-x-auto">
+              <p className="mb-1 text-[11px] text-slate-500">Prices in rupees (₹). R is the profit as a multiple of the amount risked on the trade.</p>
               <table className="w-full min-w-[640px] text-left text-[12px]">
                 <thead><tr className="text-[11.5px] font-bold uppercase tracking-[0.06em] text-slate-500"><th className="py-1 pr-3">Stock</th><th className="py-1 pr-3">Bought</th><th className="py-1 pr-3">Sold</th><th className="py-1 pr-3">Why</th><th className="py-1 pr-3">Result</th><th className="py-1">R</th></tr></thead>
                 <tbody>

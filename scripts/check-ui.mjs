@@ -108,7 +108,7 @@ try {
       problems = [];
       await page.goto(`${BASE}/tracker`, { waitUntil: "domcontentloaded" });
       await page.waitForTimeout(2500);
-      if (!(await page.getByRole("button", { name: /Switch to (dark|light) theme/ }).count())) fail(shellWhere, "the light/dark switch is missing on the Live check page");
+      if (!(await page.getByRole("button", { name: /Switch to (dark|light|auto) theme/ }).count())) fail(shellWhere, "the light/dark switch is missing on the Live check page");
       else if (wname === "desktop") {
         await page.locator('summary[aria-label="Research and older tools"]').click();
         await page.getByRole("button", { name: "Scanner directory" }).first().click();

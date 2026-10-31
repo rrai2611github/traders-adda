@@ -370,3 +370,12 @@
 {"ts":"2026-10-31T13:07:26Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
 {"ts":"2026-10-31T13:07:28Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
 {"ts":"2026-10-31T13:07:29Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T15:37:30Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T15:37:35Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T15:37:43Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T15:37:56Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T15:37:57Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T15:38:23Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T15:38:25Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T15:38:26Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T15:38:32Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}

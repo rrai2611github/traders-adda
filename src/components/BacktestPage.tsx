@@ -221,6 +221,7 @@ function Results({ result }: { result: BacktestResult }) {
       <details className="rounded-xl border border-border bg-surface p-4">
         <summary className="cursor-pointer text-[13px] font-extrabold text-slate-900">Latest trades ({Math.min(60, result.trades.length)} of {result.tradeCount})</summary>
         <div className="mt-3 overflow-x-auto">
+          <p className="mb-1 text-[11px] text-slate-500">Prices and P&amp;L in rupees (₹), after costs. R is the profit as a multiple of the amount risked on the trade.</p>
           <table className="w-full min-w-[640px] text-left text-[12px]"><thead className="text-[11.5px] uppercase tracking-[0.06em] text-slate-500"><tr><th className="py-1">Stock</th><th>Bought</th><th>Price</th><th>Sold</th><th>Price</th><th>Why</th><th>R</th><th>P&amp;L</th></tr></thead><tbody>
             {result.trades.slice(-60).reverse().map((t, i) => <tr key={`${t.symbol}${t.entryDay}${i}`} className="border-t border-border"><td className="py-1 font-bold">{t.symbol}</td><td>{t.entryDay}</td><td>{t.entryPrice.toFixed(1)}</td><td>{t.exitDay}</td><td>{t.exitPrice.toFixed(1)}</td><td>{t.exitReason}</td><td className={t.r >= 0 ? "text-emerald-700" : "text-rose-700"}>{t.r.toFixed(2)}</td><td>{money(t.pnl)}</td></tr>)}
           </tbody></table>

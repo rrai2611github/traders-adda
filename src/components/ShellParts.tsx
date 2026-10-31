@@ -11,17 +11,17 @@ import type { MarketStatus } from "@/lib/market/types";
 const IST_CLOCK = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false });
 
 export function ThemeToggle() {
-  const [theme, toggle] = useTheme();
-  const dark = theme === "dark";
+  const [, , preference, cycle] = useTheme();
+  const next = preference === "light" ? "dark" : preference === "dark" ? "auto" : "light";
   return (
     <button
       type="button"
-      onClick={toggle}
-      aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
-      title={dark ? "Light theme" : "Dark theme"}
+      onClick={cycle}
+      aria-label={`Theme is ${preference}. Switch to ${next} theme`}
+      title={`${preference === "auto" ? "Auto (follows your device)" : preference === "dark" ? "Dark theme" : "Light theme"}. Click for ${next}.`}
       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-base text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-900"
     >
-      <NavIcon name={dark ? "sun" : "moon"} size={17} />
+      <NavIcon name={preference === "auto" ? "auto-theme" : preference === "dark" ? "moon" : "sun"} size={17} />
     </button>
   );
 }

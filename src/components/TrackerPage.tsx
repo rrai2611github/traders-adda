@@ -201,6 +201,7 @@ export function TrackerPage() {
             <p className="mb-2 text-[11.5px] text-slate-500">If every holding fell to its sell level at once (the higher of its stop and its 50-day line) the account would lose <b className={openRiskPercent > RISK_LIMITS.maxOpenRiskPercent ? "text-rose-700" : "text-slate-800"}>{openRiskPercent.toFixed(1)}%</b> (limit {RISK_LIMITS.maxOpenRiskPercent}%).</p>
             {result.openPositions.length === 0 ? <p className="text-sm text-slate-600">Nothing is held right now.</p> : (
               <div className="overflow-x-auto">
+                <p className="mb-1 text-[11px] text-slate-500">Prices and profit in rupees (₹). Gain is the move since the buy price.</p>
                 <table className="w-full min-w-[720px] text-left text-[12.5px]"><thead className="text-[11.5px] uppercase tracking-[0.06em] text-slate-500"><tr><th className="py-1">Stock</th><th>Bought</th><th className="text-right">Buy price</th><th className="text-right">Now</th><th className="text-right">Gain</th><th className="text-right">Profit</th><th className="text-right">Stop</th><th className="text-right">Sell if it closes under</th></tr></thead><tbody>
                   {result.openPositions.map((p) => {
                     const gain = (p.last / (p.spent / p.quantity) - 1) * 100;
@@ -228,6 +229,7 @@ export function TrackerPage() {
             <h3 className="mb-2 text-[13px] font-extrabold text-slate-900">Closed trades</h3>
             {closed.length === 0 ? <p className="text-sm text-slate-600">No trade has closed yet. The backtest averaged about 30 trades a year, so expect this list to fill slowly, and most of the profit to come from a few long holds.</p> : (
               <div className="overflow-x-auto">
+                <p className="mb-1 text-[11px] text-slate-500">Prices and profit in rupees (₹). R is the profit as a multiple of the amount risked on the trade (+2R means twice the risk).</p>
                 <table className="w-full min-w-[700px] text-left text-[12px] [&_td]:px-2 [&_th]:px-2"><thead className="text-[11.5px] uppercase tracking-[0.06em] text-slate-500"><tr><th className="py-1">Stock</th><th>Bought</th><th className="text-right">Price</th><th>Sold</th><th className="text-right">Price</th><th>Why</th><th className="text-right">R</th><th className="text-right">Profit</th></tr></thead><tbody>
                   {[...closed].reverse().map((t, i) => <tr key={`${t.symbol}${t.entryDay}${i}`} className="border-t border-border"><td className="py-1 font-bold">{t.symbol}</td><td>{t.entryDay}</td><td className="text-right tabular-nums">{t.entryPrice.toFixed(1)}</td><td>{t.exitDay}</td><td className="text-right tabular-nums">{t.exitPrice.toFixed(1)}</td><td>{t.exitReason}</td><td className={`text-right tabular-nums ${tone(t.r)}`}>{t.r.toFixed(2)}</td><td className={`text-right tabular-nums ${tone(t.pnl)}`}>{signedMoney(t.pnl)}</td></tr>)}
                 </tbody></table>
