@@ -22,7 +22,7 @@ const STATE: Record<ScoreState, { label: string; chip: string }> = {
   "no-data": { label: "No price file", chip: "bg-slate-100 text-slate-600" },
 };
 
-const th = "px-2.5 py-2 text-left text-[10px] font-black uppercase tracking-wide text-slate-500";
+const th = "px-2.5 py-2 text-left text-[11px] font-black uppercase tracking-wide text-slate-500";
 const td = "px-2.5 py-2 align-middle text-[12px]";
 
 function GroupTable({ rows, empty }: { rows: GroupSummary[]; empty: string }) {
@@ -48,7 +48,7 @@ function GroupTable({ rows, empty }: { rows: GroupSummary[]; empty: string }) {
             <tr key={g.key} className="border-b border-slate-100">
               <td className={`${td} font-bold text-slate-900`}>
                 {g.label}
-                {!g.enough && <span className="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[9.5px] font-bold text-slate-600" title={`Fewer than ${ENOUGH} stocks have had a finished session, so these numbers can easily be luck.`}>too few to judge</span>}
+                {!g.enough && <span className="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-600" title={`Fewer than ${ENOUGH} stocks have had a finished session, so these numbers can easily be luck.`}>too few to judge</span>}
               </td>
               <td className={`${td} font-mono`}>{g.scored}<span className="text-slate-400"> / {g.count}</span></td>
               <td className={`${td} font-mono font-bold`}>{g.winRate == null ? "—" : `${g.winRate.toFixed(0)}%`}</td>
@@ -105,7 +105,12 @@ export function RadarPage() {
         </p>
       )}
       {failed && !view && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[12.5px] text-rose-800">Could not load the track record. The page will try again.</p>}
-      {!view && !failed && <p className="text-[12.5px] text-slate-500">Loading…</p>}
+      {!view && !failed && (
+        <div role="status" aria-label="Loading the track record" className="space-y-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">{[0, 1, 2, 3].map((i) => <div key={i} className="skeleton-card space-y-3"><span className="skeleton-line w-1/2" /><span className="skeleton-line h-5 w-1/3" /></div>)}</div>
+          <div className="skeleton-card space-y-3">{[0, 1, 2, 3].map((i) => <span key={i} className="skeleton-line" />)}</div>
+        </div>
+      )}
 
       {view && view.total === 0 && (
         <section className="rounded-2xl border border-slate-200 bg-white p-5 text-[13px] text-slate-700">
@@ -177,19 +182,19 @@ export function RadarPage() {
                     <tr key={entry.id} className="border-b border-slate-100">
                       <td className={td}>
                         <StockSymbolButton symbol={entry.symbol} className="block text-left text-[12px] font-black text-slate-900">{entry.symbol}</StockSymbolButton>
-                        <span className="block max-w-[170px] truncate text-[10.5px] text-slate-500">{entry.name}</span>
+                        <span className="block max-w-[170px] truncate text-[11.5px] text-slate-500">{entry.name}</span>
                       </td>
-                      <td className={`${td} text-slate-700`}>{groupLabel(entry)}{entry.tag && entry.list !== "top-picks" ? ` · ${TAG_LABEL[entry.tag] ?? entry.tag}` : ""}{entry.mentions > 1 && <span className="block text-[10px] text-slate-400">listed {entry.mentions} times</span>}</td>
-                      <td className={`${td} text-slate-600`}>{dayLabel(entry.firstDay)}<span className="block text-[10px] text-slate-400">{entry.email === "pre-open" ? "pre-open" : "hourly"}{entry.breadth50 != null ? ` · market ${Math.round(entry.breadth50)}%` : ""}</span></td>
+                      <td className={`${td} text-slate-700`}>{groupLabel(entry)}{entry.tag && entry.list !== "top-picks" ? ` · ${TAG_LABEL[entry.tag] ?? entry.tag}` : ""}{entry.mentions > 1 && <span className="block text-[11px] text-slate-400">listed {entry.mentions} times</span>}</td>
+                      <td className={`${td} text-slate-600`}>{dayLabel(entry.firstDay)}<span className="block text-[11px] text-slate-400">{entry.email === "pre-open" ? "pre-open" : "hourly"}{entry.breadth50 != null ? ` · market ${Math.round(entry.breadth50)}%` : ""}</span></td>
                       <td className={`${td} font-mono`}>₹{px(entry.price)}</td>
-                      <td className={`${td} font-mono text-slate-600`}>{score.stop != null ? `₹${px(score.stop)}` : "—"}{entry.stop == null && score.stop != null && <span className="block text-[10px] text-slate-400">12% rule</span>}</td>
+                      <td className={`${td} font-mono text-slate-600`}>{score.stop != null ? `₹${px(score.stop)}` : "—"}{entry.stop == null && score.stop != null && <span className="block text-[11px] text-slate-400">12% rule</span>}</td>
                       <td className={td}>
-                        <span className={`rounded-full px-2 py-0.5 text-[10.5px] font-bold ${STATE[score.state].chip}`}>{STATE[score.state].label}</span>
-                        {score.exitDay && <span className="block text-[10px] text-slate-400">on {dayLabel(score.exitDay)}</span>}
-                        {score.state === "open" && <span className="block text-[10px] text-slate-400">{score.sessions} session{score.sessions === 1 ? "" : "s"}</span>}
+                        <span className={`rounded-full px-2 py-0.5 text-[11.5px] font-bold ${STATE[score.state].chip}`}>{STATE[score.state].label}</span>
+                        {score.exitDay && <span className="block text-[11px] text-slate-400">on {dayLabel(score.exitDay)}</span>}
+                        {score.state === "open" && <span className="block text-[11px] text-slate-400">{score.sessions} session{score.sessions === 1 ? "" : "s"}</span>}
                       </td>
                       <td className={`${td} font-mono font-bold ${tone(score.returnPercent)}`}>{signed(score.returnPercent)}</td>
-                      <td className={`${td} font-mono text-[11px]`}><span className="text-emerald-700">{signed(score.best)}</span> <span className="text-slate-300">/</span> <span className="text-rose-700">{signed(score.worst)}</span>{score.hitTarget1 && <span className="block text-[10px] font-bold text-emerald-700">reached target 1</span>}</td>
+                      <td className={`${td} font-mono text-[11px]`}><span className="text-emerald-700">{signed(score.best)}</span> <span className="text-slate-300">/</span> <span className="text-rose-700">{signed(score.worst)}</span>{score.hitTarget1 && <span className="block text-[11px] font-bold text-emerald-700">reached target 1</span>}</td>
                       <td className={`${td} font-mono ${tone(score.vsNifty)}`}>{signed(score.vsNifty)}</td>
                       <td className={`${td} font-mono font-bold ${tone(score.r)}`}>{signed(score.r, "R")}</td>
                     </tr>

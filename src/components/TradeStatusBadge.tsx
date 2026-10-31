@@ -12,7 +12,7 @@ export const TRADE_STATUS_STYLE: Record<TradeStatusKey, { chip: string; bar: str
 export function TradeStatusPill({ status, title, suffix }: { status: TradeStatusKey; title?: string; suffix?: string }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-2 py-1 text-[10px] font-black uppercase tracking-wide ${TRADE_STATUS_STYLE[status].chip}`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-2 py-1 text-[11px] font-black uppercase tracking-wide ${TRADE_STATUS_STYLE[status].chip}`}
       title={title ?? TRADE_STATUS[status].meaning}
     >
       {TRADE_STATUS[status].label}

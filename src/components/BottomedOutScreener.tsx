@@ -92,7 +92,7 @@ export function BottomedOutScreener({ keep }: { keep: ((symbol: string) => boole
           !rows.length ? <EmptyState title="No bottomed-out stocks in this tier">No stock meets these rules in the selected universe. Empty results are valid; no candidates are manufactured.</EmptyState> :
             <div className="max-h-[650px] overflow-auto rounded-xl border border-border">
               <table className="w-full min-w-[960px] border-separate border-spacing-0 text-left text-xs">
-                <thead className="sticky top-0 z-20 bg-raised text-[10px] uppercase tracking-wide text-muted"><tr>
+                <thead className="sticky top-0 z-20 bg-raised text-[11px] uppercase tracking-wide text-muted"><tr>
                   <th className="sticky left-0 z-30 bg-raised px-4 py-3">Stock / RS</th><th className="px-3 py-3">Fall</th><th className="px-3 py-3">Base</th><th className="px-3 py-3">Reclaim</th><th className="px-3 py-3">Context</th><th className="px-3 py-3">Tested exit</th>
                 </tr></thead>
                 <tbody>{rows.map((row) => <BottomRow key={row.symbol} row={row} changes={changes} />)}</tbody>
@@ -112,7 +112,7 @@ function BottomRow({ row, changes }: { row: BottomedOutPick; changes: ListChange
         <div className="mt-1 truncate text-muted">{row.name}</div>
         <div className="mt-1 font-mono text-accent">RS {row.rs ?? "—"}</div>
       </td>
-      <td className="border-b border-border px-3 py-3"><div className="font-mono font-bold text-rose-700">−{row.fromHighPercent.toFixed(1)}%</div><div className="mt-1 text-muted">from 52-week high</div><div className="mt-1"><LivePrice symbol={row.symbol} fallbackPrice={row.close} fallbackChange={null} /></div><div className="text-[10px] text-muted">signal close ₹{formatPrice(row.close)}</div></td>
+      <td className="border-b border-border px-3 py-3"><div className="font-mono font-bold text-rose-700">−{row.fromHighPercent.toFixed(1)}%</div><div className="mt-1 text-muted">from 52-week high</div><div className="mt-1"><LivePrice symbol={row.symbol} fallbackPrice={row.close} fallbackChange={null} /></div><div className="text-[11px] text-muted">signal close ₹{formatPrice(row.close)}</div></td>
       <td className="border-b border-border px-3 py-3"><div>Low ₹{formatPrice(row.lowPrice)} · {row.lowAgeSessions} sessions ago</div><div className="mt-1">Higher low ₹{formatPrice(row.higherLow)}</div><div className="mt-1 font-mono text-emerald-700">+{row.offLowPercent.toFixed(1)}% off the low</div></td>
       <td className="border-b border-border px-3 py-3"><div>Above 20 EMA ₹{formatPrice(row.ema20)}</div><div className={`mt-1 ${row.aboveEma50 ? "text-emerald-700" : "text-muted"}`}>{row.ema50 == null ? "50 EMA n/a" : row.aboveEma50 ? `Above 50 EMA ₹${formatPrice(row.ema50)}` : `Below 50 EMA ₹${formatPrice(row.ema50)}`}</div></td>
       <td className="border-b border-border px-3 py-3"><div className={row.volumeRatio >= 1.5 ? "text-emerald-700" : "text-muted"}>Volume {row.volumeRatio.toFixed(2)}× avg</div><div className="mt-1 text-muted">RSI {row.rsi14 ?? "—"}{row.rsiDivergence ? " · bullish divergence" : ""}</div><div className="mt-1 text-muted">₹{(row.turnoverCr ?? 0).toFixed(1)} Cr/day</div></td>

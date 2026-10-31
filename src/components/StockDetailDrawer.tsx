@@ -51,7 +51,7 @@ const signed = (value: number | null, suffix = "%") =>
 function Kpi({ label, value, tone = "text-slate-900", hint }: { label: string; value: string; tone?: string; hint?: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm" title={hint}>
-      <div className="text-[9px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</div>
+      <div className="text-[10.5px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</div>
       <div className={`mt-1 font-mono text-base font-black tabular-nums ${tone}`}>{value}</div>
     </div>
   );
@@ -64,7 +64,7 @@ function CheckList({ checks }: { checks: RatedCheck[] }) {
         <li key={check.key} className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs font-semibold ${
           check.pass ? "border-emerald-100 bg-emerald-50/60 text-emerald-800" : "border-rose-100 bg-rose-50/60 text-rose-800"
         }`}>
-          <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-black text-white ${check.pass ? "bg-emerald-500" : "bg-rose-500"}`} aria-hidden>
+          <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10.5px] font-black text-white ${check.pass ? "bg-emerald-500" : "bg-rose-500"}`} aria-hidden>
             {check.pass ? "✓" : "✕"}
           </span>
           <span>{check.label}</span>
@@ -78,7 +78,7 @@ function CheckList({ checks }: { checks: RatedCheck[] }) {
 function LevelCell({ label, value, sub, odds, tone }: { label: string; value: string; sub: string; odds?: string; tone: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
-      <div className="text-[9px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</div>
+      <div className="text-[10.5px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</div>
       <div className={`mt-1 font-mono text-base font-black tabular-nums ${tone}`}>{value}</div>
       <div className="text-[11px] text-slate-500">{sub}</div>
       {odds && <div className="mt-1 text-[11px] font-bold text-slate-700">{odds}</div>}
@@ -93,7 +93,7 @@ function ReferenceLevels({ plan, horizon }: { plan: HorizonPlan; horizon: BuyHor
   const move = (value: number) => `${value >= plan.entry ? "+" : "−"}${Math.abs((value / plan.entry - 1) * 100).toFixed(1)}%`;
   return (
     <div className="space-y-2">
-      <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Reference levels · not a recommendation</div>
+      <div className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">Reference levels · not a recommendation</div>
       <div className="grid gap-2 sm:grid-cols-4">
         <LevelCell label="Entry above" value={`₹${formatPrice(plan.entry)}`} sub={`Zone to ₹${formatPrice(plan.buyZoneHigh)}`} tone="text-blue-700" />
         <LevelCell label="Stop-loss" value={`₹${formatPrice(plan.stop)}`} sub={`Risk ${plan.riskPercent.toFixed(1)}%`} odds={lines?.stop} tone="text-rose-700" />
@@ -147,7 +147,7 @@ function UnratedNotice({ symbol, reason }: { symbol: string; reason: UnratedReas
       <Card
         title="Recently listed — not rated yet"
         subtitle={`${symbol} has ${reason.sessions} of the ${MIN_RATED_SESSIONS} daily sessions needed before bases, moving averages and oscillators can be measured. Ratings, trade plans and scanner matches start in about ${reason.remaining} more session${reason.remaining === 1 ? "" : "s"}.`}
-        action={<span className="shrink-0 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.1em] text-sky-700">New listing</span>}
+        action={<span className="shrink-0 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.1em] text-sky-700">New listing</span>}
       >
         {stats ? (
           <>
@@ -376,7 +376,7 @@ export function StockDetailDrawer({
                 aria-label="Close stock details"
                 className="rounded-lg border border-white/15 px-3 py-2 text-xs font-bold text-slate-300 transition hover:bg-white/10 hover:text-white"
               >
-                ✕ <span className="ml-1 font-mono text-[10px] text-slate-500">Esc</span>
+                ✕ <span className="ml-1 font-mono text-[11px] text-slate-500">Esc</span>
               </button>
             </div>
           </div>
@@ -445,7 +445,7 @@ export function StockDetailDrawer({
                   <ul className="mt-2 space-y-1.5">
                     {row.riskFlags.map((flag) => (
                       <li key={flag.key} className="flex items-start gap-2 text-xs">
-                        <span className={`mt-0.5 shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide ${flag.severity === "high" ? "bg-rose-600 text-white" : "bg-amber-400 text-amber-950"}`}>
+                        <span className={`mt-0.5 shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-black uppercase tracking-wide ${flag.severity === "high" ? "bg-rose-600 text-white" : "bg-amber-400 text-amber-950"}`}>
                           {flag.label}
                         </span>
                         <span className="text-slate-700">{flag.detail}</span>
@@ -524,10 +524,10 @@ export function StockDetailDrawer({
                       {signals.map((item) => (
                         <li key={`${item.family}-${item.label}`} className={`flex items-center justify-between gap-3 rounded-lg border px-2.5 py-1.5 text-xs ${SIGNAL_TONES[item.tone]}`}>
                           <span className="min-w-0">
-                            <span className="block text-[9px] font-black uppercase tracking-[0.12em] opacity-60">{item.family}</span>
+                            <span className="block text-[10.5px] font-black uppercase tracking-[0.12em] opacity-60">{item.family}</span>
                             <span className="font-black">{item.label}</span>
                           </span>
-                          {item.detail && <span className="shrink-0 text-[10px] font-semibold capitalize opacity-80">{item.detail}</span>}
+                          {item.detail && <span className="shrink-0 text-[11px] font-semibold capitalize opacity-80">{item.detail}</span>}
                         </li>
                       ))}
                     </ul>
@@ -537,7 +537,7 @@ export function StockDetailDrawer({
                     </p>
                   )}
                   {(!scanners || !rsiEdge) && (
-                    <p className="mt-2 text-[10px] text-slate-400">
+                    <p className="mt-2 text-[11px] text-slate-400">
                       {!scanners ? "Trade Trigger results loading… " : ""}{!rsiEdge ? "RSI Edge results loading…" : ""}
                     </p>
                   )}

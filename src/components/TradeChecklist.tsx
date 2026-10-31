@@ -49,7 +49,7 @@ export function TradeChecklist({ row, candles }: { row: ScanRow; candles: Candle
       <ul className="mt-3 space-y-1.5">
         {checklist.items.map((item) => (
           <li key={item.key} className="flex items-start gap-2.5 text-xs">
-            <span aria-label={item.state} className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${MARK[item.state].style}`}>{MARK[item.state].icon}</span>
+            <span aria-label={item.state} className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[11px] font-black ${MARK[item.state].style}`}>{MARK[item.state].icon}</span>
             <span className="min-w-0">
               <span className="font-bold text-slate-800">{item.label}</span>
               <span className="block text-[11px] text-slate-500">{item.detail}</span>
@@ -61,7 +61,7 @@ export function TradeChecklist({ row, candles }: { row: ScanRow; candles: Candle
         Exit: stop at the stop level, then hold while it closes above its <b>{checklist.exitDays}-day average</b>
         {checklist.exitDays === 100 ? " (the slower exit tested better for Multi-year breakouts)" : ""}. Risk about 1% of capital a trade.
       </p>
-      <p className="mt-1 text-[10px] leading-4 text-slate-400">Only 30–40% of trades win; a few big winners pay for the rest. Research output, not advice.</p>
+      <p className="mt-1 text-[11px] leading-4 text-slate-400">Only 30–40% of trades win; a few big winners pay for the rest. Research output, not advice.</p>
     </section>
   );
 }

@@ -34,7 +34,7 @@ function IndexCard({ quote }: { quote: Quote }) {
       <div className={`mt-2 inline-flex rounded-md bg-raised px-2 py-1 font-mono text-[11px] font-semibold ${toneClass(quote.change)}`}>
         {formatSigned(quote.change)} ({formatPercent(quote.changePercent)})
       </div>
-      <div className="mt-1.5 text-[10px] font-bold uppercase tracking-wide text-accent">
+      <div className="mt-1.5 text-[11px] font-bold uppercase tracking-wide text-accent">
         View analysis <span aria-hidden>→</span>
       </div>
     </Link>
@@ -50,10 +50,11 @@ export function IndexStrip({ quotes, lastUpdate, error }: {
     return (
       <div className="flex gap-3 overflow-x-auto" role="status" aria-label="Loading index snapshot">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-[86px] min-w-[168px] flex-1 animate-pulse rounded-lg border border-border bg-surface"
-          />
+          <div key={i} className="skeleton-card h-[104px] min-w-[168px] flex-1 space-y-3">
+            <span className="skeleton-line w-1/2" />
+            <span className="skeleton-line h-4 w-3/4" />
+            <span className="skeleton-line w-2/5" />
+          </div>
         ))}
       </div>
     );

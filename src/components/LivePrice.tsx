@@ -30,7 +30,7 @@ export function LivePrice({ symbol, fallbackPrice, fallbackChange, stacked = fal
     <span className={`font-mono ${className}`} title={quote ? "Latest market price" : "Price from the last scan"}>
       {money(price)}
       {move}
-      {old && <span className="block text-[10px] font-bold text-amber-600">{old}</span>}
+      {old && <span className="block text-[11px] font-bold text-amber-600">{old}</span>}
     </span>
   );
 }

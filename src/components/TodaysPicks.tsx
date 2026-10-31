@@ -201,7 +201,7 @@ function SourceEdgeBadges({ sources }: { sources: string[] }) {
         <span
           key={stat.key}
           title={scannerBacktestSentence(stat)}
-          className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-bold ${
+          className={`rounded px-1.5 py-0.5 font-mono text-[11px] font-bold ${
             stat.edge === "proven" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
           }`}
         >
@@ -229,7 +229,7 @@ function PicksTable({
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[1040px] text-left text-sm">
-        <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-[0.1em] text-slate-400">
+        <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-[0.1em] text-slate-400">
           <tr>
             <th className="px-5 py-2.5">#</th>
             <th className="px-3 py-2.5">Stock</th>
@@ -283,11 +283,11 @@ function PicksTable({
                           : { text: `${(((pick.plan.entry / cmp) - 1) * 100).toFixed(1)}% below trigger`, tone: "text-slate-500" };
                     return (
                       <>
-                        <div className="font-bold text-slate-800">₹{formatPrice(cmp)}{quote && <span className="ml-1 align-middle text-[9px] font-black text-emerald-600">{old ? "" : "●"}</span>}</div>
+                        <div className="font-bold text-slate-800">₹{formatPrice(cmp)}{quote && <span className="ml-1 align-middle text-[10.5px] font-black text-emerald-600">{old ? "" : "●"}</span>}</div>
                         {change != null && <div className={`text-[11px] ${change >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{formatPercent(change)}{quote ? " today" : ""}</div>}
-                        {state && <div className={`text-[10px] font-bold ${state.tone}`}>{state.text}</div>}
-                        {quote && <div className="text-[10px] text-slate-400">close ₹{formatPrice(pick.close)}</div>}
-                        {old && <div className="text-[10px] font-bold text-amber-600">{old}</div>}
+                        {state && <div className={`text-[11px] font-bold ${state.tone}`}>{state.text}</div>}
+                        {quote && <div className="text-[11px] text-slate-400">close ₹{formatPrice(pick.close)}</div>}
+                        {old && <div className="text-[11px] font-bold text-amber-600">{old}</div>}
                       </>
                     );
                   })()}

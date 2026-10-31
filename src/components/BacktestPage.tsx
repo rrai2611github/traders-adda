@@ -77,7 +77,7 @@ function Field({ label, children, hint }: { label: string; children: React.React
     <label className="flex min-w-0 flex-col gap-1 text-[11px] font-bold uppercase tracking-[0.06em] text-slate-500">
       {label}
       {children}
-      {hint && <span className="text-[10.5px] font-medium normal-case tracking-normal text-slate-400">{hint}</span>}
+      {hint && <span className="text-[11.5px] font-medium normal-case tracking-normal text-slate-400">{hint}</span>}
     </label>
   );
 }
@@ -86,7 +86,7 @@ const inputCls = "h-9 w-full rounded-lg border border-slate-200 bg-white px-2.5 
 export function Stat({ label, value, tone, note }: { label: ReactNode; value: string; tone?: "good" | "bad"; note?: string }) {
   return (
     <div className="rounded-xl border border-border bg-surface p-3.5">
-      <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-slate-500">{label}</p>
+      <p className="text-[11.5px] font-bold uppercase tracking-[0.08em] text-slate-500">{label}</p>
       <p className={`mt-1 text-[22px] font-extrabold tracking-[-0.02em] ${tone === "good" ? "text-emerald-700" : tone === "bad" ? "text-rose-700" : "text-slate-900"}`}>{value}</p>
       {note && <p className="mt-0.5 text-[11px] text-slate-500">{note}</p>}
     </div>
@@ -120,7 +120,7 @@ export function EquityChart({ result }: { result: BacktestResult }) {
         <path d={geo.bench} fill="none" stroke="#94a3b8" strokeWidth="1.5" />
         <path d={geo.strategy} fill="none" stroke="#059669" strokeWidth="2" />
       </svg>
-      <p className="mb-1 mt-2 text-[10.5px] font-bold uppercase tracking-[0.08em] text-slate-500">Drop from the previous peak</p>
+      <p className="mb-1 mt-2 text-[11.5px] font-bold uppercase tracking-[0.08em] text-slate-500">Drop from the previous peak</p>
       <svg viewBox={`0 0 ${W} ${DH}`} className="w-full" role="img" aria-label="Drawdown">
         <path d={geo.dd} fill="none" stroke="#e11d48" strokeWidth="1.5" />
       </svg>
@@ -143,7 +143,7 @@ function YearTable({ result }: { result: BacktestResult }) {
       <p className="mb-2 text-[11.5px] text-slate-500">Profit is the change in account value after costs, with open positions counted at the year-end price. &quot;Money in trades&quot; is the rupees held in shares, on average across the year and at its highest close. &quot;Bought&quot; is the total spent on shares for trades started that year. These tests only use stocks that are listed today, so companies that failed or were delisted are missing and real results are likely lower.</p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] text-[12.5px]">
-          <thead className="text-[10.5px] uppercase tracking-[0.06em] text-slate-500">
+          <thead className="text-[11.5px] uppercase tracking-[0.06em] text-slate-500">
             <tr><th className="px-2 py-1 text-left">Year</th><th className="px-2 py-1 text-right">Started with</th><th className="px-2 py-1 text-right">Profit</th><th className="px-2 py-1 text-right">Return</th><th className="px-2 py-1 text-right">Money in trades (avg)</th><th className="px-2 py-1 text-right">Most at once</th><th className="px-2 py-1 text-right">Bought</th><th className="px-2 py-1 text-right">Trades</th><th className="px-2 py-1 text-right">Win</th><th className="px-2 py-1 text-right">Avg R</th></tr>
           </thead>
           <tbody>
@@ -210,7 +210,7 @@ function Results({ result }: { result: BacktestResult }) {
           <div className="rounded-xl border border-border bg-surface p-4">
             <h3 className="text-[13px] font-extrabold text-slate-900">Does it hold up? Two halves of the period</h3>
             <p className="mb-2 text-[11.5px] text-slate-500">Split at {result.halves.split}. A real edge shows in both.</p>
-            <table className="w-full text-left text-[12.5px]"><thead className="text-[10.5px] uppercase tracking-[0.06em] text-slate-500"><tr><th className="py-1">Half</th><th>Trades</th><th>Win</th><th>Avg</th><th>PF</th></tr></thead><tbody>
+            <table className="w-full text-left text-[12.5px]"><thead className="text-[11.5px] uppercase tracking-[0.06em] text-slate-500"><tr><th className="py-1">Half</th><th>Trades</th><th>Win</th><th>Avg</th><th>PF</th></tr></thead><tbody>
               <HalfRow label="First" s={result.halves.first} /><HalfRow label="Second" s={result.halves.second} />
             </tbody></table>
           </div>
@@ -221,7 +221,7 @@ function Results({ result }: { result: BacktestResult }) {
       <details className="rounded-xl border border-border bg-surface p-4">
         <summary className="cursor-pointer text-[13px] font-extrabold text-slate-900">Latest trades ({Math.min(60, result.trades.length)} of {result.tradeCount})</summary>
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-[12px]"><thead className="text-[10.5px] uppercase tracking-[0.06em] text-slate-500"><tr><th className="py-1">Stock</th><th>Bought</th><th>Price</th><th>Sold</th><th>Price</th><th>Why</th><th>R</th><th>P&amp;L</th></tr></thead><tbody>
+          <table className="w-full min-w-[640px] text-left text-[12px]"><thead className="text-[11.5px] uppercase tracking-[0.06em] text-slate-500"><tr><th className="py-1">Stock</th><th>Bought</th><th>Price</th><th>Sold</th><th>Price</th><th>Why</th><th>R</th><th>P&amp;L</th></tr></thead><tbody>
             {result.trades.slice(-60).reverse().map((t, i) => <tr key={`${t.symbol}${t.entryDay}${i}`} className="border-t border-border"><td className="py-1 font-bold">{t.symbol}</td><td>{t.entryDay}</td><td>{t.entryPrice.toFixed(1)}</td><td>{t.exitDay}</td><td>{t.exitPrice.toFixed(1)}</td><td>{t.exitReason}</td><td className={t.r >= 0 ? "text-emerald-700" : "text-rose-700"}>{t.r.toFixed(2)}</td><td>{money(t.pnl)}</td></tr>)}
           </tbody></table>
         </div>

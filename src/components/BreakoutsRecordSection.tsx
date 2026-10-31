@@ -363,7 +363,7 @@ export function BreakoutsRecordSection({ scan }: { scan: ScreenScan | null }) {
                 </div>
               </div>
               <div className="mt-3 border-y border-border py-3">
-                <div className="mb-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+                <div className="mb-2 text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">
                   Current buying status
                 </div>
                 {ratings.get(row.symbol)
@@ -379,7 +379,7 @@ export function BreakoutsRecordSection({ scan }: { scan: ScreenScan | null }) {
                 {visibleMeasures.includes("mcap") && <Metric label="Market cap" value={row.marketCap == null ? "—" : `₹${Math.round(row.marketCap).toLocaleString("en-IN")}cr`} />}
               </div>
               <div className="mt-3 flex flex-wrap gap-1.5">
-                {row.tags.length ? row.tags.map((tag) => <span key={tag} className="rounded-md bg-[#e7f6ee] px-2 py-1 text-[10px] font-black text-[#16894f]">{tag}</span>) : <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-500">matches no screen</span>}
+                {row.tags.length ? row.tags.map((tag) => <span key={tag} className="rounded-md bg-[#e7f6ee] px-2 py-1 text-[11px] font-black text-[#16894f]">{tag}</span>) : <span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">matches no screen</span>}
               </div>
               <button type="button" className="mt-3 w-full rounded-xl border border-border bg-slate-50 px-3 py-2 text-xs font-black text-foreground">{row.seed}</button>
             </article>
@@ -435,7 +435,7 @@ export function BreakoutsRecordSection({ scan }: { scan: ScreenScan | null }) {
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg bg-slate-50 px-2 py-2">
-      <div className="text-[10px] font-bold text-slate-400">{label}</div>
+      <div className="text-[11px] font-bold text-slate-400">{label}</div>
       <div className="mt-1 font-mono font-black text-slate-700">{value}</div>
     </div>
   );

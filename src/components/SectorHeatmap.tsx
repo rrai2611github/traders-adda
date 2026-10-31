@@ -108,7 +108,7 @@ export function SectorHeatmap({ rows }: { rows: ReadonlyArray<ScanRow> }) {
                 <span className={`block font-mono font-black ${rank < 2 ? "text-3xl" : rank < 6 ? "text-xl" : "text-base"}`}>
                   {formatHeatValue(metric, sector.value, "sector")}
                 </span>
-                <span className="block text-[10px] font-bold opacity-80">{sector.advancing}/{sector.total} up</span>
+                <span className="block text-[11px] font-bold opacity-80">{sector.advancing}/{sector.total} up</span>
               </span>
             </button>
           );

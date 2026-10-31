@@ -37,7 +37,7 @@ export function MarketPill({ status }: { status: MarketStatus | null }) {
   return (
     <span
       title={status?.label ?? "Connecting"}
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] ${
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-extrabold uppercase tracking-[0.08em] ${
         live ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
       }`}
     >

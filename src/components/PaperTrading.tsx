@@ -173,7 +173,7 @@ export function PaperTrading({
               <h3 className="mb-2 text-sm font-black text-slate-900">Positions &amp; orders</h3>
               <div className="overflow-x-auto rounded-xl border border-slate-200">
                 <table className="w-full min-w-[1320px] text-left text-xs">
-                  <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-wide text-slate-500">
+                  <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500">
                     <tr>
                       <th className="px-3 py-2">Stock</th>
                       <th className="px-3 py-2">Status</th>
@@ -211,7 +211,7 @@ export function PaperTrading({
               ) : (
                 <div className="overflow-x-auto rounded-xl border border-slate-200">
                   <table className="w-full min-w-[860px] text-left text-xs">
-                    <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-wide text-slate-500">
+                    <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500">
                       <tr>
                         <th className="px-3 py-2">Date &amp; time (IST)</th>
                         <th className="px-3 py-2">Stock</th>
@@ -259,13 +259,13 @@ function EnginePanel({ snapshot }: { snapshot: PaperSnapshot }) {
       </div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div>
-          <div className="text-[10px] font-black uppercase tracking-wide text-slate-500">Today vs loss limit</div>
-          <div className={`font-mono text-sm font-black ${pnlTone(risk.dayPnl)}`}>{signed(risk.dayPnl)} <span className="text-[10px] font-bold text-slate-500">of −{currency(risk.dayLimit)}</span></div>
+          <div className="text-[11px] font-black uppercase tracking-wide text-slate-500">Today vs loss limit</div>
+          <div className={`font-mono text-sm font-black ${pnlTone(risk.dayPnl)}`}>{signed(risk.dayPnl)} <span className="text-[11px] font-bold text-slate-500">of −{currency(risk.dayLimit)}</span></div>
           {bar(used(risk.dayPnl, risk.dayLimit))}
         </div>
         <div>
-          <div className="text-[10px] font-black uppercase tracking-wide text-slate-500">This week vs loss limit</div>
-          <div className={`font-mono text-sm font-black ${pnlTone(risk.weekPnl)}`}>{signed(risk.weekPnl)} <span className="text-[10px] font-bold text-slate-500">of −{currency(risk.weekLimit)}</span></div>
+          <div className="text-[11px] font-black uppercase tracking-wide text-slate-500">This week vs loss limit</div>
+          <div className={`font-mono text-sm font-black ${pnlTone(risk.weekPnl)}`}>{signed(risk.weekPnl)} <span className="text-[11px] font-bold text-slate-500">of −{currency(risk.weekLimit)}</span></div>
           {bar(used(risk.weekPnl, risk.weekLimit))}
         </div>
         <Stat label="Pending + open" value={`${risk.openCount} of ${settings.maxOpenPositions}`} hint="Position cap" />
@@ -279,7 +279,7 @@ function EnginePanel({ snapshot }: { snapshot: PaperSnapshot }) {
         <Stat label="Profit factor" value={stats.profitFactor == null ? "—" : stats.profitFactor.toFixed(2)} />
         <Stat label="Max drawdown" value={currency(stats.maxDrawdown)} hint="Closed trades, net" />
       </div>
-      <p className="text-[10px] leading-4 text-slate-500">
+      <p className="text-[11px] leading-4 text-slate-500">
         Costs are estimates: delivery brokerage taken as ₹0, STT 0.1% each side, exchange, SEBI, stamp duty, GST and a depository charge per sale day, plus {settings.slippagePercent}% slippage per fill.
         Today and week figures count exits plus open P&amp;L on positions entered in that period. Loss limits: {settings.dailyLossPercent}% a day, {settings.weeklyLossPercent}% a week of starting capital.
       </p>
@@ -290,9 +290,9 @@ function EnginePanel({ snapshot }: { snapshot: PaperSnapshot }) {
 function Stat({ label, value, hint, tone = "text-slate-900" }: { label: string; value: string; hint?: string; tone?: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-2.5">
-      <div className="text-[10px] font-black uppercase tracking-wide text-slate-500">{label}</div>
+      <div className="text-[11px] font-black uppercase tracking-wide text-slate-500">{label}</div>
       <div className={`mt-0.5 font-mono text-sm font-black ${tone}`}>{value}</div>
-      {hint && <div className="mt-0.5 text-[10px] text-slate-500">{hint}</div>}
+      {hint && <div className="mt-0.5 text-[11px] text-slate-500">{hint}</div>}
     </div>
   );
 }
@@ -301,7 +301,7 @@ function SymbolCell({ order }: { order: PaperOrder }) {
   return (
     <>
       <StockSymbolButton symbol={order.symbol} className="font-black">{order.symbol}</StockSymbolButton>
-      {isDemoPaperOrder(order) && <span className="ml-1.5 rounded bg-fuchsia-600 px-1.5 py-0.5 text-[9px] font-black uppercase text-white">Demo</span>}
+      {isDemoPaperOrder(order) && <span className="ml-1.5 rounded bg-fuchsia-600 px-1.5 py-0.5 text-[10.5px] font-black uppercase text-white">Demo</span>}
     </>
   );
 }
@@ -351,7 +351,7 @@ function OrderRow({
         {sells.length === 0 ? <span className="text-slate-400">—</span> : sells.map((fill, index) => (
           <div key={`${fill.timestamp}-${index}`} className="mb-1 last:mb-0">
             <span className="font-mono font-bold">{fill.quantity} × {currency(fill.price)}</span>
-            <span className="ml-1 rounded bg-slate-100 px-1 text-[10px] font-bold text-slate-600">{fill.label}</span>
+            <span className="ml-1 rounded bg-slate-100 px-1 text-[11px] font-bold text-slate-600">{fill.label}</span>
             <div className="whitespace-nowrap font-mono text-[11px] text-slate-500">{dateTime(fill.timestamp)}</div>
           </div>
         ))}
@@ -361,7 +361,7 @@ function OrderRow({
           <>
             <div className="font-bold">{money.holding} sh · {money.lastPrice == null ? "—" : currency(money.lastPrice)}</div>
             <div className="text-slate-500">Value {currency(money.currentValue)}</div>
-            {order.lastQuoteTimestamp && <div className="text-[10px] text-slate-400">as of {dateTime(order.lastQuoteTimestamp)}</div>}
+            {order.lastQuoteTimestamp && <div className="text-[11px] text-slate-400">as of {dateTime(order.lastQuoteTimestamp)}</div>}
           </>
         ) : <span className="text-slate-400">—</span>}
       </td>
@@ -370,7 +370,7 @@ function OrderRow({
           <>
             <div>{signed(money.total)}</div>
             <div className="text-[11px]">{money.totalPercent > 0 ? "+" : money.totalPercent < 0 ? "−" : ""}{Math.abs(money.totalPercent).toFixed(2)}%</div>
-            {order.status === "open" && <div className="text-[10px] font-semibold text-slate-500">Booked {signed(order.realizedPnl)}</div>}
+            {order.status === "open" && <div className="text-[11px] font-semibold text-slate-500">Booked {signed(order.realizedPnl)}</div>}
           </>
         ) : "—"}
       </td>
@@ -382,7 +382,7 @@ function OrderRow({
           <ol className="mt-2 w-72 space-y-1 border-l-2 border-violet-200 pl-3">
             {order.events.map((event, index) => (
               <li key={`${event.timestamp}-${index}`}>
-                <span className="font-mono text-[10px] text-slate-400">{dateTime(event.timestamp)}</span> {event.message}
+                <span className="font-mono text-[11px] text-slate-400">{dateTime(event.timestamp)}</span> {event.message}
               </li>
             ))}
           </ol>
@@ -444,7 +444,7 @@ function TradeRow({ order, fill }: { order: PaperOrder; fill: PaperFill }) {
       <td className="whitespace-nowrap px-3 py-2 font-mono">{dateTime(fill.timestamp)}</td>
       <td className="px-3 py-2"><SymbolCell order={order} /></td>
       <td className="px-3 py-2">
-        <span className={`rounded px-1.5 py-0.5 text-[10px] font-black ${fill.side === "buy" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
+        <span className={`rounded px-1.5 py-0.5 text-[11px] font-black ${fill.side === "buy" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
           {fill.side === "buy" ? "BUY" : "SELL"}
         </span>
       </td>

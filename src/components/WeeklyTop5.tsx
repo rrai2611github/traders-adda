@@ -45,7 +45,7 @@ export function WeeklyTop5() {
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-left text-sm">
-            <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-[0.1em] text-slate-400">
+            <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-[0.1em] text-slate-400">
               <tr>
                 <th className="px-5 py-2.5">#</th>
                 <th className="px-3 py-2.5">Stock</th>
@@ -68,7 +68,7 @@ export function WeeklyTop5() {
                   <td className="px-3 py-3 text-right font-mono font-black text-emerald-700">{Math.round(pick.rs)}</td>
                   <td className="px-3 py-3 text-right"><LivePrice symbol={pick.symbol} fallbackPrice={pick.close} fallbackChange={null} /></td>
                   <td className="px-3 py-3 text-right font-mono">{formatPrice(pick.close)}</td>
-                  <td className="px-3 py-3 text-right font-mono text-rose-700">{formatPrice(pick.stop)}<div className="text-[10px] text-slate-400">−{pick.riskPercent.toFixed(1)}%</div></td>
+                  <td className="px-3 py-3 text-right font-mono text-rose-700">{formatPrice(pick.stop)}<div className="text-[11px] text-slate-400">−{pick.riskPercent.toFixed(1)}%</div></td>
                   <td className="px-3 py-3 text-right font-mono text-emerald-700">{formatPrice(pick.target)}</td>
                   <td className="px-5 py-3 text-right font-mono text-slate-600">{pick.scanners ?? "—"}</td>
                 </tr>

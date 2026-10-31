@@ -130,7 +130,7 @@ function Stat({ label, value, detail, tone = "text-slate-900", bar, onClick }: {
 }) {
   return (
     <button type="button" onClick={onClick} className="dashboard-stat rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
-      <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</div>
+      <div className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</div>
       <div className={`mt-1 font-mono text-2xl font-black tabular-nums ${tone}`}>{value}</div>
       {bar && (
         <div className="relative mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
@@ -139,7 +139,7 @@ function Stat({ label, value, detail, tone = "text-slate-900", bar, onClick }: {
         </div>
       )}
       <div className="mt-1.5 text-[11px] leading-4 text-slate-500">{detail}</div>
-      <div className="mt-2 text-[10px] font-bold text-accent">View stocks <span aria-hidden>→</span></div>
+      <div className="mt-2 text-[11px] font-bold text-accent">View stocks <span aria-hidden>→</span></div>
     </button>
   );
 }
@@ -153,7 +153,7 @@ function SkeletonRows({ rows = 5 }: { rows?: number }) {
 function Identity({ symbol, name, sector }: { symbol: string; name: string; sector?: string }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-[10px] font-black text-white">{symbol.slice(0, 2)}</div>
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-[11px] font-black text-white">{symbol.slice(0, 2)}</div>
       <div className="min-w-0">
         <StockSymbolButton symbol={symbol} className="block max-w-full truncate font-mono text-sm font-black text-slate-900">{symbol}</StockSymbolButton>
         <div className="truncate text-[11px] text-slate-500">{name}{sector ? ` · ${sector}` : ""}</div>
@@ -174,7 +174,7 @@ function BuyIdeaTable({ ideas, horizon, muted = false, hypothetical = false }: {
         <col className="w-[16%]" />
         <col className="w-[32%]" />
       </colgroup>
-      <thead className="bg-slate-50 text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">
+      <thead className="bg-slate-50 text-[10.5px] font-black uppercase tracking-[0.12em] text-slate-400">
         <tr>
           <th className="px-4 py-2">Stock</th>
           <th className="px-2 py-2">{hypothetical ? "Hypothetical status" : "Status"}</th>
@@ -189,15 +189,15 @@ function BuyIdeaTable({ ideas, horizon, muted = false, hypothetical = false }: {
           <tr key={row.key} className="hover:bg-emerald-50/40">
             <td className="px-4 py-2"><Identity symbol={row.symbol} name={row.name} sector={row.sector} /></td>
             <td className="px-2 py-2">
-              {hypothetical && <div className="mb-1 text-[9px] font-bold text-amber-700">Breadth ignored · not actionable</div>}
+              {hypothetical && <div className="mb-1 text-[10.5px] font-bold text-amber-700">Breadth ignored · not actionable</div>}
               <BuyingStatusBadge status={signal.status} showMissing={false} />
-              <div className="mt-1 flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide text-slate-400"><RvolPill rvol={row.rvol} /> RVOL</div>
+              <div className="mt-1 flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-wide text-slate-400"><RvolPill rvol={row.rvol} /> RVOL</div>
             </td>
-            <td className="px-2 py-2 text-right text-[10px] leading-4" title={signal.status.failed.join(", ") || undefined}>
+            <td className="px-2 py-2 text-right text-[11px] leading-4" title={signal.status.failed.join(", ") || undefined}>
               <div className="font-mono text-xs font-black text-slate-800">{signal.status.passed}/{signal.status.total} pass</div>
               <div className="text-slate-400">RS {row.rs ?? "—"}</div>
             </td>
-            <td className="px-4 py-2 text-right font-mono text-[10px] leading-4">
+            <td className="px-4 py-2 text-right font-mono text-[11px] leading-4">
               {signal.plan ? (
                 <>
                   <div className="text-xs font-black text-slate-800">₹{formatPrice(signal.plan.entry)}</div>
@@ -226,7 +226,7 @@ function FeedList({ events, tone, empty }: { events: FeedEvent[]; tone: "up" | "
           <li key={`${event.type}-${event.symbol}`} className="flex items-center justify-between gap-3 px-4 py-2">
             <div className="min-w-0">
               <StockSymbolButton symbol={event.symbol} className="font-mono text-xs font-black text-slate-900">{event.symbol}</StockSymbolButton>
-              <div className="truncate text-[10px] text-slate-500">
+              <div className="truncate text-[11px] text-slate-500">
                 {event.screens.join(" · ") || "Base breakout"}
                 {event.type === "played_out" && event.why ? ` · ${event.why}` : ""}
               </div>
@@ -337,7 +337,7 @@ export function CommandCenter({
     ? movingAverageBreadth(marketRows, selectedMetric === "above50" ? "vs50" : "vs200").covered
     : regime.total;
   return (
-    <WorkspaceFrame id={view} className="scroll-mt-28">
+    <WorkspaceFrame id={view} bare={view === "today"} className="scroll-mt-28">
       {view !== "today" && <WorkspaceHero
         eyebrow={`Daily briefing${session ? ` · ${session}` : ""}`}
         title={view === "metrics" ? METRIC_LABELS[metric] : research ? "Stock research & session changes" : "Scanner directory"}
@@ -346,7 +346,7 @@ export function CommandCenter({
         action={<button type="button" onClick={() => onNavigate("today")} className="rounded-xl border border-border bg-surface px-4 py-2 text-sm font-bold text-foreground">Back to Today</button>}
       />}
 
-      <div className="space-y-4 bg-slate-50/60 p-3 sm:p-5">
+      <div className={view === "today" ? "space-y-4" : "space-y-4 bg-slate-50/60 p-3 sm:p-5"}>
         {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-800">Scan refresh failed; figures may be stale. Retrying automatically.</p>}
         <DataQualityNotice health={scan} updatedAt={scan?.updatedAt} />
         {loading && <p className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs text-slate-500">{loadingMessage ?? "Loading the NSE universe scan…"}</p>}
@@ -396,7 +396,7 @@ export function CommandCenter({
               ) : (
                 <div className="max-h-[480px] overflow-auto">
                   <table className="w-full min-w-[640px] border-separate border-spacing-0 text-left text-xs">
-                    <thead className="sticky top-0 z-20 bg-raised text-[10px] uppercase tracking-wide text-muted">
+                    <thead className="sticky top-0 z-20 bg-raised text-[11px] uppercase tracking-wide text-muted">
                       <tr>
                         <th className="sticky left-0 z-30 bg-raised px-4 py-3">Stock</th>
                         <th className="px-3 py-3 text-right">Price</th>
@@ -515,7 +515,7 @@ export function CommandCenter({
                   <col className="w-[7%]" />
                   <col className="w-[12%]" />
                 </colgroup>
-                <thead className="bg-slate-50 text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">
+                <thead className="bg-slate-50 text-[10.5px] font-black uppercase tracking-[0.12em] text-slate-400">
                   <tr>
                     <th className="px-4 py-2">Stock</th>
                     <th className="px-2 py-2">Status</th>
@@ -564,7 +564,7 @@ export function CommandCenter({
                     <col className="w-[18%]" />
                     <col className="w-[46%]" />
                   </colgroup>
-                  <thead className="bg-slate-50 text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">
+                  <thead className="bg-slate-50 text-[10.5px] font-black uppercase tracking-[0.12em] text-slate-400">
                     <tr>
                       <th className="px-4 py-2">Stock</th>
                       <th className="px-2 py-2">Families</th>
@@ -577,9 +577,9 @@ export function CommandCenter({
                         <td className="px-4 py-2"><Identity symbol={row.symbol} name={row.name} sector={row.sector} /></td>
                         <td className="px-2 py-2">
                           {direction === "bull" ? <ConfluenceBadge confluence={confluence} compact /> : (
-                            <span className="inline-flex rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-black text-rose-700">{confluence.bear.length}/2 bearish</span>
+                            <span className="inline-flex rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-black text-rose-700">{confluence.bear.length}/2 bearish</span>
                           )}
-                          <div className="mt-1 flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide text-slate-400"><RvolPill rvol={row.rvol} /> RVOL</div>
+                          <div className="mt-1 flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-wide text-slate-400"><RvolPill rvol={row.rvol} /> RVOL</div>
                         </td>
                         <td className="px-4 py-2">
                           <div className="flex flex-wrap gap-1">
@@ -587,7 +587,7 @@ export function CommandCenter({
                               <span
                                 key={`${signal.family}-${signal.label}`}
                                 title={`${signal.family}${signal.detail ? ` · ${signal.detail}` : ""}`}
-                                className={`truncate rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${direction === "bull" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-800"}`}
+                                className={`truncate rounded-md border px-1.5 py-0.5 text-[11px] font-bold ${direction === "bull" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-800"}`}
                               >
                                 {signal.label}
                               </span>
@@ -614,7 +614,7 @@ export function CommandCenter({
               <div className="grid grid-cols-2 divide-x divide-slate-100">
                 {([["Heating up", heating, "bg-emerald-500", "text-emerald-700"], ["Cooling off", cooling, "bg-rose-500", "text-rose-700"]] as const).map(([label, list, bar, text]) => (
                   <div key={label} className="p-4">
-                    <div className="mb-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</div>
+                    <div className="mb-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</div>
                     {list.length === 0 ? <p className="text-xs text-slate-400">None today.</p> : (
                       <ul className="space-y-2.5">
                         {list.map((sector) => (
@@ -626,7 +626,7 @@ export function CommandCenter({
                             <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
                               <div className={`h-full rounded-full ${bar}`} style={{ width: `${(Math.abs(sector.avgChange) / sectorScale) * 100}%` }} />
                             </div>
-                            <div className="mt-0.5 text-[10px] text-slate-400">{sector.advancing}/{sector.total} advancing</div>
+                            <div className="mt-0.5 text-[11px] text-slate-400">{sector.advancing}/{sector.total} advancing</div>
                           </li>
                         ))}
                       </ul>
@@ -645,19 +645,19 @@ export function CommandCenter({
             {loading ? <SkeletonRows rows={6} /> : (
               <div className="grid grid-cols-2 divide-x divide-slate-100">
                 <div>
-                  <div className="flex items-center justify-between px-4 pt-3 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">
+                  <div className="flex items-center justify-between px-4 pt-3 text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">
                     <span>New breakouts</span><span className="font-mono text-emerald-700">{changes.breakouts.length}</span>
                   </div>
                   <FeedList events={changes.breakouts} tone="up" empty="No new base breakouts this session." />
                 </div>
                 <div>
-                  <div className="flex items-center justify-between px-4 pt-3 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">
+                  <div className="flex items-center justify-between px-4 pt-3 text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">
                     <span>Failed breakouts</span><span className="font-mono text-rose-700">{changes.failed.length}</span>
                   </div>
                   <FeedList events={changes.failed} tone="down" empty="No breakout failed this session." />
                   {changes.exits.length > 0 && (
                     <>
-                      <div className="flex items-center justify-between border-t border-slate-100 px-4 pt-3 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">
+                      <div className="flex items-center justify-between border-t border-slate-100 px-4 pt-3 text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">
                         <span>Played out</span><span className="font-mono text-slate-500">{changes.exits.length}</span>
                       </div>
                       <FeedList events={changes.exits} tone="muted" empty="" />

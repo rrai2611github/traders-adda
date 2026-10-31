@@ -18,7 +18,7 @@ export function ConfluenceBadge({ confluence, compact = false }: { confluence: C
   ].join("\n");
   return (
     <span className="inline-flex flex-col gap-1" title={title}>
-      <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${LEVEL_STYLES[level.key]}`}>
+      <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-black uppercase tracking-wide ${LEVEL_STYLES[level.key]}`}>
         {bull.length}/{CONFLUENCE_FAMILIES.length}
         {!compact && <span>{level.label}</span>}
       </span>
@@ -30,7 +30,7 @@ export function ConfluenceBadge({ confluence, compact = false }: { confluence: C
           />
         ))}
       </span>
-      {confluence?.conflict && <span className="text-[9px] font-bold text-amber-700">Scanners disagree</span>}
+      {confluence?.conflict && <span className="text-[10.5px] font-bold text-amber-700">Scanners disagree</span>}
     </span>
   );
 }

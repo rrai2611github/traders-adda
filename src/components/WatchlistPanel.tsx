@@ -93,19 +93,19 @@ function WatchlistRow({
       </td>
       <td className="sticky left-[56px] z-10 border-b border-slate-100 bg-inherit px-3 py-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-[10px] font-black text-white shadow-sm">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-[11px] font-black text-white shadow-sm">
             {quote.symbol.slice(0, 2)}
           </div>
           <div className="min-w-0">
             <StockSymbolButton symbol={quote.symbol} className="block font-black text-slate-900">{quote.symbol}</StockSymbolButton>
             <div className="max-w-[190px] truncate text-xs text-muted">{quote.name}</div>
-            {!isLiveQuote && <div className="mt-0.5 text-[9px] font-black uppercase tracking-wide text-amber-600">Scan snapshot</div>}
+            {!isLiveQuote && <div className="mt-0.5 text-[10.5px] font-black uppercase tracking-wide text-amber-600">Scan snapshot</div>}
           </div>
         </div>
       </td>
       <td className="border-b border-slate-100 px-3 py-3 text-right">
         <div className="font-mono font-black text-slate-900">₹{formatPrice(quote.ltp)}</div>
-        <div className={`mt-1 inline-flex rounded-md px-2 py-0.5 font-mono text-[10px] font-black ${
+        <div className={`mt-1 inline-flex rounded-md px-2 py-0.5 font-mono text-[11px] font-black ${
           quote.changePercent >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
         }`}>
           {formatPercent(quote.changePercent)}
@@ -143,12 +143,12 @@ function WatchlistRow({
             <div className="whitespace-nowrap text-emerald-700">T1 ₹{formatPrice(plan.target1)} · T2 ₹{formatPrice(plan.target2)}</div>
           </>
         ) : noTrade ? (
-          <div className="font-sans text-[10px] font-bold text-rose-700" title={noTrade.detail}>{noTrade.reason}</div>
+          <div className="font-sans text-[11px] font-bold text-rose-700" title={noTrade.detail}>{noTrade.reason}</div>
         ) : <span className="text-slate-300">—</span>}
       </td>
       <td className="sticky right-0 z-10 border-b border-slate-100 bg-inherit px-3 py-3 text-right">
         {isIndexMember ? (
-          <span className="whitespace-nowrap rounded-lg border border-slate-200 bg-white px-2 py-1 text-[10px] font-black uppercase tracking-wide text-slate-500 shadow-sm">
+          <span className="whitespace-nowrap rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-black uppercase tracking-wide text-slate-500 shadow-sm">
             Nifty 50
           </span>
         ) : (
@@ -288,7 +288,7 @@ export function WatchlistPanel({
         className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
       >
         {label}
-        <span className="text-[10px]">
+        <span className="text-[11px]">
           {sortKey === key ? (sortDir === "asc" ? "▲" : "▼") : ""}
         </span>
       </button>
@@ -329,7 +329,7 @@ export function WatchlistPanel({
       <div className="border-b border-border bg-white px-5 py-4">
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <div className="mb-1.5 text-[10px] font-black uppercase tracking-wide text-slate-400">Buy horizon</div>
+            <div className="mb-1.5 text-[11px] font-black uppercase tracking-wide text-slate-400">Buy horizon</div>
             <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
               {HORIZONS.map((option) => (
                 <button
@@ -372,12 +372,12 @@ export function WatchlistPanel({
             Clear filters
           </button>
           <div className="ml-auto rounded-xl bg-emerald-50 px-3 py-2 text-right">
-            <div className="text-[10px] font-black uppercase tracking-wide text-emerald-700">{activeHorizon.label}</div>
+            <div className="text-[11px] font-black uppercase tracking-wide text-emerald-700">{activeHorizon.label}</div>
             <div className="text-xs font-bold text-emerald-900">Hold {activeHorizon.holding} · {rows.length} matches</div>
           </div>
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-slate-100 bg-white px-5 py-3 text-[10px] font-semibold text-slate-500">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-slate-100 bg-white px-5 py-3 text-[11px] font-semibold text-slate-500">
         <TradeStatusLegend />
         <span className="ml-auto rounded-lg bg-slate-100 px-2.5 py-1 font-mono font-black text-slate-600">
           Sorted: {sortKey === "changePercent" ? "Day change" : sortKey === "buyRating" ? "Checks passed" : sortKey} {sortDir === "desc" ? "↓" : "↑"}
@@ -409,7 +409,7 @@ export function WatchlistPanel({
               <col className="w-[100px]" />
             </colgroup>
             <thead className="sticky top-0 z-20">
-              <tr className="bg-[#f7f9fa] text-[10px] uppercase tracking-[0.08em] text-slate-400 shadow-[0_1px_0_#e2e8f0]">
+              <tr className="bg-[#f7f9fa] text-[11px] uppercase tracking-[0.08em] text-slate-400 shadow-[0_1px_0_#e2e8f0]">
                 <th scope="col" className="sticky left-0 z-30 bg-[#f7f9fa] px-3 py-3 text-center font-black">#</th>
                 <th scope="col" className="sticky left-[56px] z-30 bg-[#f7f9fa] px-3 py-3 text-left font-black">
                   <button
@@ -418,7 +418,7 @@ export function WatchlistPanel({
                     className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
                   >
                     Instrument
-                    <span className="text-[10px]">
+                    <span className="text-[11px]">
                       {sortKey === "symbol" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                     </span>
                   </button>
@@ -427,7 +427,7 @@ export function WatchlistPanel({
                 <th scope="col" className="px-3 py-3 text-right font-black">
                   <button type="button" onClick={() => toggleSort("changePercent")} className="inline-flex items-center gap-1 hover:text-foreground">
                     Net chg
-                    <span className="text-[10px]">{sortKey === "changePercent" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
+                    <span className="text-[11px]">{sortKey === "changePercent" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
                   </button>
                 </th>
                 <th scope="col" className="hidden px-3 py-3 text-right font-black md:table-cell">
@@ -443,12 +443,12 @@ export function WatchlistPanel({
                 <th scope="col" className="px-3 py-3 text-left font-black">
                   <button type="button" onClick={() => toggleSort("buyRating")} className="inline-flex items-center gap-1 hover:text-foreground">
                     Status
-                    <span className="text-[10px]">{sortKey === "buyRating" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
+                    <span className="text-[11px]">{sortKey === "buyRating" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
                   </button>
                 </th>
                 <th scope="col" className="px-3 py-3 text-right font-black">Checks</th>
                 <th scope="col" className="px-3 py-3 text-right font-black" title={odds ? `Backtest ${odds.trades} trades: T1 reached ${Math.round(odds.t1HitPercent)}%, T2 ${Math.round(odds.t2HitPercent)}% within ${odds.maxHoldSessions} trading days` : undefined}>
-                  Reference levels{odds ? <span className="block text-[9px] normal-case tracking-normal text-slate-500">T1 hit {Math.round(odds.t1HitPercent)}% · T2 {Math.round(odds.t2HitPercent)}%</span> : null}
+                  Reference levels{odds ? <span className="block text-[10.5px] normal-case tracking-normal text-slate-500">T1 hit {Math.round(odds.t1HitPercent)}% · T2 {Math.round(odds.t2HitPercent)}%</span> : null}
                 </th>
             <th scope="col" className="sticky right-0 z-30 bg-[#f7f9fa] px-3 py-3 text-right font-black">
                   Membership
@@ -483,7 +483,7 @@ export function WatchlistPanel({
 function Summary({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
     <div className="rounded-xl border border-border bg-white px-4 py-3">
-      <div className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</div>
+      <div className="text-[11px] font-black uppercase tracking-wide text-slate-400">{label}</div>
       <div className={`mt-1 text-2xl font-black ${tone}`}>{value}</div>
     </div>
   );
@@ -492,7 +492,7 @@ function Summary({ label, value, tone }: { label: string; value: string; tone: s
 function FilterLabel({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label>
-      <span className="mb-1.5 block text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</span>
+      <span className="mb-1.5 block text-[11px] font-black uppercase tracking-wide text-slate-400">{label}</span>
       {children}
     </label>
   );

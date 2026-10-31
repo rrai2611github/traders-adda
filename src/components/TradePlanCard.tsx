@@ -41,7 +41,7 @@ function Rung({ kind, tone, title, price, delta, note }: { kind: string; tone: "
   const text = tone === "up" ? "text-emerald-800" : tone === "buy" ? "text-sky-800" : "text-rose-800";
   return (
     <div className={`flex items-center gap-3 rounded-xl border px-3.5 py-2.5 ${style}`}>
-      <span className={`w-12 shrink-0 rounded-md py-1 text-center text-[10px] font-black uppercase tracking-wide text-white ${badge}`}>{kind}</span>
+      <span className={`w-12 shrink-0 rounded-md py-1 text-center text-[11px] font-black uppercase tracking-wide text-white ${badge}`}>{kind}</span>
       <div className="min-w-0 flex-1">
         <div className="text-xs font-black text-slate-800">{title}</div>
         <div className="truncate text-[11px] text-slate-500">{note}</div>
@@ -186,11 +186,11 @@ export function TradePlanCard({ symbol }: { symbol: string }) {
         </div>
         {s && s.quantity > 0 ? (
           <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs sm:grid-cols-5">
-            <div><dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Shares</dt><dd className="font-mono text-base font-black text-slate-900">{s.quantity.toLocaleString("en-IN")}</dd></div>
-            <div><dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Invested</dt><dd className="font-mono font-black text-slate-900">{money(s.invested)}</dd></div>
-            <div><dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Loss at stop</dt><dd className="font-mono font-black text-rose-700">−{money(s.maxLoss)}</dd></div>
-            <div><dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Gain at T1 (half)</dt><dd className="font-mono font-black text-emerald-700">+{money(s.gainT1 / 2)}</dd></div>
-            <div><dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Gain at T2 (all)</dt><dd className="font-mono font-black text-emerald-700">+{money(s.gainT2)}</dd></div>
+            <div><dt className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Shares</dt><dd className="font-mono text-base font-black text-slate-900">{s.quantity.toLocaleString("en-IN")}</dd></div>
+            <div><dt className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Invested</dt><dd className="font-mono font-black text-slate-900">{money(s.invested)}</dd></div>
+            <div><dt className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Loss at stop</dt><dd className="font-mono font-black text-rose-700">−{money(s.maxLoss)}</dd></div>
+            <div><dt className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Gain at T1 (half)</dt><dd className="font-mono font-black text-emerald-700">+{money(s.gainT1 / 2)}</dd></div>
+            <div><dt className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Gain at T2 (all)</dt><dd className="font-mono font-black text-emerald-700">+{money(s.gainT2)}</dd></div>
           </dl>
         ) : (
           <p className="mt-3 text-xs text-slate-500">Capital is too small for one share at this price and risk.</p>
@@ -199,7 +199,7 @@ export function TradePlanCard({ symbol }: { symbol: string }) {
         {gate && (
           <div className={`mt-3 rounded-lg border px-3 py-2 text-[11.5px] leading-5 ${gate.verdict === "PASS" ? "border-emerald-200 bg-emerald-50 text-emerald-900" : gate.verdict === "WARN" ? "border-amber-200 bg-amber-50 text-amber-900" : "border-rose-200 bg-rose-50 text-rose-900"}`}>
             <b>Risk check: {gate.verdict}.</b> {verdictLine(gate)}
-            <span className="mt-0.5 block text-[10px] opacity-70">This checks the one order against your capital. Positions you already hold are not counted here; the Live strategy check counts them.</span>
+            <span className="mt-0.5 block text-[11px] opacity-70">This checks the one order against your capital. Positions you already hold are not counted here; the Live strategy check counts them.</span>
           </div>
         )}
       </div>
@@ -211,7 +211,7 @@ export function TradePlanCard({ symbol }: { symbol: string }) {
         Bought it? Add it to My positions with this plan filled in →
       </a>
 
-      <p className="mt-2 text-[10px] leading-4 text-slate-400">
+      <p className="mt-2 text-[11px] leading-4 text-slate-400">
         10-year backtest (2016–2026): buying Blue sky and Multi-year breakouts with a 12% stop and the exit under the 50-day average made about 46% a year with a worst drop of about 21%, but only about 45% of trades win. The history only includes stocks listed today, so real results are likely lower. Fixed targets did worse than holding with the exit. Research output, not advice.
       </p>
     </section>

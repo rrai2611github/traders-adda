@@ -67,7 +67,7 @@ export function PositionSizeCalculator({
     <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">Account size</span>
+          <span className="text-[10.5px] font-black uppercase tracking-[0.12em] text-slate-400">Account size</span>
           <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1">
             <span className="text-xs font-bold text-slate-400">₹</span>
             <input
@@ -81,7 +81,7 @@ export function PositionSizeCalculator({
           </div>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">Risk / trade</span>
+          <span className="text-[10.5px] font-black uppercase tracking-[0.12em] text-slate-400">Risk / trade</span>
           <div className="flex overflow-hidden rounded-lg border border-slate-200 bg-white">
             {[0.5, 1, 2].map((option) => (
               <button
@@ -97,17 +97,17 @@ export function PositionSizeCalculator({
         </label>
         <div className="ml-auto flex items-end gap-4">
           <div>
-            <div className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">Buy</div>
+            <div className="text-[10.5px] font-black uppercase tracking-[0.12em] text-slate-400">Buy</div>
             <div className="font-mono text-lg font-black tabular-nums text-slate-900">
               {size.tooSmall ? "—" : `${size.quantity} sh`}
             </div>
           </div>
           <div>
-            <div className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">Capital</div>
+            <div className="text-[10.5px] font-black uppercase tracking-[0.12em] text-slate-400">Capital</div>
             <div className="font-mono text-sm font-black tabular-nums text-slate-700">₹{formatPrice(size.capitalRequired)}</div>
           </div>
           <div>
-            <div className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">At risk</div>
+            <div className="text-[10.5px] font-black uppercase tracking-[0.12em] text-slate-400">At risk</div>
             <div className="font-mono text-sm font-black tabular-nums text-slate-700">₹{formatPrice(size.riskAmount)}</div>
           </div>
           {canLog && (

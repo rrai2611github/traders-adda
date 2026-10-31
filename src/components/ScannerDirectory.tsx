@@ -36,7 +36,7 @@ const HORIZON_CHIP: Record<DirectoryEntry["horizon"], string> = {
 export function StyleTag({ horizon }: { horizon: DirectoryEntry["horizon"] }) {
   const style = TRADING_STYLES[horizon];
   return (
-    <span title={`Typical holding ${style.holding}`} className={`inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-black ${HORIZON_CHIP[horizon]}`}>
+    <span title={`Typical holding ${style.holding}`} className={`inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-black ${HORIZON_CHIP[horizon]}`}>
       {style.tag}
       <span className="truncate font-semibold opacity-70">· {style.holding}</span>
     </span>
@@ -80,7 +80,7 @@ export function ScannerDirectory({
               const hits = entries.reduce((sum, entry) => sum + (counts.get(entry.id)?.count ?? 0), 0);
               return (
                 <div key={family}>
-                  <div className="mb-2 flex items-baseline gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">
+                  <div className="mb-2 flex items-baseline gap-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">
                     <span>{family}</span>
                     <span className="font-semibold normal-case tracking-normal text-slate-400">{entries.length} scanner{entries.length === 1 ? "" : "s"} · {hits} hit{hits === 1 ? "" : "s"} today</span>
                   </div>
@@ -104,10 +104,10 @@ export function ScannerDirectory({
                           </div>
                           <div className="mt-1.5 flex flex-wrap gap-1">
                             <StyleTag horizon={entry.horizon} />
-                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-black ${direction.chip}`}>{direction.label}</span>
+                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-black ${direction.chip}`}>{direction.label}</span>
                           </div>
                           <p className="mt-2 flex-1 text-[11px] leading-4 text-slate-600">{entry.rule}</p>
-                          <div className="mt-2 flex items-center justify-between gap-2 text-[10px]">
+                          <div className="mt-2 flex items-center justify-between gap-2 text-[11px]">
                             <span className="truncate font-semibold text-slate-400">{count?.detail ?? (count?.count == null ? "Loading…" : " ")}</span>
                             <span className="shrink-0 font-black text-emerald-700 opacity-70 transition group-hover:opacity-100">Open →</span>
                           </div>

@@ -114,7 +114,7 @@ export function RpciApproxSection({
         <div className="mt-5 max-h-[calc(100vh-260px)] overflow-auto rounded-xl border border-slate-200">
           <table className="w-full min-w-[1180px] border-separate border-spacing-0 text-sm">
             <thead className="sticky top-0 z-20">
-              <tr className="bg-[#f7f9fa] text-[10px] uppercase tracking-[0.08em] text-slate-400 shadow-[0_1px_0_#e2e8f0]">
+              <tr className="bg-[#f7f9fa] text-[11px] uppercase tracking-[0.08em] text-slate-400 shadow-[0_1px_0_#e2e8f0]">
                 <th scope="col" className="sticky left-0 z-30 bg-[#f7f9fa] px-3 py-3 text-center">#</th>
                 <th scope="col" className="sticky left-[48px] z-30 bg-[#f7f9fa] px-3 py-3 text-left">Instrument</th>
                 <th scope="col" className="px-3 py-3 text-right">Price / day</th>
@@ -159,7 +159,7 @@ export function RpciApproxSection({
                       <LivePrice symbol={row.symbol} fallbackPrice={row.price} fallbackChange={row.changePercent} stacked className="font-black" />
                     </td>
                     <td className={`${ROW_BG} ${cell}`}>
-                      <span className={`inline-flex whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${stage.className}`}>{stage.label}</span>
+                      <span className={`inline-flex whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-black uppercase tracking-wide ${stage.className}`}>{stage.label}</span>
                     </td>
                     <td className={`${ROW_BG} ${cell}`}><BuyingStatusBadge status={buyingStatus} /></td>
                     <td className={`text-right font-mono ${ROW_BG} ${cell}`}>{result.rangePercent.toFixed(1)}%</td>
@@ -174,7 +174,7 @@ export function RpciApproxSection({
                     <td className={`text-right font-mono font-black ${ROW_BG} ${cell}`}>{row.rs}</td>
                     <td className={`${ROW_BG} ${cell}`}>
                       <span
-                        className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold ${freshness.actionable ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"}`}
+                        className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold ${freshness.actionable ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"}`}
                         title={`Candle: ${timestampLabel(result.lastCompletedCandleTimestamp)}\nQuote: ${row.quoteTimestamp == null ? "Unavailable" : timestampLabel(row.quoteTimestamp)}`}
                       >
                         {freshness.label}

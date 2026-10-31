@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { LivePrice } from "./LivePrice";
 import { AppShell } from "./AppShell";
+import { showToast } from "@/lib/toast";
 import { Stat, money, num } from "./BacktestPage";
 import { StockSymbolButton } from "./StockDetailContext";
 import { useAccountSize } from "@/hooks/useAccountSize";
@@ -82,7 +83,7 @@ function PlanEmailSwitch({ accountSize }: { accountSize: number }) {
   if (saved === undefined) return null;
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-slate-50 px-3 py-2 text-[11.5px] leading-5 text-slate-700" aria-label="Tomorrow's plan email">
-      <span className={`rounded px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide ${saved != null ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-700"}`}>Plan email {saved != null ? "on" : "off"}</span>
+      <span className={`rounded px-1.5 py-0.5 text-[11px] font-black uppercase tracking-wide ${saved != null ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-700"}`}>Plan email {saved != null ? "on" : "off"}</span>
       <span className="min-w-[220px] flex-1">
         {saved != null
           ? `After the close, on days the market check passes and something fits your account (₹${saved.toLocaleString("en-IN")}), you get a private email with exact orders for the next open: shares, price, stop. Only to you.`
@@ -127,6 +128,7 @@ function AddForm({ prefill, onDone, onError }: { prefill: Prefill | null; onDone
     setBusy(false);
     if (result.error || !result.view) { onError(result.error ?? "That did not work."); return; }
     onError("");
+    showToast("Position added");
     onDone(result.view);
     setSymbol(""); setQty(""); setQtyTyped(false); setPrice(""); setStop(""); setNote("");
   };
@@ -171,6 +173,7 @@ function SellForm({ holding, status, onDone, onError, onCancel }: { holding: Hol
     setBusy(false);
     if (result.error || !result.view) { onError(result.error ?? "That did not work."); return; }
     onError("");
+    showToast("Marked as sold");
     onDone(result.view);
   };
   return (
@@ -221,7 +224,7 @@ export function PositionsPage() {
   const accept = (next: PositionsView) => { setView(next); setSelling(null); setRemoving(null); };
   const remove = async (id: string) => {
     const result = await call({ action: "remove", id });
-    if (result.view) { setMessage(""); accept(result.view); } else setMessage(result.error ?? "That did not work.");
+    if (result.view) { setMessage(""); showToast("Position removed"); accept(result.view); } else setMessage(result.error ?? "That did not work.");
   };
 
   const open = view?.open ?? [];
@@ -274,7 +277,7 @@ export function PositionsPage() {
       <section className="space-y-3" aria-label="Open positions">
         <h2 className="text-[13px] font-extrabold text-slate-900">Open positions</h2>
         {!view ? (
-          <p className="text-sm text-slate-600">Loading…</p>
+          <div role="status" aria-label="Loading your positions" className="skeleton-card space-y-3"><span className="skeleton-line w-1/3" /><span className="skeleton-line" /><span className="skeleton-line w-2/3" /></div>
         ) : open.length === 0 ? (
           <p className="rounded-xl border border-border bg-surface px-4 py-6 text-center text-sm text-slate-500">No open positions. When you buy a stock, add it above and the app will watch it for you.</p>
         ) : (
@@ -289,7 +292,7 @@ export function PositionsPage() {
                       <div className="text-[11px] text-slate-500">Planned ₹{px(h.plannedPrice)} · paid <b className={fillSlippagePercent(h)! > 0.05 ? "text-amber-700" : "text-slate-700"}>{fillSlippagePercent(h)! >= 0 ? "+" : "−"}{Math.abs(fillSlippagePercent(h)!).toFixed(2)}%</b> {fillSlippagePercent(h)! >= 0 ? "above" : "below"} the plan</div>
                     )}
                   </div>
-                  <span className={`rounded px-2 py-0.5 text-[10.5px] font-black uppercase tracking-wide ${STATUS[a.status].chip}`}>{STATUS[a.status].label}</span>
+                  <span className={`rounded px-2 py-0.5 text-[11.5px] font-black uppercase tracking-wide ${STATUS[a.status].chip}`}>{STATUS[a.status].label}</span>
                 </div>
                 <p className="mt-2 text-[12.5px] font-bold leading-5 text-slate-800">{a.headline}</p>
                 <p className="text-[12px] leading-5 text-slate-600">{a.action}</p>
@@ -346,14 +349,14 @@ export function PositionsPage() {
             {j.byReason.length > 0 && (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[420px] text-left text-[12px]">
-                  <thead><tr className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-slate-500"><th className="py-1 pr-3">How you sold</th><th className="py-1 pr-3">Trades</th><th className="py-1">Average</th></tr></thead>
+                  <thead><tr className="text-[11.5px] font-bold uppercase tracking-[0.06em] text-slate-500"><th className="py-1 pr-3">How you sold</th><th className="py-1 pr-3">Trades</th><th className="py-1">Average</th></tr></thead>
                   <tbody>{j.byReason.map((g) => <tr key={g.reason} className="border-t border-border"><td className="py-1.5 pr-3 font-semibold text-slate-800">{g.label}</td><td className="py-1.5 pr-3">{g.n}</td><td className={`py-1.5 font-mono font-bold ${tone(g.avgR)}`}>{signedR(g.avgR)}</td></tr>)}</tbody>
                 </table>
               </div>
             )}
             <div className="overflow-x-auto">
               <table className="w-full min-w-[640px] text-left text-[12px]">
-                <thead><tr className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-slate-500"><th className="py-1 pr-3">Stock</th><th className="py-1 pr-3">Bought</th><th className="py-1 pr-3">Sold</th><th className="py-1 pr-3">Why</th><th className="py-1 pr-3">Result</th><th className="py-1">R</th></tr></thead>
+                <thead><tr className="text-[11.5px] font-bold uppercase tracking-[0.06em] text-slate-500"><th className="py-1 pr-3">Stock</th><th className="py-1 pr-3">Bought</th><th className="py-1 pr-3">Sold</th><th className="py-1 pr-3">Why</th><th className="py-1 pr-3">Result</th><th className="py-1">R</th></tr></thead>
                 <tbody>
                   {view!.closed.map((t) => (
                     <tr key={t.holding.id} className="border-t border-border">

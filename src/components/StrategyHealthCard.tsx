@@ -53,12 +53,12 @@ export function StrategyHealthCard() {
           <ul className="space-y-1.5">
             {data.report.checks.map((c) => (
               <li key={c.key} className="flex items-start gap-2 text-[12px] leading-5 text-slate-700">
-                <span className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-black ${STYLE[c.state].chip}`}>{STYLE[c.state].label}</span>
+                <span className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[11px] font-black ${STYLE[c.state].chip}`}>{STYLE[c.state].label}</span>
                 <span className="min-w-0"><b className="text-slate-900">{c.label}.</b> {c.detail}</span>
               </li>
             ))}
           </ul>
-          <p className="text-[10.5px] text-slate-400">Prices up to {data.lastDay}. One warning is a reason to look, not a reason to stop: even a good rule has bad stretches.</p>
+          <p className="text-[11.5px] text-slate-400">Prices up to {data.lastDay}. One warning is a reason to look, not a reason to stop: even a good rule has bad stretches.</p>
         </div>
       )}
     </section>

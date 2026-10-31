@@ -74,12 +74,12 @@ export function RealityCheck({ result }: { result: BacktestResult }) {
           <p className={`rounded-lg border px-3 py-2 text-[12.5px] font-bold ${TONE[verdict.tone]}`}>{verdict.text}</p>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px] text-left text-[12px]">
-              <thead><tr className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-slate-500"><th className="py-1 pr-3">Case</th><th className="py-1 pr-3">Profit</th><th className="py-1 pr-3">Yearly</th><th className="py-1 pr-3">Worst drop</th><th className="py-1">Average trade</th></tr></thead>
+              <thead><tr className="text-[11.5px] font-bold uppercase tracking-[0.06em] text-slate-500"><th className="py-1 pr-3">Case</th><th className="py-1 pr-3">Profit</th><th className="py-1 pr-3">Yearly</th><th className="py-1 pr-3">Worst drop</th><th className="py-1">Average trade</th></tr></thead>
               <tbody>
                 <tr className="border-t border-border"><td className="py-1.5 pr-3 font-semibold text-slate-800">The test as it is</td><td className="py-1.5 pr-3 font-mono">{money(s.totalProfit)}</td><td className="py-1.5 pr-3 font-mono">{pct(s.cagrPercent)}</td><td className="py-1.5 pr-3 font-mono">{pct(s.maxDrawdownPercent)}</td><td className="py-1.5 font-mono">{s.avgR == null ? "—" : `${s.avgR.toFixed(2)}R`}</td></tr>
                 {state.rows.map((r) => (
                   <tr key={r.scenario.key} className="border-t border-border">
-                    <td className="py-1.5 pr-3"><div className="font-semibold text-slate-800">{r.scenario.name}</div><div className="text-[10.5px] text-slate-500">{r.scenario.detail}</div></td>
+                    <td className="py-1.5 pr-3"><div className="font-semibold text-slate-800">{r.scenario.name}</div><div className="text-[11.5px] text-slate-500">{r.scenario.detail}</div></td>
                     <td className={`py-1.5 pr-3 font-mono font-bold ${r.stats.totalProfit >= 0 ? "text-emerald-700" : "text-rose-700"}`}>{money(r.stats.totalProfit)}</td>
                     <td className="py-1.5 pr-3 font-mono">{pct(r.stats.cagrPercent)}</td>
                     <td className="py-1.5 pr-3 font-mono">{pct(r.stats.maxDrawdownPercent)}</td>
@@ -89,7 +89,7 @@ export function RealityCheck({ result }: { result: BacktestResult }) {
               </tbody>
             </table>
           </div>
-          <p className="text-[10.5px] text-slate-400">Which stops gap is chosen at random with a fixed seed, so another seed gives a slightly different answer. It does not model delisted stocks, which this history does not contain either.</p>
+          <p className="text-[11.5px] text-slate-400">Which stops gap is chosen at random with a fixed seed, so another seed gives a slightly different answer. It does not model delisted stocks, which this history does not contain either.</p>
         </>
       )}
     </section>

@@ -41,7 +41,7 @@ function Tile({ tile }: { tile: StripTile }) {
   const t = TONE[tile.tone];
   const body = (
     <>
-      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.1em] text-slate-500">
+      <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.1em] text-slate-500">
         <span className={`h-2 w-2 rounded-full ${t.dot}`} aria-hidden />
         {tile.title}
       </div>

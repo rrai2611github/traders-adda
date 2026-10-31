@@ -34,12 +34,12 @@ export function RiskFlagChips({ flags, max = 2 }: { flags: RiskFlag[] | undefine
   return (
     <span className="inline-flex flex-wrap gap-1">
       {shown.map((flag) => (
-        <span key={flag.key} title={flag.detail} className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${FLAG_STYLES[flag.severity]}`}>
+        <span key={flag.key} title={flag.detail} className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-bold ${FLAG_STYLES[flag.severity]}`}>
           <span aria-hidden>⚠</span>{flag.label}
         </span>
       ))}
       {rest.length > 0 && (
-        <span title={rest.map((flag) => `${flag.label}: ${flag.detail}`).join("\n")} className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">
+        <span title={rest.map((flag) => `${flag.label}: ${flag.detail}`).join("\n")} className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[11px] font-bold text-slate-500">
           +{rest.length}
         </span>
       )}

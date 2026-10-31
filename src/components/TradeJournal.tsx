@@ -19,11 +19,11 @@ function CloseTradeForm({ entry, onClose }: { entry: JournalEntry; onClose: (exi
   return (
     <div className="flex flex-wrap items-end gap-2 rounded-lg bg-slate-50 p-2">
       <label className="flex flex-col gap-0.5">
-        <span className="text-[9px] font-black uppercase tracking-wide text-slate-400">Exit price</span>
+        <span className="text-[10.5px] font-black uppercase tracking-wide text-slate-400">Exit price</span>
         <input type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="w-24 rounded border border-slate-200 bg-white px-2 py-1 font-mono text-xs" />
       </label>
       <label className="flex flex-col gap-0.5">
-        <span className="text-[9px] font-black uppercase tracking-wide text-slate-400">Exit date</span>
+        <span className="text-[10.5px] font-black uppercase tracking-wide text-slate-400">Exit date</span>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded border border-slate-200 bg-white px-2 py-1 font-mono text-xs" />
       </label>
       <button
@@ -135,7 +135,7 @@ export function TradeJournal({
 function Stat({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
     <div>
-      <div className="text-[10px] font-black uppercase tracking-[0.13em] text-slate-400">{label}</div>
+      <div className="text-[11px] font-black uppercase tracking-[0.13em] text-slate-400">{label}</div>
       <div className={`mt-0.5 font-mono text-lg font-black tabular-nums ${tone}`}>{value}</div>
     </div>
   );
@@ -178,9 +178,9 @@ function Row({ entry, r, children }: { entry: JournalEntry; r?: number | null; c
 function Cell({ label, value, sub, tone = "text-slate-900" }: { label: string; value: string; sub?: string; tone?: string }) {
   return (
     <div className="min-w-[80px]">
-      <div className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">{label}</div>
+      <div className="text-[10.5px] font-black uppercase tracking-[0.12em] text-slate-400">{label}</div>
       <div className={`font-mono text-sm font-black tabular-nums ${tone}`}>{value}</div>
-      {sub && <div className="text-[10px] text-slate-400">{sub}</div>}
+      {sub && <div className="text-[11px] text-slate-400">{sub}</div>}
     </div>
   );
 }

@@ -30,7 +30,7 @@ export function WorkspaceHero({
             </span>
           )}
           <div className="min-w-0">
-            <p className="text-[10.5px] font-extrabold uppercase tracking-[0.16em] text-emerald-700">{eyebrow}</p>
+            <p className="text-[11.5px] font-extrabold uppercase tracking-[0.16em] text-emerald-700">{eyebrow}</p>
             <h2 className="mt-1 text-[26px] font-extrabold leading-tight tracking-[-0.02em] text-slate-900">{title}</h2>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">{description}</p>
           </div>
@@ -46,13 +46,16 @@ export function WorkspaceFrame({
   id,
   children,
   className = "",
+  bare = false,
 }: {
   id?: string;
   children: ReactNode;
   className?: string;
+  /** No outer box: the page's own cards stand on the page background (the Today page). */
+  bare?: boolean;
 }) {
   return (
-    <section id={id} className={`overflow-hidden rounded-3xl border border-border bg-white shadow-sm ${className}`}>
+    <section id={id} className={`${bare ? "" : "overflow-hidden rounded-3xl border border-border bg-white shadow-sm"} ${className}`}>
       {children}
     </section>
   );

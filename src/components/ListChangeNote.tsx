@@ -3,7 +3,7 @@ import { sinceLabel } from "@/hooks/useListChanges";
 import { StockSymbolButton } from "./StockDetailContext";
 
 export function NewTag() {
-  return <span className="ml-1.5 rounded bg-emerald-100 px-1.5 py-0.5 align-middle text-[9px] font-black uppercase tracking-wide text-emerald-800" title="Not on this list the last time you looked on an earlier day">New</span>;
+  return <span className="ml-1.5 rounded bg-emerald-100 px-1.5 py-0.5 align-middle text-[10.5px] font-black uppercase tracking-wide text-emerald-800" title="Not on this list the last time you looked on an earlier day">New</span>;
 }
 
 /** What entered and left a list since the last day this browser saw it. Silent until there is an earlier day to compare with. */

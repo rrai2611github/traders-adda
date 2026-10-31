@@ -582,7 +582,7 @@ const STATE_DOT_CLASS: Record<BreakoutStateTone, string> = {
 function BreakoutStateBadge({ state }: { state: BreakoutState }) {
   const info = BREAKOUT_STATES[state];
   return (
-    <span title={`Chart stage: ${info.rule}`} className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-slate-500">
+    <span title={`Chart stage: ${info.rule}`} className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10.5px] font-bold tracking-wide text-slate-500">
       {info.label}
     </span>
   );
@@ -1161,7 +1161,7 @@ export function LivePatternSection({
                         </span>
                         <span>
                           <span className="block">{setup.label}</span>
-                          <span className="mt-0.5 block text-[9px] font-bold uppercase tracking-wide text-slate-400">{setup.category}</span>
+                          <span className="mt-0.5 block text-[10.5px] font-bold uppercase tracking-wide text-slate-400">{setup.category}</span>
                         </span>
                       </span>
                       <span className="text-slate-400" aria-hidden>›</span>
@@ -1691,7 +1691,7 @@ export function LivePatternSection({
               >
                 {info && <span className={`h-2 w-2 rounded-full ${STATE_DOT_CLASS[info.tone]}`} aria-hidden />}
                 {info?.label ?? "All"}
-                <span className={`font-mono text-[10px] ${selected ? "text-white opacity-75" : "text-slate-400"}`}>{count}</span>
+                <span className={`font-mono text-[11px] ${selected ? "text-white opacity-75" : "text-slate-400"}`}>{count}</span>
               </button>
             );
           })}
@@ -1791,7 +1791,7 @@ export function LivePatternSection({
                   </div>
 
                   <div className="mx-4 mt-3 rounded-xl border border-slate-200 bg-[#fbfcfd] p-3">
-                    <div className="flex items-start justify-between gap-3 text-[10px] font-bold text-slate-400">
+                    <div className="flex items-start justify-between gap-3 text-[11px] font-bold text-slate-400">
                       <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 font-mono">
                         <span>{formatChartDate(candles[candles.length - 1]?.timestamp ?? lastUpdate)}</span>
                         <span>O {formatPatternPrice(lastCandle.open)}</span>
@@ -1915,7 +1915,7 @@ export function LivePatternSection({
 
                   <div className="flex flex-wrap gap-1.5 px-4 pb-3">
                     {(stock.tags ?? []).map((tag) => (
-                      <span key={tag} className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold text-slate-400">
+                      <span key={tag} className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[11px] font-bold text-slate-400">
                         {tag}
                       </span>
                     ))}
@@ -1923,7 +1923,7 @@ export function LivePatternSection({
                       <span
                         key={`${flag.icon}-${flag.label}`}
                         title={flag.tip}
-                        className="cursor-help rounded-full bg-[#fff7db] px-2 py-0.5 text-[10px] font-black text-[#8a6a00]"
+                        className="cursor-help rounded-full bg-[#fff7db] px-2 py-0.5 text-[11px] font-black text-[#8a6a00]"
                       >
                         {flag.icon} {flag.label}
                       </span>
@@ -1946,7 +1946,7 @@ export function LivePatternSection({
           <div className="flex items-center justify-between gap-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-4 py-3">
             <div className="flex items-center gap-5">
               <div>
-                <div className="text-[10px] font-black uppercase tracking-[0.13em] text-slate-400">Results</div>
+                <div className="text-[11px] font-black uppercase tracking-[0.13em] text-slate-400">Results</div>
                 <div className="mt-0.5 text-lg font-black text-slate-900">
                   {visibleRows.length}
                   {hiddenAvoidCount > 0 && <span className="ml-1 font-mono text-xs font-bold text-slate-400">of {rows.length}</span>}
@@ -1954,32 +1954,32 @@ export function LivePatternSection({
               </div>
               <div className="h-8 w-px bg-slate-200" />
               <div>
-                <div className="text-[10px] font-black uppercase tracking-[0.13em] text-slate-400">Average RS</div>
+                <div className="text-[11px] font-black uppercase tracking-[0.13em] text-slate-400">Average RS</div>
                 <div className="mt-0.5 font-mono text-lg font-black text-slate-900">
                   {Math.round(rows.reduce((sum, stock) => sum + stock.rs, 0) / rows.length)}
                 </div>
               </div>
               <div className="h-8 w-px bg-slate-200" />
               <div>
-                <div className="text-[10px] font-black uppercase tracking-[0.13em] text-slate-400">Buy ready</div>
+                <div className="text-[11px] font-black uppercase tracking-[0.13em] text-slate-400">Buy ready</div>
                 <div className="mt-0.5 font-mono text-lg font-black text-emerald-600">
                   {[...buyingStatuses.values()].filter((status) => status.key === "buy-ready").length}
                 </div>
               </div>
               <div className="h-8 w-px bg-slate-200" />
               <div>
-                <div className="text-[10px] font-black uppercase tracking-[0.13em] text-slate-400">Watch</div>
+                <div className="text-[11px] font-black uppercase tracking-[0.13em] text-slate-400">Watch</div>
                 <div className="mt-0.5 font-mono text-lg font-black text-sky-600">
                   {[...buyingStatuses.values()].filter((status) => status.key === "watch").length}
                 </div>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-[10px] font-black uppercase tracking-[0.13em] text-slate-400">Sorted by</div>
+              <div className="text-[11px] font-black uppercase tracking-[0.13em] text-slate-400">Sorted by</div>
               <div className="mt-0.5 text-xs font-bold text-slate-700">{activeSortBy} {sortDescending ? "↓" : "↑"}</div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-5 border-b border-slate-100 bg-white px-4 py-2 text-[10px] font-semibold text-slate-500">
+          <div className="flex flex-wrap items-center gap-5 border-b border-slate-100 bg-white px-4 py-2 text-[11px] font-semibold text-slate-500">
             <label className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-black text-slate-600">
               <input type="checkbox" checked={hideAvoid} onChange={(e) => setHideAvoid(e.target.checked)} className="h-3 w-3" />
               Hide Avoid{hiddenAvoidCount > 0 ? ` (${hiddenAvoidCount})` : ""}
@@ -2003,7 +2003,7 @@ export function LivePatternSection({
                 <col className="w-[9%]" />
               </colgroup>
               <thead className="sticky top-0 z-20">
-                <tr className="bg-[#f7f9fa] text-[10px] uppercase tracking-[0.08em] text-slate-400 shadow-[0_1px_0_#e2e8f0]">
+                <tr className="bg-[#f7f9fa] text-[11px] uppercase tracking-[0.08em] text-slate-400 shadow-[0_1px_0_#e2e8f0]">
                   <th className="sticky left-0 z-30 bg-[#f7f9fa] px-3 py-3 text-center font-black">#</th>
                   <th className="sticky left-[59px] z-30 bg-[#f7f9fa] px-3 py-3 font-black">
                     <button
@@ -2057,7 +2057,7 @@ export function LivePatternSection({
                       </td>
                       <td className="sticky left-[59px] z-10 border-b border-slate-100 bg-inherit px-3 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-[10px] font-black text-white shadow-sm">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-[11px] font-black text-white shadow-sm">
                             {ticker.slice(0, 2)}
                           </div>
                           <div className="min-w-0">
@@ -2072,7 +2072,7 @@ export function LivePatternSection({
                           {tags.map((tag) => (
                             <span
                               key={tag}
-                              className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold leading-none text-slate-400"
+                              className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[11px] font-bold leading-none text-slate-400"
                             >
                               {tag}
                             </span>
@@ -2085,7 +2085,7 @@ export function LivePatternSection({
                           {price == null ? "—" : `₹${formatPatternPrice(price)}`}
                         </div>
                         {changePercent == null ? null : (
-                          <div className={`mt-1 inline-flex rounded-md px-1.5 py-0.5 font-mono text-[10px] font-black ${
+                          <div className={`mt-1 inline-flex rounded-md px-1.5 py-0.5 font-mono text-[11px] font-black ${
                             changePercent > 0 ? "bg-emerald-50 text-emerald-700" : changePercent < 0 ? "bg-red-50 text-red-600" : "bg-slate-100 text-slate-500"
                           }`}>{formatCompactPercent(changePercent)}</div>
                         )}
@@ -2112,7 +2112,7 @@ export function LivePatternSection({
                             <div className="ml-auto w-20">
                               <div className="flex items-center justify-between gap-2">
                                 <span className="font-black text-slate-900">{value}</span>
-                                <span className="text-[9px] text-slate-400">/99</span>
+                                <span className="text-[10.5px] text-slate-400">/99</span>
                               </div>
                               <div className="mt-1 h-1 overflow-hidden rounded-full bg-slate-100">
                                 <div className={`h-full rounded-full ${stock.rs >= 80 ? "bg-emerald-500" : stock.rs >= 60 ? "bg-amber-500" : "bg-slate-400"}`} style={{ width: `${Math.min(100, stock.rs)}%` }} />
@@ -2134,7 +2134,7 @@ export function LivePatternSection({
                             type="button"
                             disabled={!onAddToWatchlist || isAdded}
                             onClick={() => onAddToWatchlist?.(stock.symbol)}
-                            className={`rounded-lg border px-2.5 py-1.5 text-[10px] font-black transition ${
+                            className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-black transition ${
                               isAdded
                                 ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                                 : "border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700"

@@ -414,7 +414,7 @@ export function ChartinkScannerSection({
                           <>
                             {priceLabel(cmp)}
                             {change != null && <span className={`ml-1 text-xs ${toneClass(change)}`}>{formatPercent(change)}</span>}
-                            <div className="text-[10px] text-muted">signal close {priceLabel(row.close)}{old ? <span className="ml-1 font-bold text-amber-600">· {old}</span> : null}</div>
+                            <div className="text-[11px] text-muted">signal close {priceLabel(row.close)}{old ? <span className="ml-1 font-bold text-amber-600">· {old}</span> : null}</div>
                           </>
                         );
                       })()}

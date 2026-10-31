@@ -52,7 +52,7 @@ export function MarketGateBanner({
       }`}
     >
       <div>
-        <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">{label}</div>
+        <div className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">{label}</div>
         <div className={`mt-1 text-xl font-black ${healthy ? "text-emerald-800" : "text-amber-900"}`}>
           {healthy ? "Buying allowed" : "No new buys — watch only"}
         </div>

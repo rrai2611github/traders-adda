@@ -16,7 +16,6 @@ import { setupStatus } from "@/lib/screen/setupGate";
 import { STAT_TITLES, statItems, type StatItem, type StatKey } from "@/lib/screen/statLists";
 import { buildTopPicks, PICK_RULES, type PickTag } from "@/lib/screen/topPicks";
 import { CompanyHealthTag } from "./FundamentalsPanel";
-import { TodayStrip } from "./TodayStrip";
 import { LivePrice } from "./LivePrice";
 import { StockSymbolButton } from "./StockDetailContext";
 
@@ -162,9 +161,9 @@ function TrendCard({ breadth }: { breadth: BreadthPayload | null }) {
 function Stat({ label, value, sub, tone = "text-slate-900", onClick, active }: { label: string; value: string; sub?: string; tone?: string; onClick?: () => void; active?: boolean }) {
   const body = (
     <>
-      <div className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</div>
+      <div className="text-[11px] font-black uppercase tracking-wide text-slate-400">{label}</div>
       <div className={`font-mono text-xl font-black ${tone}`}>{value}</div>
-      {sub && <div className="text-[10px] leading-4 text-slate-500">{sub}</div>}
+      {sub && <div className="text-[11px] leading-4 text-slate-500">{sub}</div>}
     </>
   );
   if (!onClick) return <div className="rounded-xl bg-slate-50 px-3 py-2.5">{body}</div>;
@@ -176,7 +175,7 @@ function Stat({ label, value, sub, tone = "text-slate-900", onClick, active }: {
       className={`rounded-xl px-3 py-2.5 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c8951c] ${active ? "bg-white shadow-sm ring-2 ring-[#e6b53c]" : "bg-slate-50 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-slate-300"}`}
     >
       {body}
-      <div className="mt-1 text-[10px] font-bold text-accent">{active ? "Hide stocks ▲" : "View stocks →"}</div>
+      <div className="mt-1 text-[11px] font-bold text-accent">{active ? "Hide stocks ▲" : "View stocks →"}</div>
     </button>
   );
 }
@@ -197,9 +196,9 @@ function StatList({ statKey, items, outOf, onClose }: { statKey: StatKey; items:
       <div className="flex items-start justify-between gap-2 px-4 pt-3">
         <div className="min-w-0">
           <h4 className="text-[12.5px] font-black text-slate-900">{title} <span className="font-mono text-accent">({items.length}{outOf != null ? ` of ${outOf}` : ""})</span></h4>
-          <p className="text-[10.5px] text-slate-500">{about} Tap a stock for its details.</p>
+          <p className="text-[11.5px] text-slate-500">{about} Tap a stock for its details.</p>
         </div>
-        <button type="button" onClick={onClose} className="shrink-0 rounded-md border border-slate-200 px-2 py-0.5 text-[10.5px] font-bold text-slate-600 hover:bg-slate-50">Close</button>
+        <button type="button" onClick={onClose} className="shrink-0 rounded-md border border-slate-200 px-2 py-0.5 text-[11.5px] font-bold text-slate-600 hover:bg-slate-50">Close</button>
       </div>
       {items.length === 0 ? (
         <p className="px-3 py-4 text-center text-[11.5px] text-slate-500">No stocks right now.</p>
@@ -210,13 +209,13 @@ function StatList({ statKey, items, outOf, onClose }: { statKey: StatKey; items:
               <StockSymbolButton symbol={item.symbol} className="w-[104px] shrink-0 truncate text-left text-[12.5px] font-black text-slate-900">{item.symbol}</StockSymbolButton>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[11px] text-slate-500">{item.name}</div>
-                {item.note && <div className="truncate text-[10px] text-slate-400">{item.note}</div>}
+                {item.note && <div className="truncate text-[11px] text-slate-400">{item.note}</div>}
               </div>
               <div className="shrink-0 text-right">
                 {item.price != null && <div className="font-mono text-[11.5px] font-bold text-slate-800">₹{formatPrice(item.price)}</div>}
-                {item.changePercent != null && <div className={`font-mono text-[10.5px] font-bold ${item.changePercent >= 0 ? "text-emerald-700" : "text-rose-700"}`}>{formatPercent(item.changePercent)}</div>}
+                {item.changePercent != null && <div className={`font-mono text-[11.5px] font-bold ${item.changePercent >= 0 ? "text-emerald-700" : "text-rose-700"}`}>{formatPercent(item.changePercent)}</div>}
               </div>
-              {item.rs != null && <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-black text-slate-600" title="Relative strength rating, 1 to 99">RS {Math.round(item.rs)}</span>}
+              {item.rs != null && <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[11px] font-black text-slate-600" title="Relative strength rating, 1 to 99">RS {Math.round(item.rs)}</span>}
             </li>
           ))}
         </ul>
@@ -322,14 +321,14 @@ function TopPicksSection({ rows, onAll }: { rows: ReadonlyArray<ScanRow>; onAll:
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <StockSymbolButton symbol={p.symbol} className="block truncate text-sm font-black text-slate-900">{p.symbol}</StockSymbolButton>
-                      {p.name && <div className="truncate text-[10px] text-slate-500">{p.name}</div>}
+                      {p.name && <div className="truncate text-[11px] text-slate-500">{p.name}</div>}
                     </div>
                     <div className="shrink-0 text-center" title="Relative strength rating, 1 to 99">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-emerald-500 bg-white font-mono text-xs font-black text-emerald-700">{Math.round(p.rs)}</div>
                     </div>
                   </div>
                   <div className="mt-1.5"><LivePrice symbol={p.symbol} fallbackPrice={p.price} fallbackChange={null} /></div>
-                  <p className="mt-2 text-[11.5px] font-bold leading-4 text-slate-800"><span className={`mr-1.5 rounded px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide ${VERDICT_STYLE[analysis.verdict].chip}`}>{analysis.status}</span>{analysis.headline}</p>
+                  <p className="mt-2 text-[11.5px] font-bold leading-4 text-slate-800"><span className={`mr-1.5 rounded px-1.5 py-0.5 text-[11px] font-black uppercase tracking-wide ${VERDICT_STYLE[analysis.verdict].chip}`}>{analysis.status}</span>{analysis.headline}</p>
                   {p.ext != null && (
                     <p className="mt-1 text-[11px] text-slate-600">
                       <b className={p.ext <= 0 ? "text-emerald-700" : p.ext <= PICK_RULES.brokeMaxExt ? "text-sky-700" : "text-amber-700"}>{Math.abs(p.ext).toFixed(1)}%</b> {p.ext <= 0 ? "under" : "past"} its breakout level{p.pivotPrice != null ? ` (₹${formatPrice(p.pivotPrice)})` : ""}
@@ -338,26 +337,26 @@ function TopPicksSection({ rows, onAll }: { rows: ReadonlyArray<ScanRow>; onAll:
                   {p.buy != null && p.stop != null ? (
                     <div className="mt-2 grid grid-cols-3 gap-2 text-[11px]">
                       <div><div className="font-black uppercase tracking-wide text-sky-700">Buy</div><div className="font-mono font-bold text-slate-800">₹{formatPrice(p.buy)}</div></div>
-                      <div><div className="font-black uppercase tracking-wide text-rose-700">Stop</div><div className="font-mono font-bold text-slate-800">₹{formatPrice(p.stop)}</div><div className="text-[10px] text-slate-400">−{PICK_RULES.stopPercent}%</div></div>
-                      {analysis.plan?.targets && <div className="text-right"><div className="font-black uppercase tracking-wide text-emerald-700">Target</div><div className="font-mono font-bold text-slate-800">₹{formatPrice(analysis.plan.targets.t1)}</div><div className="text-[10px] text-slate-400">+{analysis.plan.targets.t1Percent}% · T2 +{analysis.plan.targets.t2Percent}%</div></div>}
+                      <div><div className="font-black uppercase tracking-wide text-rose-700">Stop</div><div className="font-mono font-bold text-slate-800">₹{formatPrice(p.stop)}</div><div className="text-[11px] text-slate-400">−{PICK_RULES.stopPercent}%</div></div>
+                      {analysis.plan?.targets && <div className="text-right"><div className="font-black uppercase tracking-wide text-emerald-700">Target</div><div className="font-mono font-bold text-slate-800">₹{formatPrice(analysis.plan.targets.t1)}</div><div className="text-[11px] text-slate-400">+{analysis.plan.targets.t1Percent}% · T2 +{analysis.plan.targets.t2Percent}%</div></div>}
                     </div>
                   ) : (
                     <p className="mt-2 text-[11px] text-slate-500">{TAG[p.tag].note}</p>
                   )}
                   <details className="mt-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] leading-4 text-slate-700">
                     <summary className="cursor-pointer text-[11px] font-black text-emerald-700">Full analysis</summary>
-                    <p className="mt-1.5 text-[10px] font-black uppercase tracking-wide text-slate-400">Why it is on the list</p>
+                    <p className="mt-1.5 text-[11px] font-black uppercase tracking-wide text-slate-400">Why it is on the list</p>
                     <ul className="list-disc space-y-0.5 pl-4">{analysis.why.map((line) => <li key={line}>{line}</li>)}</ul>
-                    {analysis.watchOut.length > 0 && (<><p className="mt-1.5 text-[10px] font-black uppercase tracking-wide text-amber-700">Watch out for</p><ul className="list-disc space-y-0.5 pl-4 text-amber-900">{analysis.watchOut.map((line) => <li key={line}>{line}</li>)}</ul></>)}
-                    {analysis.plan && (<><p className="mt-1.5 text-[10px] font-black uppercase tracking-wide text-slate-400">Plan</p>{analysis.plan.tighter && <p className="mb-1"><b>Tighter option:</b> stop ₹{formatPrice(analysis.plan.tighter.stop)} (−{analysis.plan.tighter.percent}%). {analysis.plan.tighter.note}</p>}{analysis.plan.targets && <p className="mb-1"><b>Targets:</b> ₹{formatPrice(analysis.plan.targets.t1)} (+{analysis.plan.targets.t1Percent}%) and ₹{formatPrice(analysis.plan.targets.t2)} (+{analysis.plan.targets.t2Percent}%). {analysis.plan.targets.note}</p>}<p>{analysis.plan.exit}</p>{analysis.plan.example && <p className="mt-1 text-slate-500">Example with ₹{analysis.plan.example.capital.toLocaleString("en-IN")} risking {analysis.plan.example.riskPercent}%: {analysis.plan.example.quantity} shares (₹{analysis.plan.example.invested.toLocaleString("en-IN")}), about ₹{analysis.plan.example.maxLoss.toLocaleString("en-IN")} lost if the stop is hit.</p>}</>)}
+                    {analysis.watchOut.length > 0 && (<><p className="mt-1.5 text-[11px] font-black uppercase tracking-wide text-amber-700">Watch out for</p><ul className="list-disc space-y-0.5 pl-4 text-amber-900">{analysis.watchOut.map((line) => <li key={line}>{line}</li>)}</ul></>)}
+                    {analysis.plan && (<><p className="mt-1.5 text-[11px] font-black uppercase tracking-wide text-slate-400">Plan</p>{analysis.plan.tighter && <p className="mb-1"><b>Tighter option:</b> stop ₹{formatPrice(analysis.plan.tighter.stop)} (−{analysis.plan.tighter.percent}%). {analysis.plan.tighter.note}</p>}{analysis.plan.targets && <p className="mb-1"><b>Targets:</b> ₹{formatPrice(analysis.plan.targets.t1)} (+{analysis.plan.targets.t1Percent}%) and ₹{formatPrice(analysis.plan.targets.t2)} (+{analysis.plan.targets.t2Percent}%). {analysis.plan.targets.note}</p>}<p>{analysis.plan.exit}</p>{analysis.plan.example && <p className="mt-1 text-slate-500">Example with ₹{analysis.plan.example.capital.toLocaleString("en-IN")} risking {analysis.plan.example.riskPercent}%: {analysis.plan.example.quantity} shares (₹{analysis.plan.example.invested.toLocaleString("en-IN")}), about ₹{analysis.plan.example.maxLoss.toLocaleString("en-IN")} lost if the stop is hit.</p>}</>)}
                   </details>
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {p.quiet && <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200">Volume dried up</span>}
-                    {days != null && days <= 14 && <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 ring-1 ring-amber-200" title="A results announcement can gap the price through your stop. Wait for it, or take a smaller position.">⚠ Results in {days} day{days === 1 ? "" : "s"}</span>}
-                    {p.sector && <span className="rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 ring-1 ring-slate-200">{p.sector}</span>}
+                    {p.quiet && <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-200">Volume dried up</span>}
+                    {days != null && days <= 14 && <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-bold text-amber-800 ring-1 ring-amber-200" title="A results announcement can gap the price through your stop. Wait for it, or take a smaller position.">⚠ Results in {days} day{days === 1 ? "" : "s"}</span>}
+                    {p.sector && <span className="rounded bg-white px-1.5 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">{p.sector}</span>}
                     <CompanyHealthTag symbol={p.symbol} sector={p.sector} />
                     {p.buy != null && p.stop != null && (p.tag === "ready" || p.tag === "broke") && (
-                      <a href={`/positions?symbol=${encodeURIComponent(p.symbol)}&buy=${p.buy}&stop=${p.stop}`} className="ml-auto rounded bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-slate-700" title="Open My positions with this pick's symbol, buy price and stop filled in, once you have bought it">I bought it →</a>
+                      <a href={`/positions?symbol=${encodeURIComponent(p.symbol)}&buy=${p.buy}&stop=${p.stop}`} className="ml-auto rounded bg-slate-900 px-2 py-0.5 text-[11px] font-bold text-white hover:bg-slate-700" title="Open My positions with this pick's symbol, buy price and stop filled in, once you have bought it">I bought it →</a>
                     )}
                   </div>
                 </li>
@@ -366,7 +365,7 @@ function TopPicksSection({ rows, onAll }: { rows: ReadonlyArray<ScanRow>; onAll:
           </ul>
         </>
       )}
-      <p className="mt-3 text-[10px] leading-4 text-slate-400">
+      <p className="mt-3 text-[11px] leading-4 text-slate-400">
         The tested rule: buy a Blue sky or Multi-year breakout on the day it breaks out, only while at least 35% of stocks are above their 50-day average. Stop about {PICK_RULES.stopPercent}% below the buy price, with a smaller position so the money at risk stays the same; exit when the stock closes under its 50-day average. Hold at most 10 positions and add at most 3 a day. 10-year test: about 46% a year with a worst drop of about 21%, but only about 45% of trades win. The history only includes stocks listed today, so real results are likely lower. Stocks still under their level are the watchlist for tomorrow. Check results dates before buying. Research output, not advice.
       </p>
     </section>
@@ -441,9 +440,9 @@ function ChangesCard({ breakouts, failed, onAll }: { breakouts: ReadonlyArray<Fe
   ));
   return (
     <Card title="What changed" hint="Base breakouts, latest session" action={<button type="button" onClick={onAll} className="whitespace-nowrap text-xs font-bold text-emerald-700 hover:underline">Record →</button>}>
-      <div className="mb-1 flex justify-between text-[10px] font-black uppercase tracking-wide text-slate-400"><span>New breakouts</span><span className="text-emerald-700">{breakouts.length}</span></div>
+      <div className="mb-1 flex justify-between text-[11px] font-black uppercase tracking-wide text-slate-400"><span>New breakouts</span><span className="text-emerald-700">{breakouts.length}</span></div>
       <ul className="space-y-1.5">{list(breakouts, "text-emerald-700", "None this session.")}</ul>
-      <div className="mb-1 mt-3 flex justify-between border-t border-slate-100 pt-2 text-[10px] font-black uppercase tracking-wide text-slate-400"><span>Failed</span><span className="text-rose-700">{failed.length}</span></div>
+      <div className="mb-1 mt-3 flex justify-between border-t border-slate-100 pt-2 text-[11px] font-black uppercase tracking-wide text-slate-400"><span>Failed</span><span className="text-rose-700">{failed.length}</span></div>
       <ul className="space-y-1.5">{list(failed, "text-rose-700", "None this session.")}</ul>
     </Card>
   );
@@ -526,7 +525,6 @@ export function TodayBoard({ rows, sectors, advancing, declining, breakouts, fai
   return (
     <div className="space-y-4">
       <LiveChip breadth={breadth} />
-      <TodayStrip />
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)_minmax(0,1fr)]">
         <MarketGauge breadth={breadth} />
         <TrendCard breadth={breadth} />

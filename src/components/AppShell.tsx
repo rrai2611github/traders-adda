@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { HeaderClock, MarketPill, SideGroup, SideItem, SidebarClock, ThemeToggle, ToolSection } from "./ShellParts";
 import { SymbolSearch } from "./SymbolSearch";
+import { Toaster } from "./Toaster";
 import { NavIcon } from "./NavIcons";
 import { useNow } from "@/hooks/useNow";
 import { getMarketStatus } from "@/lib/market/marketHours";
@@ -88,7 +89,7 @@ export function AppShell({ current, children }: { current: ShellPage; children: 
           </SideGroup>
         </nav>
 
-        <div className="sidenav-footer sidenav-divider flex h-11 shrink-0 items-center gap-2 border-t px-4 text-[10px] font-extrabold uppercase tracking-[0.1em]">
+        <div className="sidenav-footer sidenav-divider flex h-11 shrink-0 items-center gap-2 border-t px-4 text-[11px] font-extrabold uppercase tracking-[0.1em]">
           <span className={`h-1.5 w-1.5 rounded-full ${status?.isLive ? "bg-[#5fd49a] pulse-dot" : "bg-[#6b7280]"}`} />
           <span className="sidenav-muted truncate">{status?.label ?? "Connecting"}</span>
           <SidebarClock />
@@ -110,6 +111,7 @@ export function AppShell({ current, children }: { current: ShellPage; children: 
           </div>
         </header>
         {children}
+        <Toaster />
       </main>
     </div>
   );

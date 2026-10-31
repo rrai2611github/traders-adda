@@ -54,7 +54,7 @@ export function MarketPulseCard({ pulse, compact = false }: { pulse: MarketPulse
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-sm text-slate-600" aria-hidden>◔</span>
           Market pulse
         </h3>
-        <span className={`rounded-md border px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.14em] ${style.badge}`}>
+        <span className={`rounded-md border px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.14em] ${style.badge}`}>
           {pulse.moodLabel}
         </span>
       </header>
@@ -75,8 +75,8 @@ export function MarketPulseCard({ pulse, compact = false }: { pulse: MarketPulse
         </div>
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-md bg-slate-900 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-white">{pulse.stance}</span>
-            <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">What this means today</span>
+            <span className="rounded-md bg-slate-900 px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.12em] text-white">{pulse.stance}</span>
+            <span className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">What this means today</span>
           </div>
           {!compact && <p className="mt-2 text-sm leading-6 text-slate-800">{pulse.meaning}</p>}
           <p className="mt-1 text-sm text-slate-600">

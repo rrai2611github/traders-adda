@@ -23,6 +23,7 @@ import { MarketStatusBar } from "./MarketStatusBar";
 import { EDGE_TAG, scannerEdge, scannerEdgeSentence, sortByEdge } from "@/lib/screen/scannerEdge";
 import { FyersBanner } from "./FyersBanner";
 import { MarketStrip } from "./MarketStrip";
+import { TodayStrip } from "./TodayStrip";
 import { SymbolSearch } from "./SymbolSearch";
 import { WatchlistPanel } from "./WatchlistPanel";
 import { useIntradaySeries } from "@/hooks/useIntradaySeries";
@@ -319,7 +320,7 @@ function Greeting({ status }: { status: MarketStatus | null }) {
   return (
     <div className="flex min-h-[52px] flex-wrap items-end justify-between gap-3 px-1">
       <div>
-        <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-accent">Your daily edge</p>
+        <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-accent">Your daily edge</p>
         <h2 className="text-[24px] font-extrabold tracking-[-0.03em] text-slate-900">
           {part ? `${part}, ${USER_NAME}` : USER_NAME}
         </h2>
@@ -354,7 +355,7 @@ function UniversePicker({ value, onChange }: { value: UniverseKey; onChange: (ke
           <option key={item.key} value={item.key}>{item.label}</option>
         ))}
       </select>
-      {size != null && <span className="hidden font-mono text-[10px] opacity-80 xl:inline">{size}</span>}
+      {size != null && <span className="hidden font-mono text-[11px] opacity-80 xl:inline">{size}</span>}
     </label>
   );
 }
@@ -559,7 +560,7 @@ export function Dashboard() {
           </SideGroup>
         </nav>
 
-        <div className="sidenav-footer sidenav-divider flex h-11 shrink-0 items-center gap-2 border-t px-4 text-[10px] font-extrabold uppercase tracking-[0.1em]">
+        <div className="sidenav-footer sidenav-divider flex h-11 shrink-0 items-center gap-2 border-t px-4 text-[11px] font-extrabold uppercase tracking-[0.1em]">
           {sidebarCollapsed ? (
             <button type="button" onClick={() => setSidebarCollapsed(false)} aria-label="Expand sidebar" title="Expand sidebar" className="sidenav-btn mx-auto flex h-7 w-7 items-center justify-center">
               <NavIcon name="chevron-left" size={14} className="rotate-180" />
@@ -583,7 +584,7 @@ export function Dashboard() {
             <SymbolSearch onSelect={openStock} existing={[]} />
           </div>
           <button type="button" onClick={() => setCommandOpen(true)} aria-label="Quick actions" title="Quick actions (Ctrl K)" className="flex h-9 shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-500 transition hover:border-slate-300 hover:text-slate-900">
-            <span className="hidden 2xl:inline">Quick actions</span><kbd className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px]">Ctrl K</kbd>
+            <span className="hidden 2xl:inline">Quick actions</span><kbd className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[11px]">Ctrl K</kbd>
           </button>
           <div className="hidden sm:block"><CopyPageLink /></div>
           <ThemeToggle />
@@ -617,7 +618,7 @@ export function Dashboard() {
                   <SymbolSearch onSelect={openStock} existing={[]} />
                 </div>
                 <div className="p-3">
-                  <div className="px-2 pb-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Navigate</div>
+                  <div className="px-2 pb-2 text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Navigate</div>
                   <div className="grid grid-cols-2 gap-2">
                     {[
                       ["Dashboard", "Market summary and next steps", "today", "◎"],
@@ -649,8 +650,9 @@ export function Dashboard() {
 
       <FyersBanner />
       <MarketStrip />
+      {activeNav === "today" && <TodayStrip />}
 
-      {activeNav !== "metrics" && <section aria-label="Market index snapshot" className="scroll-mt-36 rounded-2xl border border-border bg-surface p-3 shadow-sm sm:p-4">
+      {activeNav !== "metrics" && <section aria-label="Market index snapshot" className="scroll-mt-36">
         <IndexStrip quotes={indices.quotes} lastUpdate={indices.lastUpdate} error={indices.error} />
       </section>}
 

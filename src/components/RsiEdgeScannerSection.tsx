@@ -103,7 +103,7 @@ export function RsiEdgeScannerSection({
             Verify on Chartink ↗
           </a>
         </div>
-        <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold">
+        <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-bold">
           <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-emerald-700">Exact source membership</span>
           <span className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-700">Chartink delayed market data</span>
           <span className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-600">Hidden clauses — no guessed near matches</span>
@@ -148,7 +148,7 @@ export function RsiEdgeScannerSection({
         <div className="max-h-[calc(100vh-260px)] overflow-auto">
           <table className="min-w-[1120px] w-full border-separate border-spacing-0 text-sm">
             <thead className="sticky top-0 z-20">
-              <tr className="bg-[#f7f9fa] text-[10px] uppercase tracking-[0.08em] text-slate-400 shadow-[0_1px_0_#e2e8f0]">
+              <tr className="bg-[#f7f9fa] text-[11px] uppercase tracking-[0.08em] text-slate-400 shadow-[0_1px_0_#e2e8f0]">
                 <th className="sticky left-0 z-30 bg-[#f7f9fa] px-3 py-3 text-center">#</th>
                 <th className="sticky left-[56px] z-30 bg-[#f7f9fa] px-3 py-3 text-left">Instrument</th>
                 <th className="px-3 py-3 text-right">Chartink price / day</th>

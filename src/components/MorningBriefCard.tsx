@@ -118,11 +118,11 @@ export function MorningBriefCard({
 
           <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] ${BIAS_STYLES[brief.bias.key].badge}`}>
+              <span className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.12em] ${BIAS_STYLES[brief.bias.key].badge}`}>
                 <span className={`h-2 w-2 rounded-full ${BIAS_STYLES[brief.bias.key].dot}`} aria-hidden />
                 {brief.bias.label}
               </span>
-              <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Derived opening bias</span>
+              <span className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">Derived opening bias</span>
               {brief.bias.score != null && (
                 <span className={`font-mono text-sm font-black ${moveClass(brief.bias.score)}`}>{signedPercent(brief.bias.score)}</span>
               )}
@@ -152,12 +152,12 @@ export function MorningBriefCard({
             )}
           </div>
 
-          <h4 className="mt-5 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Macro &amp; global cues</h4>
+          <h4 className="mt-5 text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Macro &amp; global cues</h4>
           <p className="mt-1 text-[11px] text-slate-500">Colours show the effect on Indian equities, so a rise in crude, the dollar, yields or VIX reads red.</p>
           <div className="mt-2 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
             {brief.cues.map((section) => (
               <div key={section.title} className="min-w-0 rounded-xl border border-slate-200 p-3">
-                <div className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500" title={section.source}>{section.title}</div>
+                <div className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-500" title={section.source}>{section.title}</div>
                 <ul className="mt-1.5 space-y-1">
                   {section.lines.map((line) => (
                     <li key={line.label} className="flex items-baseline justify-between gap-2 text-xs">
@@ -175,7 +175,7 @@ export function MorningBriefCard({
             ))}
           </div>
 
-          <h4 className="mt-5 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Key levels</h4>
+          <h4 className="mt-5 text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Key levels</h4>
           <p className="mt-1 text-[11px] text-slate-500">
             Classic floor pivots off the previous session&apos;s range. NSE option-chain open interest is not available here, so these are price structure, not OI walls.
           </p>
@@ -188,7 +188,7 @@ export function MorningBriefCard({
                 </div>
                 <div className="mt-1 font-mono text-lg font-black tabular-nums text-slate-900">{whole.format(level.close)}</div>
                 <div className="mt-1 text-[11px] font-bold text-slate-600">{level.zone} zone</div>
-                <dl className="mt-2 grid grid-cols-2 gap-x-2 gap-y-0.5 font-mono text-[10px] text-slate-500">
+                <dl className="mt-2 grid grid-cols-2 gap-x-2 gap-y-0.5 font-mono text-[11px] text-slate-500">
                   <div className="flex justify-between"><dt>R2</dt><dd className="text-emerald-700">{whole.format(level.resistance2)}</dd></div>
                   <div className="flex justify-between"><dt>S2</dt><dd className="text-rose-700">{whole.format(level.support2)}</dd></div>
                   <div className="flex justify-between"><dt>R1</dt><dd className="text-emerald-700">{whole.format(level.resistance1)}</dd></div>
@@ -202,17 +202,17 @@ export function MorningBriefCard({
             )}
           </div>
 
-          <h4 className="mt-5 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">What qualifies today · {horizonLabel}</h4>
+          <h4 className="mt-5 text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">What qualifies today · {horizonLabel}</h4>
           {brief.ideas.length ? (
             <ul className="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-200">
               {brief.ideas.map((idea) => (
                 <li key={idea.symbol} className="flex items-center justify-between gap-3 px-3 py-2">
                   <div className="min-w-0">
                     <StockSymbolButton symbol={idea.symbol} className="font-mono text-xs font-black text-slate-900">{idea.symbol}</StockSymbolButton>
-                    <div className="truncate text-[10px] text-slate-500">{idea.name} · {idea.statusLabel} {idea.rating}%</div>
+                    <div className="truncate text-[11px] text-slate-500">{idea.name} · {idea.statusLabel} {idea.rating}%</div>
                   </div>
                   {idea.entry != null && idea.stop != null && idea.target != null && (
-                    <div className="shrink-0 text-right font-mono text-[10px] leading-4">
+                    <div className="shrink-0 text-right font-mono text-[11px] leading-4">
                       <div className="text-xs font-black text-slate-800">₹{two.format(idea.entry)}</div>
                       <div className="text-rose-700">SL ₹{two.format(idea.stop)}</div>
                       <div className="text-emerald-700">T ₹{two.format(idea.target)}</div>

@@ -27,11 +27,11 @@ function ratingTitle(rating: PriceActionRating): string {
 export function PaRatingPill({ rating }: { rating: PriceActionRating | null | undefined }) {
   if (!rating) return <span className="font-mono text-[11px] text-slate-300">—</span>;
   if (rating.score == null || !rating.grade) {
-    return <span title={rating.label} className="text-[10px] font-bold text-slate-400">{rating.status === "illiquid" ? "Illiquid" : "Not rated"}</span>;
+    return <span title={rating.label} className="text-[11px] font-bold text-slate-400">{rating.status === "illiquid" ? "Illiquid" : "Not rated"}</span>;
   }
   return (
     <span title={ratingTitle(rating)} className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 font-mono text-[11px] font-black tabular-nums ${GRADE_TONE[rating.grade]}`}>
-      {rating.score}<span className="text-[10px] opacity-80">{rating.grade}</span>
+      {rating.score}<span className="text-[11px] opacity-80">{rating.grade}</span>
     </span>
   );
 }
@@ -43,13 +43,13 @@ export function PaRatingCard({ rating }: { rating: PriceActionRating | null | un
     <section className="rounded-2xl border border-slate-200 bg-white p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-emerald-700">Price Action Rating</p>
+          <p className="text-[11px] font-black uppercase tracking-[0.14em] text-emerald-700">Price Action Rating</p>
           <p className="mt-0.5 text-xs text-slate-500">Trend quality from daily candles, 0–100. Not a buy signal.</p>
         </div>
         {rating.score != null && rating.grade ? (
           <div className="text-right">
             <div className="font-mono text-3xl font-black leading-none text-slate-900">{rating.score}</div>
-            <span className={`mt-1 inline-block rounded-md border px-1.5 py-0.5 text-[10px] font-black ${GRADE_TONE[rating.grade]}`}>
+            <span className={`mt-1 inline-block rounded-md border px-1.5 py-0.5 text-[11px] font-black ${GRADE_TONE[rating.grade]}`}>
               {rating.grade} · {rating.label}
             </span>
           </div>
@@ -84,7 +84,7 @@ export function PaRatingCard({ rating }: { rating: PriceActionRating | null | un
           {rating.stats && (
             <>
               <div className="mt-3 border-t border-slate-100 pt-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">52-week range</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-400">52-week range</p>
                 <div className="relative mt-1.5 h-1.5 rounded-full bg-gradient-to-r from-rose-200 via-slate-200 to-emerald-200">
                   <span
                     className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-slate-700 shadow"
@@ -98,7 +98,7 @@ export function PaRatingCard({ rating }: { rating: PriceActionRating | null | un
                 </div>
               </div>
               <ul className="mt-3 space-y-1 border-t border-slate-100 pt-3 text-xs text-slate-600">
-                <p className="mb-1 text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">Why</p>
+                <p className="mb-1 text-[11px] font-black uppercase tracking-[0.12em] text-slate-400">Why</p>
                 {paWhy(rating).map((line) => (
                   <li key={line} className="flex gap-1.5">
                     <span className="text-slate-300" aria-hidden>•</span>

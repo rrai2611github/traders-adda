@@ -47,7 +47,7 @@
   --color-slate-100: #e9eef7;
   --color-slate-200: #d7e0ee;
   --color-slate-300: #b9c6dc;
-  --color-slate-400: #8393b0;
+  --color-slate-400: #66789a;
   --color-slate-500: #5c6e8d;
   --color-slate-600: #445573;
   --color-slate-700: #33435e;
@@ -541,3 +541,18 @@ a {
 .btn-gold:active:not(:disabled) { transform: translateY(1px); }
 .btn-gold:disabled { opacity: 0.55; }
 .btn-gold:focus-visible { outline: 2px solid var(--gold-strong); outline-offset: 2px; }
+
+/* Numbers line up in columns, and keyboard focus is always visible. */
+table, td, th, .font-mono, [class*="tabular"] { font-variant-numeric: tabular-nums; }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible, textarea:focus-visible { outline: 2px solid var(--gold-strong); outline-offset: 2px; }
+
+/* Loading placeholder: a soft shimmer instead of a blank white box (the shimmer stops for people who ask for less motion). */
+.skeleton-card { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 14px; }
+.skeleton-line { display: block; height: 10px; border-radius: 6px; background: linear-gradient(90deg, #e9eef7 0%, #f6f8fc 50%, #e9eef7 100%); background-size: 200% 100%; animation: shimmer 1.4s ease-in-out infinite; }
+[data-theme="dark"] .skeleton-line { background: linear-gradient(90deg, #14223f 0%, #1c2e52 50%, #14223f 100%); background-size: 200% 100%; }
+@media (prefers-reduced-motion: reduce) { .skeleton-line { animation: none; } }
+
+/* Save confirmations sit above the phone tab bar. */
+.toast-stack { position: fixed; left: 50%; bottom: calc(var(--tabbar-h, 0px) + 18px); transform: translateX(-50%); z-index: 70; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; width: max-content; max-width: calc(100vw - 32px); }
+.toast { pointer-events: auto; border-radius: 12px; background: #0f2144; color: #fff; border: 1px solid rgba(240, 193, 75, 0.45); box-shadow: 0 12px 30px rgba(7, 16, 38, 0.35); padding: 10px 14px; font-size: 13px; font-weight: 700; animation: page-enter 200ms ease-out; }
+.toast-ok::before { content: "\2713"; color: #f0c14b; margin-right: 8px; font-weight: 900; }

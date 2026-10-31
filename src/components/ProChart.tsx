@@ -818,7 +818,7 @@ export function ProChart({ candles, levels: levelsProp, symbol, intraday = false
   const smallButton = (on = false) =>
     `rounded-lg border px-2 py-1 text-[11px] font-black transition ${on ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 text-slate-500 hover:text-slate-900"}`;
   const chip = (on: boolean) =>
-    `rounded-full border px-2.5 py-0.5 text-[10.5px] font-bold transition ${on ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-slate-200 text-slate-500 hover:text-slate-800"}`;
+    `rounded-full border px-2.5 py-0.5 text-[11.5px] font-bold transition ${on ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-slate-200 text-slate-500 hover:text-slate-800"}`;
   const toolHint = tool === "trend" ? (pending ? "Click the second point" : "Click the first point of the trend line") : tool === "hline" ? "Click a price for the horizontal line" : null;
   const tfShort = tfShortOf(tf);
   const barTone = active.close >= active.open ? "text-[#089981]" : "text-[#f23645]";
@@ -906,7 +906,7 @@ export function ProChart({ candles, levels: levelsProp, symbol, intraday = false
 
       {showKeys && (
         <div className="mb-2 grid gap-x-6 gap-y-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600 sm:grid-cols-2">
-          <div className="col-span-full text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Shortcuts · click the chart first</div>
+          <div className="col-span-full text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Shortcuts · click the chart first</div>
           {SHORTCUTS.map(([keys, action]) => (
             <div key={keys} className="flex justify-between gap-3"><kbd className="font-mono font-bold text-slate-800">{keys}</kbd><span>{action}</span></div>
           ))}
@@ -914,13 +914,13 @@ export function ProChart({ candles, levels: levelsProp, symbol, intraday = false
       )}
 
       <div className="mb-2 flex flex-wrap items-center gap-1.5" role="group" aria-label="Indicators">
-        <span className="text-[9px] font-black uppercase tracking-[0.14em] text-slate-400">Overlays</span>
+        <span className="text-[10.5px] font-black uppercase tracking-[0.14em] text-slate-400">Overlays</span>
         {OVERLAYS.map((t) => (
           <button key={t.key} type="button" title={t.hint} onClick={() => toggle(t.key)} aria-pressed={settings.on[t.key]} className={chip(settings.on[t.key])}>
             {settings.on[t.key] ? "✓ " : ""}{t.label}
           </button>
         ))}
-        <span className="ml-2 text-[9px] font-black uppercase tracking-[0.14em] text-slate-400">Panes</span>
+        <span className="ml-2 text-[10.5px] font-black uppercase tracking-[0.14em] text-slate-400">Panes</span>
         {PANES.map((t) => (
           <button key={t.key} type="button" title={t.hint} onClick={() => toggle(t.key)} aria-pressed={settings.on[t.key]} className={chip(settings.on[t.key])}>
             {settings.on[t.key] ? "✓ " : ""}{t.label}
@@ -1040,7 +1040,7 @@ export function ProChart({ candles, levels: levelsProp, symbol, intraday = false
         })}
       </div>
 
-      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-bold text-slate-500">
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-bold text-slate-500">
         {settings.on.pivots && pivots && <Legend color={COLORS.pivot} label={`Pivots from ${pivots.label}`} dashed />}
         {levels.map((level) => <Legend key={level.label} color={level.color} label={level.label} dashed />)}
         {settings.on.levels && sr.length > 0 && (
@@ -1099,7 +1099,7 @@ function ParamsDialog({ group, params, onClose, onSave }: { group: ParamGroup; p
           <span className="text-sm font-black text-slate-800">{GROUP_TITLES[group]}</span>
           <button type="button" onClick={onClose} aria-label="Close" className="text-slate-400 hover:text-slate-800">✕</button>
         </div>
-        <div className="px-4 pt-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Inputs</div>
+        <div className="px-4 pt-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Inputs</div>
         <div className="space-y-2 px-4 py-2">
           {keys.map((k, n) => {
             const d = PARAM_DEFS[k];
@@ -1159,7 +1159,7 @@ function ArbmPanel({ map, bars, timeframe }: { map: ArbmMap; bars: Candle[]; tim
   const lastTrade = map.trades[map.trades.length - 1] ?? null;
   const { indicator, real } = map.stats;
   const card = "rounded-xl border border-slate-200 bg-slate-50 px-3 py-2";
-  const head = "text-[9px] font-black uppercase tracking-[0.14em] text-slate-400";
+  const head = "text-[10.5px] font-black uppercase tracking-[0.14em] text-slate-400";
   const row = "flex justify-between gap-3";
   const signed = (v: number, d = 2) => `${v >= 0 ? "+" : ""}${v.toFixed(d)}`;
   const tone = (v: number) => (v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-700" : "text-slate-700");
@@ -1216,7 +1216,7 @@ function ArbmPanel({ map, bars, timeframe }: { map: ArbmMap; bars: Candle[]; tim
           <div className={row}><span>Win rate</span><b className={indicator.winRate >= 50 ? "text-emerald-700" : "text-rose-700"}>{indicator.winRate.toFixed(1)}%</b></div>
           <div className={row}><span>Trade Sharpe</span><b className="text-slate-800">{indicator.sharpe.toFixed(2)}</b></div>
         </div>
-        <div className="mt-1 text-[10px] text-slate-400">Counts &quot;TP1 hit, then out at entry&quot; as a win.</div>
+        <div className="mt-1 text-[11px] text-slate-400">Counts &quot;TP1 hit, then out at entry&quot; as a win.</div>
       </div>
 
       <div className={card}>
@@ -1227,7 +1227,7 @@ function ArbmPanel({ map, bars, timeframe }: { map: ArbmMap; bars: Candle[]; tim
           <div className={row}><span>Avg per trade</span><b className={tone(real.avgReturnPct)}>{signed(real.avgReturnPct)}%</b></div>
           <div className={row}><span>Avg R</span><b className={tone(real.avgR)}>{signed(real.avgR)}R</b></div>
         </div>
-        <div className="mt-1 text-[10px] text-slate-400">Before costs. Across NSE (2022–26) it lost −0.09R a trade with a ~16% median stop.</div>
+        <div className="mt-1 text-[11px] text-slate-400">Before costs. Across NSE (2022–26) it lost −0.09R a trade with a ~16% median stop.</div>
       </div>
     </div>
   );

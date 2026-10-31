@@ -29,7 +29,7 @@ export function CompanyHealthTag({ symbol, sector }: { symbol: string; sector?: 
   const state = useFundamentals(symbol, sector);
   if (state.phase !== "done" || state.report.verdict === "unknown") return null;
   const tag = TAG[state.report.verdict];
-  return <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ring-1 ${tag.cls}`} title={`${state.report.headline} Open the stock for the details. Information only: it does not change the pick.`}>{tag.label}</span>;
+  return <span className={`rounded px-1.5 py-0.5 text-[11px] font-bold ring-1 ${tag.cls}`} title={`${state.report.headline} Open the stock for the details. Information only: it does not change the pick.`}>{tag.label}</span>;
 }
 
 /** Company health beside the chart: a good chart on a shaky company is a riskier trade. Information only; the picks and the risk check ignore it. */
@@ -49,12 +49,12 @@ export function FundamentalsPanel({ symbol, sector }: { symbol: string; sector?:
           <ul className="space-y-1.5">
             {state.report.checks.map((c) => (
               <li key={c.key} className="flex items-start gap-2 text-[12px] leading-5 text-slate-700">
-                <span className={`mt-0.5 w-[68px] shrink-0 rounded px-1.5 py-0.5 text-center text-[10px] font-black ${CHIP[c.tone].cls}`}>{CHIP[c.tone].label}</span>
+                <span className={`mt-0.5 w-[68px] shrink-0 rounded px-1.5 py-0.5 text-center text-[11px] font-black ${CHIP[c.tone].cls}`}>{CHIP[c.tone].label}</span>
                 <span className="min-w-0"><b className="text-slate-900">{c.label}.</b> {c.detail}</span>
               </li>
             ))}
           </ul>
-          <p className="text-[10.5px] text-slate-400">Sales and profit: Yahoo Finance. Owners and pledges: NSE filings. Figures are for the company as a whole, not per share.</p>
+          <p className="text-[11.5px] text-slate-400">Sales and profit: Yahoo Finance. Owners and pledges: NSE filings. Figures are for the company as a whole, not per share.</p>
         </div>
       )}
     </section>
