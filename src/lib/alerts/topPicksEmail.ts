@@ -46,6 +46,9 @@ const CAVEAT = "The tested rule: buy a Blue sky or Multi-year breakout on the da
 const NEWS_COLOR = { clear: "#475569", watch: "#b45309", caution: "#b42318" } as const;
 const NEWS_NOTE = "News check: an AI-written one-line summary of each stock's NSE announcements from the last 14 days. It can miss or misread a filing, so open the announcements before you trade.";
 
+/** Cards shown on a day real buys are blocked; the rest are listed by name. */
+const PAPER_DAY_CARDS = 3;
+
 const buyable = (p: TopPickEmailItem) => p.tag === "ready" || p.tag === "broke";
 const cell = (label: string, value: string, sub: string | null, color: string) => `<td width="33%" valign="top" style="padding-right:4px"><div style="font:700 9px ${FONT};letter-spacing:0.6px;text-transform:uppercase;color:#64748b">${label}</div><div style="font:800 14px/1.25 ${FONT};color:${color}">${value}</div>${sub ? `<div style="font:600 10px ${FONT};color:#64748b">${sub}</div>` : ""}</td>`;
 
@@ -71,6 +74,49 @@ function compactCard(p: TopPickEmailItem, index: number): string {
 
 const waitText = (p: TopPickEmailItem) => `${p.symbol} (RS ${Math.round(p.rs)}): ${p.analysis.flags.length ? p.analysis.flags.join(", ") : "not buyable yet"}`;
 
+/** What today is for, in one decision the email can lead with (and put in its subject). */
+export interface EmailDecision {
+  kind: "buy" | "paper" | "none";
+  /** The bold sentence at the top of the email. */
+  headline: string;
+  /** A few words for the subject line. */
+  subjectBit: string;
+}
+
+export function emailDecision(input: TopPicksEmailInput): EmailDecision {
+  const candidates = input.picks.filter(buyable);
+  const names = candidates.slice(0, 4).map((p) => p.symbol).join(", ");
+  const more = candidates.length > 4 ? ` and ${candidates.length - 4} more` : "";
+  const gate = setupStatus(input.breadth50, input.nifty ?? null);
+  if (!candidates.length) {
+    return { kind: "none", headline: "No new buys today: no stock is at a breakout level right now.", subjectBit: "No new buys today" };
+  }
+  if (!gate.allowed) {
+    return {
+      kind: "paper",
+      headline: `Do not buy today. Market check not passed: ${gate.reason}. Watch only: ${names}${more}.`,
+      subjectBit: "No new buys (market weak)",
+    };
+  }
+  return {
+    kind: "buy",
+    headline: `Buy candidates today: ${names}${more}. Market check passed: ${gate.reason}.`,
+    subjectBit: `Buy candidates: ${candidates.slice(0, 3).map((p) => p.symbol).join(", ")}`,
+  };
+}
+
+const DECISION_COLORS = {
+  buy: ["#f0fdf4", "#86efac", "#14532d", "#16a34a"],
+  paper: ["#fef2f2", "#fecaca", "#7f1d1d", "#ef4444"],
+  none: ["#fffbeb", "#fde68a", "#713f12", "#f59e0b"],
+} as const;
+
+/** The bold bar at the top of an email: one label, one sentence, coloured by what to do. */
+export function decisionBarHtml(decision: EmailDecision): string {
+  const [bg, border, color, bar] = DECISION_COLORS[decision.kind];
+  return `<div style="background:${bg};border:1px solid ${border};border-left:5px solid ${bar};border-radius:10px;padding:10px 14px"><div style="font:800 10px ${FONT};letter-spacing:1px;text-transform:uppercase;color:${color};opacity:0.8">Today's action</div><div style="font:800 15px/1.4 ${FONT};color:${color};padding-top:2px">${esc(decision.headline)}</div></div>`;
+}
+
 /** The one line that tells you what today is for. */
 export function todayLine(input: TopPicksEmailInput): string {
   const candidates = input.picks.filter(buyable);
@@ -88,15 +134,21 @@ export function topPicksBlock(input: TopPicksEmailInput): { html: string; text: 
   const note = noteLine(`<b>${esc(todayLine(input))}</b>`, bg, border, color);
   const buy = input.picks.filter(buyable);
   const waits = input.picks.filter((p) => !buyable(p));
-  const cards = buy.length ? buy.map((p, i) => compactCard(p, i + 1)).join("") : "";
+  const blocked = !setupStatus(input.breadth50, input.nifty ?? null).allowed;
+  // On a day real buys are blocked every card says "paper trade", so show the first few and list the rest by name.
+  const shown = blocked ? buy.slice(0, PAPER_DAY_CARDS) : buy;
+  const rest = buy.slice(shown.length);
+  const restText = rest.length ? `Also on the list (paper only): ${rest.map((p) => `${p.symbol} (RS ${Math.round(p.rs)})`).join(", ")}.` : "";
+  const cards = shown.length ? shown.map((p, i) => compactCard(p, i + 1)).join("") : "";
+  const restHtml = restText ? `<div style="font:400 12px/1.5 ${FONT};color:#475569;padding:2px 0 6px">${esc(restText)}</div>` : "";
   const waitHtml = waits.length
     ? `<div style="font:400 12px/1.5 ${FONT};color:#475569;padding:2px 0 4px"><b>Strong, but wait:</b> ${esc(waits.map(waitText).join(" · "))}</div>`
     : "";
   const hasNews = input.picks.some((p) => p.news);
-  const html = `${note}${spacer(8)}${cards}${waitHtml}${spacer(2)}<div style="font:400 11px/1.5 ${FONT};color:#64748b">${esc(CAVEAT)}${hasNews ? ` ${esc(NEWS_NOTE)}` : ""}</div>`;
+  const html = `${note}${spacer(8)}${cards}${restHtml}${waitHtml}${spacer(2)}<div style="font:400 11px/1.5 ${FONT};color:#64748b">${esc(CAVEAT)}${hasNews ? ` ${esc(NEWS_NOTE)}` : ""}</div>`;
   const text = [
     todayLine(input),
-    ...buy.map((p, i) => {
+    ...shown.map((p, i) => {
       const a = p.analysis;
       const levels = a.plan ? `buy ${px(a.plan.buy)} · stop ${px(a.plan.stop)} (−${a.plan.stopPercent}%)` : `last ${px(p.price)}`;
       const position = p.ext == null ? "" : ` · ${Math.abs(p.ext).toFixed(1)}% ${p.ext <= 0 ? "under" : "past"} its level`;
@@ -104,6 +156,7 @@ export function topPicksBlock(input: TopPicksEmailInput): { html: string; text: 
       const target = a.plan?.targets ? ` · target ${px(a.plan.targets.t1)} (+${a.plan.targets.t1Percent}%) / ${px(a.plan.targets.t2)} (+${a.plan.targets.t2Percent}%)` : "";
       return `${i + 1}. ${p.symbol} · ${a.status.toUpperCase()} · RS ${Math.round(p.rs)} · ${levels}${target}${position}${notes ? ` · ${notes}` : ""}${p.news ? ` · NEWS CHECK (${p.news.flag}): ${p.news.note}` : ""}`;
     }),
+    ...(restText ? [restText] : []),
     ...(waits.length ? [`Strong, but wait: ${waits.map(waitText).join(" · ")}`] : []),
     CAVEAT,
     ...(hasNews ? [NEWS_NOTE] : []),

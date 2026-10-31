@@ -401,3 +401,14 @@
 {"ts":"2026-10-31T16:45:40Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
 {"ts":"2026-10-31T16:45:41Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
 {"ts":"2026-10-31T16:45:42Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T17:11:30Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T17:11:32Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T17:11:33Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T17:11:35Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T17:11:36Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T17:11:38Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T17:11:39Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T17:11:40Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T17:17:53Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T17:17:54Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T17:19:35Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}

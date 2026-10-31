@@ -11,7 +11,7 @@ import type { SectorHeatLine } from "../screen/sectorHeatmap.ts";
 import type { BottomedOutPick } from "../screen/bottomedOut.ts";
 import { entryNoteHtml, entryNoteSuffix } from "./entryState.ts";
 import type { ConfluenceIdea } from "./hourlyConfluence.ts";
-import { topPicksBlock, type TopPicksEmailInput } from "./topPicksEmail.ts";
+import { decisionBarHtml, emailDecision, topPicksBlock, type TopPicksEmailInput } from "./topPicksEmail.ts";
 
 
 const SESSION_START_MINUTES = 9 * 60 + 15;
@@ -136,6 +136,7 @@ export function buildHourlyEmail(
   const indexSection = indexes ? buildIndexEmailSection(indexes, generatedAt) : null;
   // The tested setup (Blue sky + Multi-year breakouts, same list as the dashboard's Top picks), with what is new since the last email.
   const setupBlock = setup ? topPicksBlock(setup) : null;
+  const decision = setup ? emailDecision(setup) : null;
   const setupNow = (setup?.picks ?? []).filter((p) => p.tag === "ready" || p.tag === "broke").map((p) => p.symbol);
   /** One plan per stock: a stock already in Top picks is not given a second, different buy and stop further down. */
   const topSet = new Set(setupNow);
@@ -271,6 +272,7 @@ ${BRAND_STYLE}</head>
       { label: "Watch changes", value: String(watchChanges), color: "#93c5fd" },
     ],
   })}
+${decision ? `${spacer(10)}${block(decisionBarHtml(decision))}${spacer(4)}` : ""}
 ${indexSection ? `${heading("↔", "Hourly index analysis", "Latest available · provisional")}${block(indexSection.html)}` : ""}
 ${setupBlock ? `
   ${heading("✓", "Tested setup — Top picks now", `${setupNow.length} to watch or buy`, "green")}
@@ -312,6 +314,7 @@ ${changed ? "" : `
   const text = [
     `${table.brand} · Hourly update — full lists, status ${since}`,
     `${time} IST · Breadth ${table.breadth ?? "—"}%`,
+    ...(decision ? [`TODAY'S ACTION: ${decision.headline}`] : []),
     sessionNote,
     priceSourceText,
     `${SWING_LABEL}s, not intraday: ${SWING_HOLDING}`,

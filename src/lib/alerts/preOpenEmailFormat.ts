@@ -11,7 +11,7 @@ import { buildMarketOutlook, type MarketOutlook } from "../screen/marketOutlook.
 import { buildIndexEmailSection, shortLeadership, shortVix } from "./indexEmailFormat.ts";
 import { blockRow, blueHeading, esc, grid2, pill } from "./modernCards.ts";
 import { entryNoteHtml, entryNoteSuffix } from "./entryState.ts";
-import { topPicksBlock, type TopPicksEmailInput } from "./topPicksEmail.ts";
+import { decisionBarHtml, emailDecision, topPicksBlock, type TopPicksEmailInput } from "./topPicksEmail.ts";
 import { weeklyTop5Block, type Top5EmailInput } from "./weeklyTop5Email.ts";
 import { LABEL_STYLE, cueCards, indexOutlookTable, outlookHero, slimCard, type IndexRef } from "./preOpenSections.ts";
 import {
@@ -104,11 +104,15 @@ export function buildPreOpenEmail(
     ? `${rows.length} swing Buy ready`
     : `no Buy ready stocks${watchRows.length ? ` · ${watchRows.length} on watch` : ""}`;
   const giftBit = o.gift ? ` · GIFT ${signed(o.gift.gapPercent)}%` : "";
-  const subject = `Traders Adda pre-open · ${o.label} outlook${giftBit} · ${brief.bias.label}${biasPercent} · ${pickCount}${
-    highBreakouts && highBreakoutsVisible(table.breadth) && highBreakouts.breakouts.length
-      ? ` · ${highBreakouts.breakouts.length} 52W breakout${highBreakouts.breakouts.length === 1 ? "" : "s"}`
-      : ""
-  } · ${brief.sessionLabel}`;
+  // The decision leads: a phone shows only the first words of a subject, so those words are what to do today.
+  const decision = topPicks ? emailDecision(topPicks) : null;
+  const subject = decision
+    ? `Traders Adda · ${decision.subjectBit} · pre-open ${o.label.toLowerCase()} outlook${giftBit} · ${brief.sessionLabel}`
+    : `Traders Adda pre-open · ${o.label} outlook${giftBit} · ${brief.bias.label}${biasPercent} · ${pickCount}${
+      highBreakouts && highBreakoutsVisible(table.breadth) && highBreakouts.breakouts.length
+        ? ` · ${highBreakouts.breakouts.length} 52W breakout${highBreakouts.breakouts.length === 1 ? "" : "s"}`
+        : ""
+    } · ${brief.sessionLabel}`;
 
   const indexContext = brief.indexContext;
   const indexSection = indexContext ? buildIndexEmailSection({ context: indexContext }, generatedAt) : null;
@@ -247,6 +251,9 @@ ${BRAND_STYLE}
 
   ${headerHtml}
 
+${decision ? `  ${spacer(10)}
+  ${block(decisionBarHtml(decision))}
+  ${spacer(10)}` : ""}
   <tr><td class="pad" style="background:#f0fdf4;border-bottom:1px solid #bbf7d0;padding:6px 22px;font:400 11px/1.5 ${FONT};color:#14532d">
     <b>✓ Levels and ideas are final</b> — from the ${esc(brief.sessionLabel)} close.${regimeLine ? ` <span style="color:#3f6212">${esc(regimeLine)}</span>` : ""}${priceNote ? ` <span style="color:#3f6212">${esc(priceNote)}</span>` : ""}
   </td></tr>
@@ -321,6 +328,7 @@ ${hbSection ? `
   const text = [
     `${table.brand} · Pre-open brief · ${time} IST`,
     regimeLine,
+    ...(decision ? [`TODAY'S ACTION: ${decision.headline}`, ""] : []),
     `Levels and ideas are final — from the completed session on ${brief.sessionLabel}.${priceNote ? ` ${priceNote}` : ""}`,
     "",
     ...(briefing && briefing.lines.length ? ["TODAY AT A GLANCE" + (briefing.ai ? " (written by AI from the facts in this email)" : ""), ...briefing.lines.map((l) => `- ${l}`), ""] : []),
