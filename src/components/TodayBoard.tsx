@@ -11,6 +11,7 @@ import { formatPercent, formatPrice } from "@/lib/format";
 import { OVERBOUGHT_PERCENT, OVERSOLD_PERCENT } from "@/lib/screen/breadthHistory";
 import type { SectorSummary } from "@/lib/screen/commandCenter";
 import { READY_RULES } from "@/lib/screen/readyToRun";
+import { topMovers } from "@/lib/screen/movers";
 import { analysePick, type PickVerdict } from "@/lib/screen/pickAnalysis";
 import { setupStatus } from "@/lib/screen/setupGate";
 import { STAT_TITLES, statItems, type StatItem, type StatKey } from "@/lib/screen/statLists";
@@ -431,19 +432,27 @@ function SectorCard({ sectors, onAll }: { sectors: ReadonlyArray<SectorSummary>;
 
 /* ---------- what changed ---------- */
 
-function ChangesCard({ breakouts, failed, onAll }: { breakouts: ReadonlyArray<FeedEvent>; failed: ReadonlyArray<FeedEvent>; onAll: () => void }) {
-  const list = (events: ReadonlyArray<FeedEvent>, tone: string, empty: string) => events.length === 0 ? <li className="text-[11px] text-slate-400">{empty}</li> : events.slice(0, 4).map((e) => (
-    <li key={`${e.type}-${e.symbol}`} className="flex items-baseline justify-between gap-2 text-xs">
-      <StockSymbolButton symbol={e.symbol} className="font-bold text-slate-800">{e.symbol}</StockSymbolButton>
-      <span className={`font-mono text-[11px] ${tone}`}>₹{formatPrice(e.price)}</span>
+function MoversCard({ rows }: { rows: ReadonlyArray<ScanRow> }) {
+  const { gainers, losers } = useMemo(() => topMovers(rows, 5), [rows]);
+  const list = (stocks: ReadonlyArray<ScanRow>, tone: string) => stocks.length === 0 ? <li className="text-[11px] text-slate-400">None right now.</li> : stocks.map((s) => (
+    <li key={s.symbol} className="flex items-baseline justify-between gap-2 text-xs">
+      <StockSymbolButton symbol={s.symbol} className="min-w-0 truncate font-bold text-slate-800">{s.symbol}</StockSymbolButton>
+      <span className="flex shrink-0 items-baseline gap-2">
+        <span className="font-mono text-[11px] tabular-nums text-slate-500">₹{formatPrice(s.price)}</span>
+        <span className={`w-14 text-right font-mono text-[11.5px] font-black tabular-nums ${tone}`}>{formatPercent(s.changePercent)}</span>
+      </span>
     </li>
   ));
   return (
-    <Card title="What changed" hint="Base breakouts, latest session" action={<button type="button" onClick={onAll} className="whitespace-nowrap text-xs font-bold text-emerald-700 hover:underline">Record →</button>}>
-      <div className="mb-1 flex justify-between text-[11px] font-black uppercase tracking-wide text-slate-400"><span>New breakouts</span><span className="text-emerald-700">{breakouts.length}</span></div>
-      <ul className="space-y-1.5">{list(breakouts, "text-emerald-700", "None this session.")}</ul>
-      <div className="mb-1 mt-3 flex justify-between border-t border-slate-100 pt-2 text-[11px] font-black uppercase tracking-wide text-slate-400"><span>Failed</span><span className="text-rose-700">{failed.length}</span></div>
-      <ul className="space-y-1.5">{list(failed, "text-rose-700", "None this session.")}</ul>
+    <Card title="Top movers" hint="Biggest gainers and losers since yesterday's close, among stocks that trade enough to matter">
+      {rows.length === 0 ? <div className="skeleton h-40 rounded-xl" /> : (
+        <>
+          <div className="mb-1 flex justify-between text-[11px] font-black uppercase tracking-wide text-slate-400"><span>Top gainers</span><span className="text-emerald-700">{gainers.length ? "up today" : ""}</span></div>
+          <ul className="space-y-1.5">{list(gainers, "text-emerald-700")}</ul>
+          <div className="mb-1 mt-3 flex justify-between border-t border-slate-100 pt-2 text-[11px] font-black uppercase tracking-wide text-slate-400"><span>Top losers</span><span className="text-rose-700">{losers.length ? "down today" : ""}</span></div>
+          <ul className="space-y-1.5">{list(losers, "text-rose-700")}</ul>
+        </>
+      )}
     </Card>
   );
 }
@@ -534,7 +543,7 @@ export function TodayBoard({ rows, sectors, advancing, declining, breakouts, fai
       <TopPicksSection rows={rows} onAll={() => onNavigate("picks")} />
       <div className="grid gap-4 lg:grid-cols-4">
         <SectorCard sectors={sectors} onAll={() => onNavigate("sectors")} />
-        <ChangesCard breakouts={breakouts} failed={failed} onAll={() => onNavigate("breakouts")} />
+        <MoversCard rows={rows} />
         <PaperCard onOpen={() => onNavigate("journal")} />
       </div>
     </div>
