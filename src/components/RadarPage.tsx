@@ -10,6 +10,7 @@ import type { RadarView } from "@/lib/radar/radarServer";
 const px = (v: number) => v.toLocaleString("en-IN", { maximumFractionDigits: 2 });
 const signed = (v: number | null, suffix = "%") => (v == null ? "—" : `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(suffix === "R" ? 2 : 1)}${suffix}`);
 const tone = (v: number | null) => (v == null || v === 0 ? "text-slate-500" : v > 0 ? "text-emerald-700" : "text-rose-700");
+const whenLabel = (at: number) => new Date(at).toLocaleString("en-IN", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
 const dayLabel = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" });
 
 const STATE: Record<ScoreState, { label: string; chip: string }> = {
@@ -97,13 +98,18 @@ export function RadarPage() {
         </p>
       </header>
 
+      {view?.lastRecorded && (
+        <p className="text-[11.5px] text-slate-500">
+          Last email recorded: <strong className="text-slate-700">{whenLabel(view.lastRecorded.at)} IST</strong> ({view.lastRecorded.email === "pre-open" ? "pre-open" : "hourly"}) · {view.lastRecorded.listed} stocks listed, {view.lastRecorded.added} new to the record.
+        </p>
+      )}
       {failed && !view && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[12.5px] text-rose-800">Could not load the track record. The page will try again.</p>}
       {!view && !failed && <p className="text-[12.5px] text-slate-500">Loading…</p>}
 
       {view && view.total === 0 && (
         <section className="rounded-2xl border border-slate-200 bg-white p-5 text-[13px] text-slate-700">
           <h2 className="font-extrabold text-slate-900">Nothing recorded yet</h2>
-          <p className="mt-1">The record starts with the next pre-open or hourly email that really goes out (test emails are not recorded). Check back after that, and again after a few trading days: a stock needs at least one finished session before it can be scored.</p>
+          <p className="mt-1">The record starts with the next pre-open or hourly email that really goes out (test emails are not recorded). Once it has gone out, this page shows when it was recorded. Check back again after a few trading days: a stock needs at least one finished session before it can be scored.</p>
         </section>
       )}
 

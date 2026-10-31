@@ -17,6 +17,18 @@ const MAX_ROWS = 600;
 
 const sectorOf = (symbol: string): string | null => (sectorData.sectors as Record<string, string>)[symbol] ?? null;
 
+/** The last email that was recorded, so the page can show that recording is working. */
+export interface LastRecorded { at: number; email: EmailKind; listed: number; added: number }
+
+function readMeta(): LastRecorded | null {
+  try {
+    const parsed = JSON.parse(readFileSync(FILE, "utf8")) as { last?: LastRecorded };
+    return parsed.last && Number.isFinite(parsed.last.at) ? parsed.last : null;
+  } catch {
+    return null;
+  }
+}
+
 function readAll(): RadarEntry[] {
   try {
     const parsed = JSON.parse(readFileSync(FILE, "utf8")) as { entries?: RadarEntry[] };
@@ -27,10 +39,10 @@ function readAll(): RadarEntry[] {
 }
 
 /** Written to a temporary file first, so a crash cannot leave half a file behind; one backup copy a day, the newest 30 kept. */
-function writeAll(entries: RadarEntry[], day: string) {
+function writeAll(entries: RadarEntry[], day: string, last: LastRecorded) {
   mkdirSync(DIR, { recursive: true });
   const tmp = `${FILE}.tmp`;
-  writeFileSync(tmp, JSON.stringify({ version: 1, entries }, null, 1));
+  writeFileSync(tmp, JSON.stringify({ version: 1, last, entries }, null, 1));
   renameSync(tmp, FILE);
   try {
     mkdirSync(BACKUPS, { recursive: true });
@@ -78,8 +90,9 @@ export function mentionsFromEmail(table: AlertTable, topPicks: ReadonlyArray<Top
 export function recordEmailedStocks(email: EmailKind, table: AlertTable, topPicks: ReadonlyArray<TopPickEmailItem> | null, top5: ReadonlyArray<Top5Pick> | null, now = Date.now()): number {
   try {
     const day = istDateKey(now);
-    const { entries, added } = recordMentions(readAll(), mentionsFromEmail(table, topPicks, top5), { day, at: now, email, breadth50: num(table.breadth) });
-    writeAll(entries, day);
+    const mentions = mentionsFromEmail(table, topPicks, top5);
+    const { entries, added } = recordMentions(readAll(), mentions, { day, at: now, email, breadth50: num(table.breadth) });
+    writeAll(entries, day, { at: now, email, listed: mentions.length, added });
     return added;
   } catch (error) {
     console.error("[radar] could not record the emailed stocks:", error instanceof Error ? error.message : error);
@@ -102,6 +115,8 @@ export interface RadarView {
   /** Latest trading day in the price files. */
   lastDay: string | null;
   total: number;
+  /** The most recent email that was recorded; null before the first one. */
+  lastRecorded: LastRecorded | null;
   firstDay: string | null;
   rows: RadarRow[];
   overall: GroupSummary | null;
@@ -126,6 +141,7 @@ export function radarView(): RadarView {
   return {
     lastDay: historyLastDay(),
     total: entries.length,
+    lastRecorded: readMeta(),
     firstDay: entries.length ? entries.reduce((min, e) => (e.firstDay < min ? e.firstDay : min), entries[0].firstDay) : null,
     rows: sorted,
     overall: everything,
