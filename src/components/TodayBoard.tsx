@@ -434,24 +434,40 @@ function SectorCard({ sectors, onAll }: { sectors: ReadonlyArray<SectorSummary>;
 
 function MoversCard({ rows }: { rows: ReadonlyArray<ScanRow> }) {
   const { gainers, losers } = useMemo(() => topMovers(rows, 5), [rows]);
-  const list = (stocks: ReadonlyArray<ScanRow>, tone: string) => stocks.length === 0 ? <li className="text-[11px] text-slate-400">None right now.</li> : stocks.map((s) => (
-    <li key={s.symbol} className="flex items-baseline justify-between gap-2 text-xs">
-      <StockSymbolButton symbol={s.symbol} className="min-w-0 truncate font-bold text-slate-800">{s.symbol}</StockSymbolButton>
-      <span className="flex shrink-0 items-baseline gap-2">
-        <span className="font-mono text-[11px] tabular-nums text-slate-500">₹{formatPrice(s.price)}</span>
-        <span className={`w-14 text-right font-mono text-[11.5px] font-black tabular-nums ${tone}`}>{formatPercent(s.changePercent)}</span>
-      </span>
-    </li>
-  ));
+  // One shared bar scale so a +20% bar is visibly longer than a +9% bar, on either side.
+  const scale = Math.max(1, ...gainers.map((s) => s.changePercent), ...losers.map((s) => Math.abs(s.changePercent)));
+  const column = (title: string, up: boolean, stocks: ReadonlyArray<ScanRow>) => (
+    <div className="min-w-0">
+      <div className={`mb-2 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.1em] ${up ? "text-emerald-700" : "text-rose-700"}`}>
+        <span aria-hidden>{up ? "▲" : "▼"}</span>{title}
+      </div>
+      {stocks.length === 0 ? <p className="rounded-xl bg-slate-50 px-3 py-4 text-center text-xs text-slate-500">None right now.</p> : (
+        <ul className="space-y-1">
+          {stocks.map((s) => (
+            <li key={s.symbol} className="rounded-xl px-2 py-1.5 transition hover:bg-slate-50">
+              <div className="flex items-baseline justify-between gap-3">
+                <StockSymbolButton symbol={s.symbol} className="min-w-0 truncate text-[13px] font-bold text-slate-900">{s.symbol}</StockSymbolButton>
+                <span className="flex shrink-0 items-baseline gap-3">
+                  <span className="font-mono text-xs tabular-nums text-slate-500">₹{formatPrice(s.price)}</span>
+                  <span className={`rounded-md px-1.5 py-0.5 text-right font-mono text-xs font-black tabular-nums ${up ? "bg-emerald-50 text-emerald-800" : "bg-rose-50 text-rose-800"}`}>{formatPercent(s.changePercent)}</span>
+                </span>
+              </div>
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                <div className={`h-full rounded-full ${up ? "bg-gradient-to-r from-emerald-400 to-emerald-600" : "bg-gradient-to-r from-rose-400 to-rose-600"}`} style={{ width: `${Math.max(4, (Math.abs(s.changePercent) / scale) * 100)}%` }} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
   return (
-    <Card title="Top movers" hint="Biggest gainers and losers since yesterday's close, among stocks that trade enough to matter">
+    <Card title="Top movers" hint="Biggest moves since yesterday's close, among the stocks that trade enough to matter. Tap a name for its chart.">
       {rows.length === 0 ? <div className="skeleton h-40 rounded-xl" /> : (
-        <>
-          <div className="mb-1 flex justify-between text-[11px] font-black uppercase tracking-wide text-slate-400"><span>Top gainers</span><span className="text-emerald-700">{gainers.length ? "up today" : ""}</span></div>
-          <ul className="space-y-1.5">{list(gainers, "text-emerald-700")}</ul>
-          <div className="mb-1 mt-3 flex justify-between border-t border-slate-100 pt-2 text-[11px] font-black uppercase tracking-wide text-slate-400"><span>Top losers</span><span className="text-rose-700">{losers.length ? "down today" : ""}</span></div>
-          <ul className="space-y-1.5">{list(losers, "text-rose-700")}</ul>
-        </>
+        <div className="grid gap-x-8 gap-y-5 md:grid-cols-2">
+          {column("Top gainers", true, gainers)}
+          {column("Top losers", false, losers)}
+        </div>
       )}
     </Card>
   );
@@ -541,9 +557,9 @@ export function TodayBoard({ rows, sectors, advancing, declining, breakouts, fai
       </div>
       {openStat && <StatList key={openStat} statKey={openStat} items={statLists[openStat]} outOf={openStat === "above200" ? rows.filter((r) => r.vs200 != null).length : undefined} onClose={() => setOpenStat(null)} />}
       <TopPicksSection rows={rows} onAll={() => onNavigate("picks")} />
-      <div className="grid gap-4 lg:grid-cols-4">
+      <MoversCard rows={rows} />
+      <div className="grid gap-4 lg:grid-cols-3">
         <SectorCard sectors={sectors} onAll={() => onNavigate("sectors")} />
-        <MoversCard rows={rows} />
         <PaperCard onOpen={() => onNavigate("journal")} />
       </div>
     </div>
