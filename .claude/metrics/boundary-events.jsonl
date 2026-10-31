@@ -330,3 +330,22 @@
 {"ts":"2026-10-31T07:29:57Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
 {"ts":"2026-10-31T07:52:11Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
 {"ts":"2026-10-31T07:55:31Z","hook":"destructive_guard","tool":"Bash","decision":"warn","matched_rule":"Database destruction: truncate","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:40:01Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:40:02Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:40:04Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:47:49Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:47:59Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:48:00Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:48:27Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:48:28Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:49:00Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:49:01Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:49:02Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:49:04Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:49:32Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:49:33Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:50:48Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:50:50Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:50:51Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:50:52Z","hook":"tdd_guard","tool":"Write","decision":"warn","matched_rule":"tdd-red-before-green","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}
+{"ts":"2026-10-31T09:54:13Z","hook":"destructive_guard","tool":"Bash","decision":"warn","matched_rule":"File destruction: rm -rf","plugin_version":"13.2.0","session_id":"d86538e0-c539-4e23-91ce-2fb3f0d1201e"}

@@ -423,6 +423,7 @@ a {
 .sidenav { width: 232px; background: linear-gradient(180deg, #0f2144, #0a1630 62%, #070f22); color: #ffffff; border-right: 1px solid rgba(255, 255, 255, 0.06); }
 .sidenav[data-collapsed="true"] { width: 72px; }
 .sidenav-label { font-size: 9.5px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255, 255, 255, 0.42); padding: 0 10px 8px; }
+.sidenav-sublabel { font-size: 9px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #e6b53c; opacity: 0.75; padding: 0 10px 4px; }
 .sidenav-item {
   position: relative; display: flex; width: 100%; align-items: center; gap: 11px;
   border-radius: 10px; padding: 11px; font-size: 13px; font-weight: 600; text-align: left;
@@ -497,7 +498,7 @@ a {
 }
 @media (max-width: 1023px) {
   .sidenav { width: 64px; }
-  .sidenav .sidenav-text, .sidenav .sidenav-label, .sidenav-footer { display: none; }
+  .sidenav .sidenav-text, .sidenav .sidenav-label, .sidenav .sidenav-sublabel, .sidenav-footer { display: none; }
   .sidenav-item { justify-content: center; padding: 11px 8px; }
   .sidenav-sub { display: none; }
   .sidenav nav { padding-inline: 8px; }

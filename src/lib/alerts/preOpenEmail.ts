@@ -21,6 +21,9 @@ import { briefingFor } from "@/lib/ai/briefingServer";
 import { buildBriefingFacts } from "@/lib/ai/briefingFacts";
 import type { BriefingResult } from "@/lib/ai/briefing";
 import { isFirstTradingDayOfWeek } from "./weeklyTop5Email";
+import { recordEmailedStocks } from "@/lib/radar/radarServer";
+import type { TopPickEmailItem } from "./topPicksEmail";
+import type { Top5Pick } from "@/lib/screen/weeklyTop5";
 
 export { preOpenSlotKey };
 
@@ -76,6 +79,8 @@ export interface PreOpenPreview {
   brief: MorningBrief;
   outlook: MarketOutlook;
   table: AlertTable;
+  /** The stocks the email lists beyond the table, for the email track record. */
+  emailed: { topPicks: ReadonlyArray<TopPickEmailItem> | null; top5: ReadonlyArray<Top5Pick> | null };
   subject: string;
   html: string;
   text: string;
@@ -150,7 +155,9 @@ export async function buildPreOpenPreview(now: number = Date.now(), options: { f
     console.error("[email] briefing skipped:", error instanceof Error ? error.message : error);
   }
 
-  return { brief, outlook, table, ...buildPreOpenEmail(brief, table, regimeLine(table), now, state.payload.highBreakouts ?? null, outlook, top5, topPicks, briefing) };
+  // What the email lists, kept for the email track record (never part of the message itself).
+  const emailed = { topPicks: topPicks?.picks ?? null, top5: top5?.picks ?? null };
+  return { brief, outlook, table, emailed, ...buildPreOpenEmail(brief, table, regimeLine(table), now, state.payload.highBreakouts ?? null, outlook, top5, topPicks, briefing) };
 }
 
 export function preOpenEmailStatus() {
@@ -179,6 +186,7 @@ export async function sendPreOpenEmailNow(): Promise<{ messageId: string; picks:
     // belongs to the hourly alert, where the table is the whole message.
     const messageId = await sendEmail(preview.subject, preview.html, preview.text, [logoAttachment()]);
     const slotKey = openingSlotKey ?? preOpenSlotKey(now);
+    recordEmailedStocks("pre-open", preview.table, preview.emailed.topPicks, preview.emailed.top5, now);
     writeState({
       lastSentSlotKey: slotKey,
       lastSentAt: now,

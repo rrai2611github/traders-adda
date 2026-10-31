@@ -5,6 +5,7 @@ const PAGES = [
   { key: "positions", href: "/positions", label: "My positions" },
   { key: "tracker", href: "/tracker", label: "Live strategy check" },
   { key: "backtest", href: "/backtest", label: "Backtest" },
+  { key: "radar", href: "/radar", label: "Email track record" },
 ] as const;
 
 export type PageKey = (typeof PAGES)[number]["key"];

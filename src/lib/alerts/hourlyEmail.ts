@@ -8,6 +8,7 @@ import { emailConfig, sendEmail, verifyEmailConnection } from "./smtp";
 import { buildHourlyEmail, emailSlotKey, type HourlyBaseline } from "./hourlyEmailFormat";
 import { listedStocks, type ListedStock } from "./watchEmail";
 import { logoAttachment } from "./brandAssets";
+import { recordEmailedStocks } from "@/lib/radar/radarServer";
 import { getIndexContext } from "@/lib/market/indexContext";
 import { listIndexOutlookJournal } from "@/lib/market/indexOutlookJournal";
 import { buildIndexEmailSnapshot, type IndexEmailInput, type IndexEmailSnapshot } from "./indexEmailFormat";
@@ -202,7 +203,7 @@ async function loadHourlyIndexReads(now: number): Promise<Record<string, HourlyI
 }
 
 export async function hourlyEmailPreview(now: number = Date.now()): Promise<
-  | { ok: true; table: AlertTable; subject: string; html: string; text: string; hasChanges: boolean; indexSnapshot: IndexEmailSnapshot | null; setupSymbols: string[] | null }
+  | { ok: true; table: AlertTable; subject: string; html: string; text: string; hasChanges: boolean; indexSnapshot: IndexEmailSnapshot | null; setupSymbols: string[] | null; emailedPicks: TopPicksEmailInput["picks"] | null }
   | { ok: false; reason: string }> {
   const state = getScannerResults("live");
   if (state.status === "warming") return { ok: false, reason: "The NSE universe is still loading." };
@@ -242,7 +243,8 @@ export async function hourlyEmailPreview(now: number = Date.now()): Promise<
   const generatedAt = Date.now();
   return { ok: true, table, ...buildHourlyEmail(table, generatedAt, baseline(now), indexes, setup),
     indexSnapshot: buildIndexEmailSnapshot(indexes.context, generatedAt),
-    setupSymbols: setup ? setup.picks.filter((p) => p.tag === "ready" || p.tag === "broke").map((p) => p.symbol) : null };
+    setupSymbols: setup ? setup.picks.filter((p) => p.tag === "ready" || p.tag === "broke").map((p) => p.symbol) : null,
+    emailedPicks: setup ? setup.picks : null };
 }
 export function hourlyEmailStatus() {
   return {
@@ -276,6 +278,7 @@ export async function sendHourlyEmailNow(): Promise<{ messageId: string; picks: 
   };
   try {
     const messageId = await sendEmail(preview.subject, preview.html, preview.text, [logoAttachment()]);
+    recordEmailedStocks("hourly", preview.table, preview.emailedPicks, null, now);
     writeState({
       ...prior,
       ...sentLists,

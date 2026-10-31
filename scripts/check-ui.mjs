@@ -21,6 +21,7 @@ const PAGES = [
   { path: "/positions", name: "positions", wait: 2500, expect: ["my positions", "i bought a stock", "plan email"] },
   { path: "/tracker", name: "tracker", wait: 3500, expect: ["live strategy check"] },
   { path: "/backtest", name: "backtest", wait: 2500, expect: ["backtest"] },
+  { path: "/radar", name: "radar", wait: 3000, expect: ["email track record"] },
 ];
 
 mkdirSync(OUT, { recursive: true });

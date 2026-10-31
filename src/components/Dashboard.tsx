@@ -426,6 +426,16 @@ function SideGroup({ label, collapsed, children }: { label: string; collapsed: b
   );
 }
 
+/** A small heading inside "Research & older tools" so its twelve items read as four short groups. */
+function ToolSection({ label, collapsed, children }: { label: string; collapsed: boolean; children: ReactNode }) {
+  return (
+    <div role="group" aria-label={label}>
+      {!collapsed && <div className="sidenav-sublabel">{label}</div>}
+      <div className="space-y-0.5">{children}</div>
+    </div>
+  );
+}
+
 function UniversePicker({ value, onChange }: { value: UniverseKey; onChange: (key: UniverseKey) => void }) {
   const option = UNIVERSE_OPTIONS.find((item) => item.key === value)!;
   const size = universeSize(value);
@@ -614,6 +624,7 @@ export function Dashboard() {
             <SideItem icon="journal" label="My positions" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/positions")} />
             <SideItem icon="breadth" label="Live strategy check" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/tracker")} />
             <SideItem icon="signals" label="Backtest (10 years)" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/backtest")} />
+            <SideItem icon="picks" label="Email track record" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/radar")} />
             <SideItem icon="watchlist" label="Watchlist" current={activeNav === "watchlist"} collapsed={sidebarCollapsed} onClick={() => selectNav("watchlist")} />
           </SideGroup>
 
@@ -623,31 +634,27 @@ export function Dashboard() {
               <span className="sidenav-text flex-1">Research & older tools</span>
               <NavIcon name="chevron-down" size={14} className="sidenav-text sidenav-disclosure" />
             </summary>
-            <div className="mt-2 space-y-0.5">
-            <SideItem icon="breadth" label="Market overview" current={activeNav === "market"} collapsed={sidebarCollapsed} onClick={() => selectMarketMenu(activeMarketMenu)} />
-            <SideItem icon="picks" label="Older scanner picks" current={activeNav === "picks"} collapsed={sidebarCollapsed} onClick={() => selectNav("picks")} />
-            <SideItem icon="journal" label="Paper trades & journal" current={journalView} collapsed={sidebarCollapsed} onClick={() => selectNav("journal")} />
-            <SideItem icon="triggers" label="Index Scalp Desk" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/scalp")} />
-            <SideItem icon="search" label="Scanner directory" current={activeNav === "directory"} collapsed={sidebarCollapsed} onClick={() => selectNav("directory")} />
-            <SideItem icon="setups" label="Monthly Setups" current={activeNav === "monthly"} collapsed={sidebarCollapsed} onClick={() => selectNav("monthly")} />
-            <SideItem icon="setups" label="Bottomed Out" current={activeNav === "bottomed"} collapsed={sidebarCollapsed} onClick={() => selectNav("bottomed")} />
-            <SideItem icon="signals" label="Stock research" current={activeNav === "research"} collapsed={sidebarCollapsed} onClick={() => selectNav("research")} />
-            <SideItem icon="setups" label="Core Setups" current={activeNav === "screens"} collapsed={sidebarCollapsed} onClick={() => selectNav("screens")} />
-            <SideItem icon="signals" label="RPCI & Oscillators" current={signalsView} collapsed={sidebarCollapsed} onClick={() => selectNav("signals")} />
-            <SideItem
-              icon="rsi"
-              label="RSI Edge Scanners"
-              current={activeNav === "rsi-edge"}
-              collapsed={sidebarCollapsed}
-              onClick={() => selectNav("rsi-edge")}
-            />
-            <SideItem
-              icon="triggers"
-              label="Trade Triggers"
-              current={scannersView}
-              collapsed={sidebarCollapsed}
-              onClick={() => selectScanner(activeScanner)}
-            />
+            <div className="mt-2 space-y-3">
+              <ToolSection label="Market" collapsed={sidebarCollapsed}>
+                <SideItem icon="breadth" label="Market overview" current={activeNav === "market"} collapsed={sidebarCollapsed} onClick={() => selectMarketMenu(activeMarketMenu)} />
+                <SideItem icon="signals" label="Stock research" current={activeNav === "research"} collapsed={sidebarCollapsed} onClick={() => selectNav("research")} />
+                <SideItem icon="search" label="Scanner directory" current={activeNav === "directory"} collapsed={sidebarCollapsed} onClick={() => selectNav("directory")} />
+              </ToolSection>
+              <ToolSection label="Stock lists" collapsed={sidebarCollapsed}>
+                <SideItem icon="picks" label="Older scanner picks" current={activeNav === "picks"} collapsed={sidebarCollapsed} onClick={() => selectNav("picks")} />
+                <SideItem icon="setups" label="Core Setups" current={activeNav === "screens"} collapsed={sidebarCollapsed} onClick={() => selectNav("screens")} />
+                <SideItem icon="setups" label="Monthly Setups" current={activeNav === "monthly"} collapsed={sidebarCollapsed} onClick={() => selectNav("monthly")} />
+                <SideItem icon="setups" label="Bottomed Out" current={activeNav === "bottomed"} collapsed={sidebarCollapsed} onClick={() => selectNav("bottomed")} />
+              </ToolSection>
+              <ToolSection label="Signals" collapsed={sidebarCollapsed}>
+                <SideItem icon="triggers" label="Trade Triggers" current={scannersView} collapsed={sidebarCollapsed} onClick={() => selectScanner(activeScanner)} />
+                <SideItem icon="rsi" label="RSI Edge Scanners" current={activeNav === "rsi-edge"} collapsed={sidebarCollapsed} onClick={() => selectNav("rsi-edge")} />
+                <SideItem icon="signals" label="RPCI & Oscillators" current={signalsView} collapsed={sidebarCollapsed} onClick={() => selectNav("signals")} />
+              </ToolSection>
+              <ToolSection label="Practice" collapsed={sidebarCollapsed}>
+                <SideItem icon="journal" label="Paper trades & journal" current={journalView} collapsed={sidebarCollapsed} onClick={() => selectNav("journal")} />
+                <SideItem icon="triggers" label="Index Scalp Desk" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/scalp")} />
+              </ToolSection>
             </div>
           </details>
 
@@ -718,17 +725,17 @@ export function Dashboard() {
                   <div className="grid grid-cols-2 gap-2">
                     {[
                       ["Dashboard", "Market summary and next steps", "today", "◎"],
+                      ["Watchlist", "Nifty 50 buy and short monitor", "watchlist", "▤"],
+                      ["Market breadth", "Participation and regime", "market", "▥"],
                       ["Stock research", "Ideas, confluence and session changes", "research", "≋"],
                       ["Scanner directory", "Browse all visible tools", "directory", "⌖"],
-                      ["Monthly Setups", "Completed-month breakouts and compression", "monthly", "↗"],
-                      ["Bottomed Out", "Fallen stocks with a higher low", "bottomed", "▼"],
                       ["Today's Picks", "Market gate and the top Buy ready stocks", "picks", "✓"],
                       ["Core Setups", "VCP, Blue sky and base breakouts", "screens", "〽"],
-                      ["RPCI & Oscillators", "Momentum signals", "signals", "≋"],
+                      ["Monthly Setups", "Completed-month breakouts and compression", "monthly", "↗"],
+                      ["Bottomed Out", "Fallen stocks with a higher low", "bottomed", "▼"],
                       ["Trade Triggers", "Selective entry and reversal scans", "scanners", "⌖"],
                       ["RSI Edge Scanners", "Daily, weekly and bearish RSI scans", "rsi-edge", "R"],
-                      ["Market breadth", "Participation and regime", "market", "▥"],
-                      ["Watchlist", "Nifty 50 buy and short monitor", "watchlist", "▤"],
+                      ["RPCI & Oscillators", "Momentum signals", "signals", "≋"],
                       ["Paper trades & journal", "Review paper orders and logged trades", "journal", "□"],
                       ["About & risk", "Methodology and disclosures", "learn", "□"],
                     ].map(([label, description, key, icon]) => (
