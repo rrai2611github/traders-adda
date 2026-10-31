@@ -8,6 +8,7 @@ import { StockSymbolButton } from "./StockDetailContext";
 import { useAccountSize } from "@/hooks/useAccountSize";
 import { DEFAULT_STOP_PERCENT, EXIT_LABEL, NEEDS_ACTION, SECTOR_LIMIT, fillSlippagePercent, ruleStop, suggestedShares, type ExitReason, type Holding, type Status } from "@/lib/positions/positions";
 import type { PositionsView } from "@/lib/positions/positionsServer";
+import { Term } from "./Term";
 
 const px = (v: number) => v.toLocaleString("en-IN", { maximumFractionDigits: 2 });
 const signedMoney = (v: number) => `${v >= 0 ? "+" : "−"}${money(Math.abs(v))}`;
@@ -295,7 +296,7 @@ export function PositionsPage() {
                 <dl className="mt-2 grid grid-cols-3 gap-2 text-[11px]">
                   <div><dt className="font-black uppercase tracking-wide text-slate-400">Price now</dt><dd className="font-bold text-slate-800"><LivePrice symbol={h.symbol} fallbackPrice={a.last ?? h.buyPrice} fallbackChange={null} /></dd></div>
                   <div><dt className="font-black uppercase tracking-wide text-rose-700">Stop</dt><dd className="font-mono font-bold text-slate-800">₹{px(h.stop)}</dd></div>
-                  <div><dt className="font-black uppercase tracking-wide text-slate-400">50-day avg</dt><dd className="font-mono font-bold text-slate-800">{a.sma50 != null ? `₹${px(a.sma50)}` : "—"}</dd></div>
+                  <div><dt className="font-black uppercase tracking-wide text-slate-400"><Term k="exit50">50-day avg</Term></dt><dd className="font-mono font-bold text-slate-800">{a.sma50 != null ? `₹${px(a.sma50)}` : "—"}</dd></div>
                   <div><dt className="font-black uppercase tracking-wide text-slate-400">At last close</dt><dd className={`font-mono font-bold ${a.pnl != null ? tone(a.pnl) : ""}`}>{a.pnl != null ? signedMoney(a.pnl) : "—"}{a.pnlPercent != null ? ` (${a.pnlPercent >= 0 ? "+" : "−"}${Math.abs(a.pnlPercent).toFixed(1)}%)` : ""}</dd></div>
                   <div><dt className="font-black uppercase tracking-wide text-slate-400">In R</dt><dd className={`font-mono font-bold ${a.rNow != null ? tone(a.rNow) : ""}`}>{a.rNow != null ? signedR(a.rNow) : "—"}</dd></div>
                   <div><dt className="font-black uppercase tracking-wide text-slate-400">Last close</dt><dd className="font-mono font-bold text-slate-800">{a.lastDate ? dayLabel(a.lastDate) : "—"}</dd></div>
@@ -337,8 +338,8 @@ export function PositionsPage() {
           <>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               <Stat label="Closed trades" value={String(j.count)} />
-              <Stat label="Won" value={j.winRate != null ? `${j.winRate.toFixed(0)}%` : "—"} note={`${j.wins} of ${j.count} (the test won about 40%)`} />
-              <Stat label="Average trade" value={j.avgR != null ? signedR(j.avgR) : "—"} tone={j.avgR != null && j.avgR >= 0 ? "good" : "bad"} note="in R: 1R = the money risked" />
+              <Stat label={<Term k="winRate">Won</Term>} value={j.winRate != null ? `${j.winRate.toFixed(0)}%` : "—"} note={`${j.wins} of ${j.count} (the test won about 45%)`} />
+              <Stat label={<Term k="r">Average trade</Term>} value={j.avgR != null ? signedR(j.avgR) : "—"} tone={j.avgR != null && j.avgR >= 0 ? "good" : "bad"} note="in R: 1R = the money risked" />
               <Stat label="Total profit / loss" value={signedMoney(j.totalPnl)} tone={j.totalPnl >= 0 ? "good" : "bad"} note="before brokerage and tax" />
             </div>
             <ul className="list-disc space-y-1 pl-5 text-[12.5px] text-slate-700">{j.lines.map((line) => <li key={line}>{line}</li>)}</ul>

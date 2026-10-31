@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { RealityCheck } from "./RealityCheck";
 import { PageNav } from "./PageNav";
 import type { BacktestResult, BacktestSettings, TradeStats } from "@/lib/backtest/types";
+import { Term } from "./Term";
 
 type Job = { status: "running"; id: string; message: string } | { status: "failed"; id: string; error: string } | { status: "done"; id: string; result: BacktestResult };
 
@@ -82,7 +83,7 @@ function Field({ label, children, hint }: { label: string; children: React.React
 }
 const inputCls = "h-9 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-[13px] font-semibold normal-case tracking-normal text-slate-900";
 
-export function Stat({ label, value, tone, note }: { label: string; value: string; tone?: "good" | "bad"; note?: string }) {
+export function Stat({ label, value, tone, note }: { label: ReactNode; value: string; tone?: "good" | "bad"; note?: string }) {
   return (
     <div className="rounded-xl border border-border bg-surface p-3.5">
       <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-slate-500">{label}</p>
@@ -195,10 +196,10 @@ function Results({ result }: { result: BacktestResult }) {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Overall profit" value={money(s.totalProfit)} tone={s.totalProfit >= 0 ? "good" : "bad"} note={`on ${money(result.settings.capital)} start, after costs`} />
         <Stat label="Money in trades" value={money(s.avgDeployed)} note={`on average · most at once ${money(s.peakDeployed)}`} />
-        <Stat label="Average per trade" value={`${num(s.avgR)}R`} tone={(s.avgR ?? 0) > 0 ? "good" : "bad"} note="after costs" />
+        <Stat label={<Term k="r">Average per trade</Term>} value={`${num(s.avgR)}R`} tone={(s.avgR ?? 0) > 0 ? "good" : "bad"} note="after costs" />
         <Stat label="Yearly return (CAGR)" value={pct(s.cagrPercent)} tone={(s.cagrPercent ?? 0) > 0 ? "good" : "bad"} note={`total ${pct(s.totalReturnPercent, 0)}`} />
-        <Stat label="Worst drop" value={pct(s.maxDrawdownPercent, 0)} tone="bad" note="peak to bottom" />
-        <Stat label="Win rate" value={pct(s.winRate, 0)} note={`profit factor ${num(s.profitFactor)}`} />
+        <Stat label={<Term k="drawdown">Worst drop</Term>} value={pct(s.maxDrawdownPercent, 0)} tone="bad" note="peak to bottom" />
+        <Stat label={<Term k="winRate">Win rate</Term>} value={pct(s.winRate, 0)} note={`profit factor ${num(s.profitFactor)}`} />
         <Stat label="Trades per year" value={num(s.tradesPerYear, 0)} note={`avg hold ${num(s.avgHoldDays, 0)} sessions`} />
         <Stat label="Time in the market" value={pct(s.exposurePercent, 0)} note="of sessions with a position open" />
         <Stat label="Total bought" value={money(s.totalBought)} note="spent on shares over all trades" />

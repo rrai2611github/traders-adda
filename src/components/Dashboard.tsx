@@ -38,6 +38,7 @@ import { toneClass } from "@/lib/format";
 import { movingAverageBreadth } from "@/lib/screen/breadth";
 import { groupScanBySector as groupSectors, MIN_SECTOR_MEMBERS as SHARED_MIN_SECTOR_MEMBERS } from "@/lib/screen/commandCenter";
 import { NIFTY50_SYMBOLS } from "@/lib/market/defaults";
+import { GlossaryList } from "./Term";
 import { WorkspaceFrame, WorkspaceHero, WorkspaceTabs } from "./WorkspaceShell";
 import { StockDetailProvider } from "./StockDetailContext";
 import { StockDetailDrawer } from "./StockDetailDrawer";
@@ -907,6 +908,11 @@ export function Dashboard() {
                 <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
               </div>
             ))}
+            <div className="lg:col-span-3">
+              <h3 className="text-lg font-black text-slate-900">Words used in the app</h3>
+              <p className="mb-3 mt-1 text-sm text-slate-600">Dotted words on other pages explain themselves when tapped. Here they all are in one place.</p>
+              <GlossaryList />
+            </div>
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 lg:col-span-3">
               <h3 className="font-black text-amber-900">Important risk notice</h3>
               <p className="mt-2 text-sm leading-6 text-amber-900/80">

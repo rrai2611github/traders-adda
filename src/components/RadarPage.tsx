@@ -6,6 +6,7 @@ import { Stat } from "./BacktestPage";
 import { StockSymbolButton } from "./StockDetailContext";
 import { ENOUGH, LIST_LABEL, TAG_LABEL, groupLabel, type GroupSummary, type RadarList, type ScoreState } from "@/lib/radar/radar";
 import type { RadarView } from "@/lib/radar/radarServer";
+import { Term } from "./Term";
 
 const px = (v: number) => v.toLocaleString("en-IN", { maximumFractionDigits: 2 });
 const signed = (v: number | null, suffix = "%") => (v == null ? "—" : `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(suffix === "R" ? 2 : 1)}${suffix}`);
@@ -33,13 +34,13 @@ function GroupTable({ rows, empty }: { rows: GroupSummary[]; empty: string }) {
           <tr className="border-b border-slate-200">
             <th className={th}>List</th>
             <th className={th}>Stocks</th>
-            <th className={th} title="Share of finished trades (stopped out or exit signal) that made money">Win rate</th>
-            <th className={th} title="Average result of finished trades, in units of the money risked (R)">Avg R</th>
+            <th className={th}><Term k="winRate">Win rate</Term></th>
+            <th className={th}><Term k="r">Avg R</Term></th>
             <th className={th} title="Average move from the email price to now (or to the exit)">Move so far</th>
             <th className={th} title="Plain price move after 5 and 20 sessions, ignoring the stop">After 5 / 20 days</th>
-            <th className={th} title="Move minus the Nifty 50's move over the same days">Vs Nifty</th>
-            <th className={th}>Stopped out</th>
-            <th className={th} title="Reached the first target before the stop">Hit target 1</th>
+            <th className={th}><Term k="vsNifty">Vs Nifty</Term></th>
+            <th className={th}><Term k="stop">Stopped out</Term></th>
+            <th className={th}><Term k="target">Hit target 1</Term></th>
           </tr>
         </thead>
         <tbody>

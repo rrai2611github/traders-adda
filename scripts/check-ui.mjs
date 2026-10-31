@@ -102,6 +102,36 @@ try {
       if (problems.length) fail(listWhere, [...new Set(problems)].slice(0, 4).join(" | "));
     }
 
+    // The glossary on About & risk, and a tap-to-explain word: the note must open fully on screen, never widen the page, and close again.
+    {
+      const termWhere = `glossary @ ${wname}`;
+      problems = [];
+      await page.goto(`${BASE}/#about`, { waitUntil: "domcontentloaded" });
+      await page.waitForTimeout(4500);
+      const words = await page.locator("dl dt").count();
+      if (words < 15) fail(termWhere, `only ${words} words listed on About & risk`);
+      else if (await sideways()) fail(termWhere, "the page scrolls sideways");
+      else ok(termWhere, `${words} words listed`);
+      await page.goto(`${BASE}/positions`, { waitUntil: "domcontentloaded" });
+      await page.waitForTimeout(3500);
+      const word = page.locator('button[title^="What is"]').first();
+      if (!(await word.count())) ok(termWhere, "no explained word on screen today, popover not checked");
+      else {
+        await word.scrollIntoViewIfNeeded();
+        await word.click();
+        await page.waitForTimeout(300);
+        const tip = page.locator('[role="tooltip"]');
+        const box = await tip.boundingBox();
+        if (!box || box.x < 0 || box.x + box.width > w || box.y < 0 || box.y + box.height > h) fail(termWhere, "the explanation does not fit on screen");
+        else if (await sideways()) fail(termWhere, "the explanation widened the page");
+        else {
+          await page.keyboard.press("Escape");
+          if (await tip.count()) fail(termWhere, "the explanation did not close with Escape"); else ok(termWhere, "explanation opens on screen and closes");
+        }
+      }
+      if (problems.length) fail(termWhere, [...new Set(problems)].slice(0, 4).join(" | "));
+    }
+
     // The stock drawer, from the first Top pick.
     const where = `stock drawer @ ${wname}`;
     problems = [];

@@ -9,6 +9,7 @@ import { StrategyHealthCard } from "./StrategyHealthCard";
 import { useResultsDates } from "@/hooks/useResultsDates";
 import { daysUntil } from "@/lib/market/boardMeetings";
 import { checkBatch, RISK_LIMITS, verdictLine, type RiskVerdict } from "@/lib/risk/riskGate";
+import { Term } from "./Term";
 
 interface TrackerPayload {
   config: { startDate: string; startedAt: number; capital: number; niftyGate: boolean; stopPercent: 8 | 12 } | null;
@@ -156,7 +157,7 @@ export function TrackerPage() {
           <section className="rounded-xl border border-border bg-surface p-4" aria-label="Next buys">
             <h3 className="text-[13px] font-extrabold text-slate-900">What the rules would buy at the next open</h3>
             <p className="mb-2 text-[11.5px] text-slate-500">
-              Market check on {dayLabel(result.data.lastDay)}: {result.pending.breadth50 != null ? `${result.pending.breadth50}% of stocks above their 50-day average` : "breadth unavailable"} ({result.pending.breadthOk ? "allowed" : "below the 35% the rules need"}){result.pending.niftyOk == null ? "" : `, Nifty 50 ${result.pending.niftyOk ? "above" : "under"} its 200-day average`}. {result.pending.slotsFree} of 10 slots free.
+              <Term k="marketCheck">Market check</Term> on {dayLabel(result.data.lastDay)}: {result.pending.breadth50 != null ? `${result.pending.breadth50}% of stocks above their 50-day average` : "breadth unavailable"} ({result.pending.breadthOk ? "allowed" : "below the 35% the rules need"}){result.pending.niftyOk == null ? "" : `, Nifty 50 ${result.pending.niftyOk ? "above" : "under"} its 200-day average`}. {result.pending.slotsFree} of 10 slots free.
             </p>
             {result.pending.signals.length === 0 ? (
               <p className="text-sm text-slate-600">{!result.pending.breadthOk || result.pending.niftyOk === false ? "No buys: the market check is red, which is exactly when the rules stay out." : result.pending.slotsFree === 0 ? "No buys: every slot is full." : "No qualifying breakout on the last close."}</p>
