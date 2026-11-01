@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * Minimal Fyers API v3 client (market data only; no order placement).
+ * Minimal Fyers API v3 client: market data, plus one guarded call to place an order (fyersPlaceOrder).
  * Credentials come from .env.local; the daily access token is kept in
  * .cache/fyers-token.json and is treated as expired on the next IST day.
  */
@@ -175,4 +175,32 @@ export async function fyersQuotes(symbols: string[]) {
 export async function fyersOptionChain(underlying: string, strikecount: number) {
   const body = await dataGet("/data/options-chain-v3", { symbol: underlying, strikecount });
   return body.data;
+}
+
+/**
+ * Places ONE order. Only src/lib/orders/orderServer.ts calls this, and only after its guards. Never retried: a timeout may still have
+ * placed the order, so the caller reports "check your broker" instead of sending again.
+ */
+export async function fyersPlaceOrder(payload: Record<string, unknown>): Promise<{ id: string; message: string }> {
+  const config = fyersConfig();
+  if (!config) throw new FyersAuthError("Fyers is not configured. Add FYERS_APP_ID and FYERS_SECRET_ID to .env.local.");
+  const token = readToken();
+  if (!token) throw new FyersAuthError();
+  return throttled(async () => {
+    const response = await fetch(`${API}/api/v3/orders/sync`, {
+      method: "POST",
+      headers: { Authorization: `${config.appId}:${token.accessToken}`, "Content-Type": "application/json", "User-Agent": USER_AGENT },
+      body: JSON.stringify(payload),
+      cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
+    });
+    const body = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+    const code = typeof body.code === "number" ? body.code : undefined;
+    if (response.status === 401 || (code != null && AUTH_ERROR_CODES.has(code))) {
+      clearFyersToken();
+      throw new FyersAuthError("Fyers session expired. Click Connect Fyers to log in again.");
+    }
+    if (!response.ok || body.s !== "ok") throw new FyersApiError(String(body.message || `Fyers HTTP ${response.status}`), response.status, code);
+    return { id: String(body.id ?? ""), message: String(body.message ?? "") };
+  });
 }

@@ -122,7 +122,7 @@ export function planEmail(input: { plan: TomorrowPlan; accountSize: number; acco
   if (plan.skipped.length) lines.push(`Not on your list: ${plan.skipped.map((s) => `${s.symbol} (${s.reason})`).join("; ")}.`);
   if (input.resultsKnown === false) lines.push("The results calendar could not be checked today, so look up each stock's results date before you buy.");
   lines.push(
-    "The app never places orders. After you buy, open My positions and tap \"I bought it\" on the pick (or add the position) with the price you actually paid, so the exits are watched for you.",
+    "Nothing is sent to your broker unless you approve it on My positions. After you buy, open My positions and tap \"I bought it\" on the pick (or add the position) with the price you actually paid, so the exits are watched for you.",
     `Account size used: ${inr(input.accountSize)}${input.accountSaved ? "" : " (the default: set yours on My positions)"}. This email goes only to you, and only on days the market check passes and something fits.`,
   );
   return { subject: `Tomorrow's plan · ${n} buy${n === 1 ? "" : "s"} · after the close on ${input.lastDay}`, lines };

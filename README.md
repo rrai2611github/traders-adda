@@ -272,8 +272,10 @@ own VWAP, futures-vs-VWAP, PCR, max call/put OI strikes, India VIX, a
 near-ATM chain strip and the CE+PE straddle line. It refreshes every 10 s
 while the tab is visible during market hours.
 
-Data comes from the free Fyers API v3 (read-only; the app never places
-orders). Setup: create an app at `myapi.fyers.in` with redirect URL
+Data comes from the free Fyers API v3 (read-only for data; the only order the
+app can send is a buy you approve yourself on My positions, see "Tomorrow's
+orders" in the workspace notes, and it is a dry run unless you switch live
+orders on). Setup: create an app at `myapi.fyers.in` with redirect URL
 `http://127.0.0.1:3107/api/fyers/callback`, add `FYERS_APP_ID`,
 `FYERS_SECRET_ID` and `FYERS_REDIRECT_URI` to `.env.local`, restart, then click
 **Connect Fyers** on `/scalp` once each trading day (Fyers tokens are daily;

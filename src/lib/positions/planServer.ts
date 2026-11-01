@@ -10,12 +10,31 @@ import { istDateKey } from "../market/marketHours.ts";
 import { SETUP_BREADTH_MIN } from "../screen/setupGate.ts";
 import { readAccount } from "./account.ts";
 import { positionsView, sectorOf } from "./positionsServer.ts";
-import { buildTomorrowPlan, planEmail } from "./tomorrowPlan.ts";
+import { buildTomorrowPlan, planEmail, type TomorrowPlan } from "./tomorrowPlan.ts";
 
 const FILE = join(process.cwd(), ".cache", "tomorrow-plan.json");
+const ORDERS_FILE = join(process.cwd(), ".cache", "plan-orders.json");
 
 function lastKey(): string | null {
   try { return JSON.parse(readFileSync(FILE, "utf8")).key ?? null; } catch { return null; }
+}
+
+/** The exact buys of the latest plan, kept so the order panel can show and send them without re-running the strategy check. */
+export interface SavedPlan {
+  lastDay: string;
+  createdAt: number;
+  accountSize: number;
+  orders: TomorrowPlan["orders"];
+  skipped: TomorrowPlan["skipped"];
+}
+
+export function readSavedPlan(): SavedPlan | null {
+  try { return JSON.parse(readFileSync(ORDERS_FILE, "utf8")) as SavedPlan; } catch { return null; }
+}
+
+function savePlan(plan: SavedPlan) {
+  mkdirSync(join(process.cwd(), ".cache"), { recursive: true });
+  writeFileSync(ORDERS_FILE, JSON.stringify(plan));
 }
 
 /**
@@ -40,7 +59,11 @@ export async function sendTomorrowPlanIfDue(now = Date.now()): Promise<void> {
   const { result } = job;
   if (dataFreshness({ lastCandleDay: result.data.lastDay, refreshedDay: refreshState().lastDay, now }).state !== "ok") return;
   const pending = result.pending;
-  if (!pending.breadthOk || !pending.candidates?.length) return;
+  if (!pending.breadthOk || !pending.candidates?.length) {
+    // Nothing to buy for this close: the order panel must not keep showing an older day's list.
+    savePlan({ lastDay: result.data.lastDay, createdAt: now, accountSize: saved, orders: [], skipped: [] });
+    return;
+  }
 
   const today = istDateKey(now);
   const results = await getResultsDates(today).catch(() => null);
@@ -53,6 +76,7 @@ export async function sendTomorrowPlanIfDue(now = Date.now()): Promise<void> {
     resultsInDays: (symbol) => (results ? (results.dates[symbol] ? daysUntil(results.dates[symbol], today) : null) : undefined),
     marketOk: true,
   });
+  savePlan({ lastDay: result.data.lastDay, createdAt: now, accountSize: saved, orders: plan.orders, skipped: plan.skipped });
   const mail = planEmail({
     plan, accountSize: saved, accountSaved: true, breadth50: pending.breadth50, breadthMin: SETUP_BREADTH_MIN,
     lastDay: result.data.lastDay, heldCount: view.open.length, candidateCount: pending.candidates.length, resultsKnown: results != null,

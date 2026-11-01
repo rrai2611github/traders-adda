@@ -10,6 +10,7 @@ import { useAccountSize } from "@/hooks/useAccountSize";
 import { DEFAULT_STOP_PERCENT, EXIT_LABEL, NEEDS_ACTION, SECTOR_LIMIT, fillSlippagePercent, ruleStop, suggestedShares, type ExitReason, type Holding, type Status } from "@/lib/positions/positions";
 import type { PositionsView } from "@/lib/positions/positionsServer";
 import { Term } from "./Term";
+import { OrdersPanel } from "./OrdersPanel";
 
 const px = (v: number) => v.toLocaleString("en-IN", { maximumFractionDigits: 2 });
 const signedMoney = (v: number) => `${v >= 0 ? "+" : "−"}${money(Math.abs(v))}`;
@@ -237,12 +238,14 @@ export function PositionsPage() {
       <header className="flex flex-wrap items-center gap-3">
         <div>
           <h1 className="text-[20px] font-extrabold tracking-[-0.02em] text-slate-900">My positions</h1>
-          <p className="text-[12.5px] text-slate-500">Your real trades, watched against the tested exit rules, with a journal of what you did. Enter what you bought; the app tells you when the rules say sell. It never places orders.</p>
+          <p className="text-[12.5px] text-slate-500">Your real trades, watched against the tested exit rules, with a journal of what you did. Enter what you bought; the app tells you when the rules say sell. It sends a buy order only when you approve it yourself below, never a sell, and never on its own.</p>
         </div>
         <a href="/api/positions/export" download title="Every position, open and closed, as a spreadsheet file. The app also keeps a daily backup copy for the last 30 days in .cache/backups." className="ml-auto rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-emerald-500 hover:text-emerald-700">Download my records (CSV)</a>
       </header>
 
       {message && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-800">{message}</p>}
+
+      <OrdersPanel />
 
       {due.length > 0 && (
         <section className="rounded-2xl border border-rose-300 bg-rose-50 p-4" aria-label="Needs a decision">

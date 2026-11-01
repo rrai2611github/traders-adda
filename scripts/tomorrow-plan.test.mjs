@@ -73,7 +73,7 @@ test("the email lists exact orders and the skips, or nothing at all", () => {
   assert.match(mail.lines[0], /The market check passed \(41% of stocks are above their 50-day average; the setup needs 35%\)\. The rules found 2 breakouts on the close of 2026-11-03\. Here is what fits your account of ₹10,00,000 and your 0 open positions\./);
   assert.match(mail.lines[1], /^1\. AAA: buy 1,666 shares at the open, about ₹100 \(skip it if it opens above ₹105\)\. Stop ₹88 \(−12%\): set it with your broker the same day\. About ₹1,66,600 in the stock; ₹19,992 \(2% of your account\) is lost if the stop is hit\. Sector: Capital Goods\.$/);
   assert.match(mail.lines.join("\n"), /Not on your list: SOON \(results in 2 days/);
-  assert.match(mail.lines.join("\n"), /The app never places orders/);
+  assert.match(mail.lines.join("\n"), /Nothing is sent to your broker unless you approve it/);
   assert.doesNotMatch(mail.lines.join("\n"), /the default/);
   assert.match(planEmail({ plan, accountSize: 500_000, accountSaved: false, breadth50: null, breadthMin: 35, lastDay: "2026-11-03", heldCount: 1, candidateCount: 1 }).lines.join("\n"), /\(the default: set yours on My positions\)/);
   assert.equal(planEmail({ plan: { orders: [], skipped: [] }, accountSize: 1, accountSaved: true, breadth50: 50, breadthMin: 35, lastDay: "x", heldCount: 0, candidateCount: 0 }), null);
