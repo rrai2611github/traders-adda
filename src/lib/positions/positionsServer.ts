@@ -4,7 +4,7 @@ import { notifyOwner } from "@/lib/alerts/personal";
 import sectorData from "@/lib/market/data/sectors.json";
 import { historyLastDay } from "../backtest/historyRefresh.ts";
 import {
-  actionLines, assessHolding, backupsToDelete, closedTrades, fillSummary, holdingsCsv, istToday, NEEDS_ACTION, parseNewHolding, parseSale, sectorConcentration, summariseJournal,
+  actionLines, assessHolding, backupsToDelete, closedTrades, fillSummary, holdingsCsv, istToday, NEEDS_ACTION, parseHoldingSource, parseNewHolding, parseSale, sectorConcentration, summariseJournal,
   type Assessment, type Candle, type ClosedTrade, type FillSummary, type Holding, type Journal, type SectorCrowd,
 } from "./positions.ts";
 
@@ -73,8 +73,8 @@ export interface PositionsView {
   fills: FillSummary;
   closed: ClosedTrade[];
   journal: Journal;
-  /** Money in open positions at the last close, their gain or loss, and what is lost if every stop is hit from here. */
-  exposure: { invested: number; openPnl: number; ifAllStopsHit: number };
+  /** Purchase cost, last-close value, gain or loss, and what is lost if every stop is hit from here. */
+  exposure: { costBasis: number; invested: number; openPnl: number; ifAllStopsHit: number };
 }
 
 export function positionsView(now = Date.now()): PositionsView {
@@ -84,16 +84,18 @@ export function positionsView(now = Date.now()): PositionsView {
     .sort((a, b) => b.buyDate.localeCompare(a.buyDate))
     .map((holding) => ({ holding, assessment: assessHolding(holding, recentCandles(holding.symbol), now), sector: sectorOf(holding.symbol) }));
   const closed = closedTrades(all);
+  let costBasis = 0;
   let invested = 0;
   let openPnl = 0;
   let ifAllStopsHit = 0;
   for (const { holding: h, assessment: a } of open) {
     const last = a.last ?? h.buyPrice;
+    costBasis += h.buyPrice * h.qty;
     invested += last * h.qty;
     openPnl += a.pnl ?? 0;
     ifAllStopsHit += Math.min(0, (h.stop - last) * h.qty);
   }
-  return { lastDay: historyLastDay(), open, crowded: sectorConcentration(open.map((o) => ({ symbol: o.holding.symbol, sector: o.sector }))), fills: fillSummary(all), closed: closed.slice(0, 200), journal: summariseJournal(closed), exposure: { invested, openPnl, ifAllStopsHit } };
+  return { lastDay: historyLastDay(), open, crowded: sectorConcentration(open.map((o) => ({ symbol: o.holding.symbol, sector: o.sector }))), fills: fillSummary(all), closed: closed.slice(0, 200), journal: summariseJournal(closed), exposure: { costBasis, invested, openPnl, ifAllStopsHit } };
 }
 
 export type Result = { ok: true; view: PositionsView } | { ok: false; error: string; status: number };
@@ -104,6 +106,22 @@ export function addHolding(input: Record<string, unknown>, now = Date.now()): Re
   const all = readAll();
   if (all.length >= MAX_HOLDINGS) return { ok: false, error: "Too many saved positions. Remove old closed ones first.", status: 400 };
   writeAll([...all, { id: crypto.randomUUID(), ...parsed.value }]);
+  return { ok: true, view: positionsView(now) };
+}
+
+export function updateHoldingSource(id: unknown, source: unknown, now = Date.now()): Result {
+  const all = readAll();
+  const holding = all.find((h) => h.id === id);
+  if (!holding) return { ok: false, error: "That position was not found.", status: 404 };
+  const parsed = parseHoldingSource(source);
+  if (!parsed.ok) return { ok: false, error: parsed.error, status: 400 };
+  writeAll(all.map((h) => {
+    if (h.id !== id) return h;
+    const updated = { ...h };
+    if (parsed.value) updated.source = parsed.value;
+    else delete updated.source;
+    return updated;
+  }));
   return { ok: true, view: positionsView(now) };
 }
 

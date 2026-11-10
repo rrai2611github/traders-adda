@@ -6,7 +6,17 @@ interface PanelOrder {
   order: { symbol: string; shares: number; buy: number; skipAbove: number; stop: number; stopPercent: number; invested: number; atRisk: number; warnings: string[] };
   payload: { limitPrice: number; offlineOrder: boolean };
 }
-interface Result { symbol: string; status: string; detail: string; orderId?: string }
+interface Result {
+  symbol: string;
+  status: string;
+  detail: string;
+  orderId?: string;
+  brokerState?: "pending" | "partially-filled" | "filled" | "cancelled" | "rejected" | "expired" | "unknown";
+  filledQty?: number;
+  remainingQuantity?: number;
+  tradedPrice?: number;
+  brokerMessage?: string;
+}
 interface OrdersView {
   mode: "dry-run" | "live";
   planDay: string | null;
@@ -17,32 +27,53 @@ interface OrdersView {
   blocks: string[];
   alreadySent: boolean;
   sentResults: Result[] | null;
+  orderStatusError?: string;
   fyers: { configured: boolean; connected: boolean };
 }
 
 const px = (v: number) => v.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const brokerStateLabel: Record<NonNullable<Result["brokerState"]>, string> = {
+  pending: "Pending at broker",
+  "partially-filled": "Partially filled",
+  filled: "Filled",
+  cancelled: "Cancelled",
+  rejected: "Rejected",
+  expired: "Expired",
+  unknown: "Status unresolved",
+};
+const resultTone = (result: Result) => {
+  if (result.brokerState === "filled" || result.status === "placed" && !result.brokerState) return "text-emerald-800";
+  if (result.brokerState === "partially-filled" || result.brokerState === "pending") return "font-semibold text-amber-800";
+  if (result.brokerState === "cancelled" || result.brokerState === "rejected" || result.brokerState === "expired" || result.brokerState === "unknown" || result.status === "rejected" || result.status === "unknown") return "font-semibold text-rose-800";
+  return "text-slate-700";
+};
 
 /**
- * "Tomorrow's orders": the plan's buys as broker orders, to review and approve with two clicks. A dry run unless the owner has switched
- * live orders on in .env.local; a dry run sends nothing. Only buys are sent: set each stop with your broker once the buy has filled.
+ * "Tomorrow's orders": proposed buys require explicit review and confirmation. A dry run unless live orders are enabled; only buys are
+ * sent, and confirmed live orders are reconciled against the broker's order book.
  */
 export function OrdersPanel() {
   const [view, setView] = useState<OrdersView | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [results, setResults] = useState<Result[] | null>(null);
 
-  const load = useCallback(() => {
-    fetch("/api/orders", { cache: "no-store" })
-      .then((res) => (res.ok ? (res.json() as Promise<OrdersView>) : null))
-      .then((next) => { if (next) setView(next); })
-      .catch(() => { /* the panel keeps what it has */ });
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/orders", { cache: "no-store" });
+      if (!res.ok) throw new Error(`Order plan refresh failed (${res.status}).`);
+      setView((await res.json()) as OrdersView);
+      setLoadError("");
+    } catch {
+      setLoadError("Could not refresh the order plan. The last displayed plan may be out of date.");
+    }
   }, []);
   useEffect(() => {
-    const id = setTimeout(load, 0);
-    const timer = setInterval(load, 120_000);
-    return () => { clearTimeout(id); clearInterval(timer); };
+    const initial = setTimeout(() => void load(), 0);
+    const timer = setInterval(() => void load(), 30_000);
+    return () => { clearTimeout(initial); clearInterval(timer); };
   }, [load]);
 
   const approve = async () => {
@@ -56,18 +87,32 @@ export function OrdersPanel() {
     setBusy(false); setConfirming(false); load();
   };
 
-  if (!view) return null;
+  if (!view) return loadError ? <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">{loadError}</p> : null;
   const live = view.mode === "live";
   const shown = results ?? view.sentResults;
   const n = view.orders.length;
 
   return (
-    <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4" aria-label="Tomorrow's orders">
+    <section id="order-approvals" className="scroll-mt-20 space-y-3 rounded-2xl border border-border bg-surface p-4" aria-label="Order approvals">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="text-[14px] font-extrabold text-slate-900">Tomorrow&apos;s orders{view.planDay ? <span className="ml-2 text-[11.5px] font-semibold text-slate-500">from the close of {view.planDay}</span> : null}</h2>
-        <span className={`rounded px-1.5 py-0.5 text-[11px] font-black uppercase tracking-wide ${live ? "bg-rose-600 text-white" : "bg-slate-200 text-slate-700"}`} title={live ? "Approve places real orders with Fyers." : "Approve only checks and logs the orders. Nothing is sent to the broker."}>{live ? "Live: real orders" : "Dry run: nothing is sent"}</span>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-[16px] font-extrabold text-slate-900">Order approvals{view.planDay ? <span className="ml-2 text-[11.5px] font-semibold text-slate-500">· plan from {view.planDay}</span> : null}</h2>
+          <p className="mt-1 text-[12px] text-slate-600">These are proposed real buys, separate from your paper strategy and position journal. No order is sent until you review and confirm.</p>
+        </div>
+        <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${live ? "bg-rose-100 text-rose-800" : "bg-slate-100 text-slate-700"}`} title={live ? "A confirmed approval can place real orders with Fyers." : "Approval only checks and logs these orders. Nothing is sent to the broker."}>{live ? "Real orders enabled" : "Dry run · no broker order"}</span>
       </div>
 
+      <details className="rounded-xl bg-slate-50 px-3 py-2 text-[12px] text-slate-700">
+        <summary className="cursor-pointer font-bold text-slate-800">How approval works</summary>
+        <ol className="mt-2 list-decimal space-y-1 pl-5 leading-5">
+          <li>Review each proposed buy, quantity, limit price and stop below.</li>
+          <li>Select <b>Review and approve</b>, then confirm on the next prompt. That second confirmation is required for every submission.</li>
+          <li>In dry-run mode, it only records a simulation. Real orders require live order mode and an active Fyers login; the confirm action then sends the listed buys to Fyers.</li>
+          <li>After a real buy fills, verify the quantity and average price with Fyers, set its stop in your broker, then enter the actual fill under <b>Your real positions</b>. The app does not sync broker holdings or submit sell orders.</li>
+        </ol>
+      </details>
+
+      {loadError && <p role="status" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] font-semibold text-amber-900">{loadError}</p>}
       {n === 0 ? (
         <p className="text-[12.5px] text-slate-600">{view.blocks.find((b) => !b.startsWith("There is nothing")) ?? "No buys fit for the next open. The plan only lists a buy when the market check passes and a breakout fits your account."}</p>
       ) : (
@@ -95,7 +140,9 @@ export function OrdersPanel() {
 
       {n > 0 && view.blocks.length > 0 && !view.alreadySent && <p role="alert" className="rounded-lg bg-amber-50 px-3 py-2 text-[12px] font-semibold text-amber-900">Cannot send yet: {view.blocks.join(" ")}</p>}
       {view.alreadySent && <p className="rounded-lg bg-slate-50 px-3 py-2 text-[12px] font-semibold text-slate-700">These orders were already sent. Check your broker&apos;s order list.</p>}
+      {live && shown?.some((result) => result.orderId) && <p className="text-[11px] text-slate-500">Broker status is checked from today&apos;s Fyers order book every 30 seconds. Verify fills in Fyers before recording them in your positions.</p>}
       {error && <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-[12px] font-semibold text-rose-800">{error}</p>}
+      {view.orderStatusError && <p role="status" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] font-semibold text-amber-900">{view.orderStatusError} Do not submit the same orders again until you verify them with Fyers.</p>}
 
       {n > 0 && view.blocks.length === 0 && !view.alreadySent && (
         <div className="flex flex-wrap items-center gap-2">
@@ -114,8 +161,10 @@ export function OrdersPanel() {
       {shown && shown.length > 0 && (
         <ul className="space-y-0.5 text-[12px]" aria-label="What happened to each order">
           {shown.map((r) => (
-            <li key={r.symbol} className={r.status === "placed" ? "text-emerald-800" : r.status === "dry-run" ? "text-slate-700" : "font-semibold text-rose-800"}>
-              <b>{r.symbol}</b>: {r.status === "placed" ? "placed" : r.status === "dry-run" ? "dry run" : r.status}. {r.detail}{r.orderId ? ` (order ${r.orderId})` : ""}
+            <li key={r.symbol} className={resultTone(r)}>
+              <b>{r.symbol}</b>: {r.brokerState ? brokerStateLabel[r.brokerState] : r.status === "placed" ? "Submitted to Fyers" : r.status === "dry-run" ? "Dry run; nothing sent" : r.status}. {r.detail}
+              {r.filledQty != null ? ` Filled ${r.filledQty}${r.remainingQuantity != null ? ` · ${r.remainingQuantity} remaining` : ""}${r.tradedPrice ? ` at ₹${px(r.tradedPrice)}` : ""}.` : ""}
+              {r.brokerMessage ? ` ${r.brokerMessage}` : ""}{r.orderId ? ` (order ${r.orderId})` : ""}
             </li>
           ))}
         </ul>

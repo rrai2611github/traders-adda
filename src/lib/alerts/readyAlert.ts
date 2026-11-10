@@ -7,7 +7,8 @@ import { movingAverageBreadth } from "@/lib/screen/breadth";
 import { readyToRun } from "@/lib/screen/readyToRun";
 import { scanUniverse } from "@/lib/screen/scan";
 import { notifyOwner, ownerAlertAddress } from "./personal";
-import { decideReadyAlert, EMPTY_READY_STATE, readyAlertMessage, type ReadyAlertState } from "./readyAlertRules";
+import { acknowledgeReadyAlert, decideReadyAlert, EMPTY_READY_STATE, readyAlertMessage, type ReadyAlertState } from "./readyAlertRules";
+import { deliverAlertBatch } from "./alertDelivery";
 
 /**
  * Emails the owner (PERSONAL_ALERT_EMAIL) when a "Ready to run" stock breaks out, and after the close when new stocks join the list.
@@ -47,18 +48,20 @@ async function check(now = Date.now()) {
       .map((row) => ({ symbol: row.symbol, rs: row.rs ?? 0, ext: row.ext ?? 0 }));
     const live = getMarketStatus(now).isLive;
     const reading = { day: shifted.toISOString().slice(0, 10), afterClose: !live && getActiveSession(now).progress === 1, ready, broke };
-    const { state: next, alerts } = decideReadyAlert(readState(), reading);
-    if (alerts.length) {
+    const previous = readState();
+    const decision = decideReadyAlert(previous, reading);
+    if (decision.alerts.length) {
       const today = istDateKey(now);
       const calendar = await getResultsDates(today);
       const resultsInDays = Object.fromEntries(Object.entries(calendar?.dates ?? {}).map(([symbol, date]) => [symbol, daysUntil(date, today)]));
       const breadth50 = movingAverageBreadth(eligible, "vs50").percent;
-      for (const alert of alerts) {
+      await deliverAlertBatch(previous, decision, async (alert) => {
         const message = readyAlertMessage(alert, { breadth50, resultsInDays });
-        await notifyOwner(message.subject, message.lines);
-      }
+        return notifyOwner(message.subject, message.lines);
+      }, (state, alert) => acknowledgeReadyAlert(state, alert, reading), writeState);
+    } else {
+      writeState(decision.state);
     }
-    writeState(next);
   } catch (error) {
     console.error("[ready-alert] check failed:", error instanceof Error ? error.message : error);
   } finally {

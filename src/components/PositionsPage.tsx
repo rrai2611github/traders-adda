@@ -11,6 +11,8 @@ import { DEFAULT_STOP_PERCENT, EXIT_LABEL, NEEDS_ACTION, SECTOR_LIMIT, fillSlipp
 import type { PositionsView } from "@/lib/positions/positionsServer";
 import { Term } from "./Term";
 import { OrdersPanel } from "./OrdersPanel";
+import { TrackerPage } from "./TrackerPage";
+import { EmailActivityPanel } from "./EmailActivityPanel";
 
 const px = (v: number) => v.toLocaleString("en-IN", { maximumFractionDigits: 2 });
 const signedMoney = (v: number) => `${v >= 0 ? "+" : "−"}${money(Math.abs(v))}`;
@@ -97,7 +99,7 @@ function PlanEmailSwitch({ accountSize }: { accountSize: number }) {
 }
 
 /** What a pick passes along when you tap "Add to My positions": its symbol, the planned buy price and the planned stop. */
-interface Prefill { symbol: string; buy: number | null; stop: number | null }
+interface Prefill { symbol: string; buy: number | null; stop: number | null; source: string | null }
 
 function AddForm({ prefill, onDone, onError }: { prefill: Prefill | null; onDone: (view: PositionsView) => void; onError: (message: string) => void }) {
   const [symbol, setSymbol] = useState(prefill?.symbol ?? "");
@@ -106,6 +108,7 @@ function AddForm({ prefill, onDone, onError }: { prefill: Prefill | null; onDone
   const [price, setPrice] = useState(prefill?.buy != null ? String(prefill.buy) : "");
   const [date, setDate] = useState(todayIst());
   const [stop, setStop] = useState(prefill?.stop != null ? String(prefill.stop) : "");
+  const [source, setSource] = useState(prefill?.source ?? "");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const { accountSize: capital, setAccountSize: setCapital } = useAccountSize();
@@ -125,13 +128,13 @@ function AddForm({ prefill, onDone, onError }: { prefill: Prefill | null; onDone
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setBusy(true);
-    const result = await call({ action: "add", symbol, qty: Number(shares), buyPrice: priceNum, buyDate: date, stop: stop === "" ? undefined : Number(stop), plannedPrice: planned ?? undefined, note });
+    const result = await call({ action: "add", symbol, qty: Number(shares), buyPrice: priceNum, buyDate: date, stop: stop === "" ? undefined : Number(stop), plannedPrice: planned ?? undefined, source, note });
     setBusy(false);
     if (result.error || !result.view) { onError(result.error ?? "That did not work."); return; }
     onError("");
     showToast("Position added");
     onDone(result.view);
-    setSymbol(""); setQty(""); setQtyTyped(false); setPrice(""); setStop(""); setNote("");
+    setSymbol(""); setQty(""); setQtyTyped(false); setPrice(""); setStop(""); setSource(""); setNote("");
   };
 
   return (
@@ -144,6 +147,7 @@ function AddForm({ prefill, onDone, onError }: { prefill: Prefill | null; onDone
         <label className={label}>Stop ₹ (optional)<input className={`${field} w-28`} type="number" min={0} step="any" value={stop} onChange={(e) => setStop(e.target.value)} placeholder={ruleDefault != null ? String(ruleDefault) : `${DEFAULT_STOP_PERCENT}% below`} /></label>
         <label className={label}>Shares<input className={`${field} w-24`} type="number" min={1} step={1} value={shares} onChange={(e) => { setQty(e.target.value); setQtyTyped(true); }} required /></label>
         <label className={label}>Bought on<input className={`${field} w-40`} type="date" max={todayIst()} value={date} onChange={(e) => setDate(e.target.value)} required /></label>
+        <label className={`${label} min-w-[190px] flex-1`}>Algo / screener (optional)<input className={`${field} w-full`} value={source} maxLength={80} onChange={(e) => setSource(e.target.value)} placeholder="e.g. Blue sky, RSI Edge" /></label>
         <label className={`${label} min-w-[180px] flex-1`}>Note (optional)<input className={`${field} w-full`} value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} placeholder="Why you bought" /></label>
         <button type="submit" disabled={busy} className="btn-gold h-9 rounded-lg px-4 text-[13px] font-extrabold">{busy ? "Saving…" : "Add position"}</button>
       </div>
@@ -196,8 +200,14 @@ function SellForm({ holding, status, onDone, onError, onCancel }: { holding: Hol
 export function PositionsPage() {
   const [view, setView] = useState<PositionsView | null>(null);
   const [message, setMessage] = useState("");
+  const [refreshError, setRefreshError] = useState("");
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [selling, setSelling] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [editingSource, setEditingSource] = useState<string | null>(null);
+  const [sourceDraft, setSourceDraft] = useState("");
+  const [sourceBusy, setSourceBusy] = useState(false);
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   // "Add to My positions" on a pick opens this page with the symbol, planned buy price and planned stop in the address.
   useEffect(() => {
@@ -205,47 +215,101 @@ export function PositionsPage() {
     const symbol = (q.get("symbol") ?? "").trim().toUpperCase();
     if (!/^[A-Z0-9&_-]{1,20}$/.test(symbol)) return;
     const num = (key: string) => { const v = Number(q.get(key)); return Number.isFinite(v) && v > 0 ? v : null; };
-    const id = setTimeout(() => setPrefill({ symbol, buy: num("buy"), stop: (() => { const v = num("stop"); return v == null ? null : Math.floor(v * 20) / 20; })() }), 0);
+    const rawSource = q.get("source");
+    const id = setTimeout(() => setPrefill({ symbol, buy: num("buy"), stop: (() => { const v = num("stop"); return v == null ? null : Math.floor(v * 20) / 20; })(), source: rawSource?.slice(0, 80) ?? null }), 0);
     return () => clearTimeout(id);
   }, []);
 
   useEffect(() => {
     let alive = true;
-    const pull = () => {
-      fetch("/api/positions", { cache: "no-store" })
-        .then((res) => (res.ok ? (res.json() as Promise<PositionsView>) : null))
-        .then((next) => { if (alive && next) setView(next); })
-        .catch(() => { /* the page keeps what it has */ });
+    const pull = async () => {
+      try {
+        const res = await fetch("/api/positions", { cache: "no-store" });
+        if (!res.ok) throw new Error(`Position refresh failed (${res.status}).`);
+        const next = (await res.json()) as PositionsView;
+        if (alive) {
+          setView(next);
+          setRefreshError("");
+          setLastUpdated(Date.now());
+        }
+      } catch {
+        if (alive) setRefreshError("Could not refresh position checks. Showing the last loaded data; try again shortly.");
+      }
     };
-    pull();
-    const timer = setInterval(pull, 300_000);
+    void pull();
+    const timer = setInterval(() => void pull(), 30_000);
     return () => { alive = false; clearInterval(timer); };
-  }, []);
+  }, [refreshKey]);
 
-  const accept = (next: PositionsView) => { setView(next); setSelling(null); setRemoving(null); };
+  const accept = (next: PositionsView) => { setView(next); setSelling(null); setRemoving(null); setEditingSource(null); };
   const remove = async (id: string) => {
     const result = await call({ action: "remove", id });
     if (result.view) { setMessage(""); showToast("Position removed"); accept(result.view); } else setMessage(result.error ?? "That did not work.");
+  };
+  const saveSource = async (id: string) => {
+    setSourceBusy(true);
+    const result = await call({ action: "source", id, source: sourceDraft });
+    setSourceBusy(false);
+    if (result.error || !result.view) { setMessage(result.error ?? "Could not save the strategy or screener."); return; }
+    setMessage("");
+    showToast("Trade source updated");
+    accept(result.view);
   };
 
   const open = view?.open ?? [];
   const due = open.filter((i) => NEEDS_ACTION.has(i.assessment.status));
   const j = view?.journal;
+  const marketValue = view?.exposure.invested ?? 0;
+  const openPnl = view?.exposure.openPnl ?? 0;
+  const latestUpdate = lastUpdated == null ? "Waiting for first update" : `Updated ${new Date(lastUpdated).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`;
 
   return (
     <AppShell current="positions">
-    <div className="mx-auto w-full min-w-0 max-w-[1180px] space-y-5 px-4 py-6 lg:px-6">
+    <div className="mx-auto w-full min-w-0 max-w-[1320px] space-y-4 px-4 py-5 lg:px-6">
       <header className="flex flex-wrap items-center gap-3">
         <div>
-          <h1 className="text-[20px] font-extrabold tracking-[-0.02em] text-slate-900">My positions</h1>
-          <p className="text-[12.5px] text-slate-500">Your real trades, watched against the tested exit rules, with a journal of what you did. Enter what you bought; the app tells you when the rules say sell. It sends a buy order only when you approve it yourself below, never a sell, and never on its own.</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">Trading workspace</p>
+          <h1 className="mt-0.5 text-[25px] font-extrabold tracking-[-0.04em] text-slate-900">Portfolio</h1>
+          <p className="mt-1 text-[12px] leading-5 text-slate-500">Your recorded holdings, risk checks and broker order review in one place.</p>
         </div>
-        <a href="/api/positions/export" download title="Every position, open and closed, as a spreadsheet file. The app also keeps a daily backup copy for the last 30 days in .cache/backups." className="ml-auto rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-emerald-500 hover:text-emerald-700">Download my records (CSV)</a>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-800" role="status"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{latestUpdate} · checks every 30s</span>
+          <button type="button" onClick={() => setRefreshKey((key) => key + 1)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm hover:border-emerald-500 hover:text-emerald-700">Refresh</button>
+          <a href="/api/positions/export" download title="Every position, open and closed, as a spreadsheet file." className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm hover:border-emerald-500 hover:text-emerald-700">Export</a>
+        </div>
       </header>
 
-      {message && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-800">{message}</p>}
+      <section className="overflow-hidden rounded-2xl bg-[#0b1a34] text-white shadow-lg" aria-label="Portfolio overview">
+        <div className="flex flex-wrap items-end justify-between gap-5 bg-[radial-gradient(ellipse_at_top_right,rgba(49,92,151,0.42),transparent_58%)] px-5 py-5 sm:px-7 sm:py-6">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-300">Portfolio value · last close</p>
+            <p className="mt-1 font-mono text-[32px] font-bold tracking-[-0.04em] sm:text-[38px]">{view ? money(marketValue) : "—"}</p>
+            <p className="mt-1 text-[11px] text-slate-300">{view?.lastDay ? `Price history through ${dayLabel(view.lastDay)}` : "Waiting for portfolio data"}</p>
+          </div>
+          <div className="min-w-[155px] rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-300">Open P/L · last close</p>
+            <p className={`mt-1 font-mono text-[20px] font-bold ${openPnl >= 0 ? "text-emerald-300" : "text-rose-300"}`}>{view ? signedMoney(openPnl) : "—"}</p>
+            <p className="text-[10px] text-slate-400">Unrealized · before costs</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 divide-x divide-white/10 border-t border-white/10 sm:grid-cols-4">
+          <div className="px-5 py-3 sm:px-7"><p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">Cost invested</p><p className="mt-1 font-mono text-[14px] font-bold">{view ? money(view.exposure.costBasis) : "—"}</p></div>
+          <div className="px-5 py-3 sm:px-7"><p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">Open positions</p><p className="mt-1 font-mono text-[14px] font-bold">{view ? `${open.length}` : "—"}</p></div>
+          <div className="border-t border-white/10 px-5 py-3 sm:border-t-0 sm:px-7"><p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">Needs attention</p><p className={`mt-1 font-mono text-[14px] font-bold ${due.length ? "text-amber-300" : "text-emerald-300"}`}>{view ? due.length : "—"}</p></div>
+          <div className="border-t border-white/10 px-5 py-3 sm:border-t-0 sm:px-7"><p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">At risk if stops hit</p><p className="mt-1 font-mono text-[14px] font-bold text-rose-300">{view ? signedMoney(view.exposure.ifAllStopsHit) : "—"}</p></div>
+        </div>
+      </section>
 
-      <OrdersPanel />
+      <nav aria-label="Portfolio sections" className="flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface p-1.5 shadow-sm">
+        <a href="#my-positions" className="rounded-lg bg-[#0b1a34] px-3 py-2 text-[11px] font-bold text-white">Holdings <span className="ml-1 text-slate-300">{view ? open.length : "…"}</span></a>
+        <a href="#order-approvals" className="rounded-lg px-3 py-2 text-[11px] font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900">Order review</a>
+        <a href="#strategy-check" className="rounded-lg px-3 py-2 text-[11px] font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900">Paper strategy</a>
+        <a href="#email-activity" className="rounded-lg px-3 py-2 text-[11px] font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900">Email Activity</a>
+        <span className="ml-auto hidden px-3 text-[10px] text-slate-500 sm:inline">Quotes update during market hours · exit rules use completed daily candles</span>
+      </nav>
+
+      {message && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-800">{message}</p>}
+      {refreshError && <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900">{refreshError}</p>}
 
       {due.length > 0 && (
         <section className="rounded-2xl border border-rose-300 bg-rose-50 p-4" aria-label="Needs a decision">
@@ -266,16 +330,26 @@ export function PositionsPage() {
         </section>
       )}
 
-      <AddForm key={prefill ? `from-${prefill.symbol}` : "blank"} prefill={prefill} onDone={accept} onError={setMessage} />
-
-      {view && open.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Stat label="Open positions" value={String(open.length)} />
-          <Stat label="In the market" value={money(view.exposure.invested)} note="at the last close" />
-          <Stat label="Open profit / loss" value={signedMoney(view.exposure.openPnl)} tone={view.exposure.openPnl >= 0 ? "good" : "bad"} />
-          <Stat label="If every stop is hit" value={signedMoney(view.exposure.ifAllStopsHit)} tone="bad" note="from the last close" />
+      <section id="my-positions" aria-labelledby="my-positions-title" className="scroll-mt-20 space-y-3">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-emerald-700">Real portfolio</p>
+          <h2 id="my-positions-title" className="mt-0.5 text-[18px] font-extrabold tracking-[-0.03em] text-slate-900">Open positions <span className="ml-1 text-[13px] font-semibold text-slate-400">{view ? open.length : "…"}</span></h2>
+          <p className="mt-0.5 text-[11px] text-slate-500">Manually recorded holdings · not synced from your broker</p>
         </div>
-      )}
+      </header>
+      <details id="add-position" open={!!prefill} className="group overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+        <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 [&::-webkit-details-marker]:hidden">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-700 text-lg font-medium leading-none text-white">+</span>
+          <span className="text-[12px] font-extrabold text-slate-900">Add a position</span>
+          <span className="hidden text-[11px] text-slate-500 sm:inline">Record the actual fill after your broker confirms it</span>
+          <span className="ml-auto text-[11px] font-bold text-emerald-700 group-open:hidden">Open form</span>
+          <span className="ml-auto hidden text-[11px] font-bold text-slate-500 group-open:inline">Close form</span>
+        </summary>
+        <div className="border-t border-border p-3 sm:p-4">
+          <AddForm key={prefill ? `from-${prefill.symbol}` : "blank"} prefill={prefill} onDone={accept} onError={setMessage} />
+        </div>
+      </details>
 
       <section className="space-y-3" aria-label="Open positions">
         <h2 className="text-[13px] font-extrabold text-slate-900">Open positions</h2>
@@ -284,35 +358,54 @@ export function PositionsPage() {
         ) : open.length === 0 ? (
           <p className="rounded-xl border border-border bg-surface px-4 py-6 text-center text-sm text-slate-500">No open positions. When you buy a stock, add it above and the app will watch it for you.</p>
         ) : (
-          <ul className="grid gap-3 lg:grid-cols-2">
+          <ul className="grid gap-2">
             {open.map(({ holding: h, assessment: a, sector }) => (
-              <li key={h.id} className={`min-w-0 rounded-xl border p-3.5 ${STATUS[a.status].card}`}>
-                <div className="flex flex-wrap items-start justify-between gap-2">
+              <li key={h.id} className={`min-w-0 rounded-xl border px-3 py-2.5 ${STATUS[a.status].card}`}>
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                   <div className="min-w-0">
-                    <StockSymbolButton symbol={h.symbol} className="text-sm font-black text-slate-900">{h.symbol}</StockSymbolButton>
-                    <div className="text-[11px] text-slate-500">{h.qty} shares at ₹{px(h.buyPrice)} on {dayLabel(h.buyDate)} · {a.daysHeld} day{a.daysHeld === 1 ? "" : "s"}{sector ? ` · ${sector}` : ""}</div>
-                    {h.plannedPrice != null && fillSlippagePercent(h) != null && (
-                      <div className="text-[11px] text-slate-500">Planned ₹{px(h.plannedPrice)} · paid <b className={fillSlippagePercent(h)! > 0.05 ? "text-amber-700" : "text-slate-700"}>{fillSlippagePercent(h)! >= 0 ? "+" : "−"}{Math.abs(fillSlippagePercent(h)!).toFixed(2)}%</b> {fillSlippagePercent(h)! >= 0 ? "above" : "below"} the plan</div>
-                    )}
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <StockSymbolButton symbol={h.symbol} className="text-sm font-black text-slate-900">{h.symbol}</StockSymbolButton>
+                      <span className={`rounded px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${STATUS[a.status].chip}`}>{STATUS[a.status].label}</span>
+                      {sector && <span className="text-[11px] text-slate-500">{sector}</span>}
+                    </div>
+                    <p className="text-[11px] text-slate-500">{h.qty.toLocaleString("en-IN")} shares × ₹{px(h.buyPrice)} · bought {dayLabel(h.buyDate)} · {a.daysHeld} day{a.daysHeld === 1 ? "" : "s"}</p>
                   </div>
-                  <span className={`rounded px-2 py-0.5 text-[11.5px] font-black uppercase tracking-wide ${STATUS[a.status].chip}`}>{STATUS[a.status].label}</span>
+                  <div className="shrink-0 text-right">
+                    <div className="text-[9px] font-black uppercase tracking-wide text-slate-400">Cost invested</div>
+                    <div className="font-mono text-[13px] font-black text-slate-900">{money(h.qty * h.buyPrice)}</div>
+                  </div>
                 </div>
-                <p className="mt-2 text-[12.5px] font-bold leading-5 text-slate-800">{a.headline}</p>
-                <p className="text-[12px] leading-5 text-slate-600">{a.action}</p>
-                <dl className="mt-2 grid grid-cols-3 gap-2 text-[11px]">
-                  <div><dt className="font-black uppercase tracking-wide text-slate-400">Price now</dt><dd className="font-bold text-slate-800"><LivePrice symbol={h.symbol} fallbackPrice={a.last ?? h.buyPrice} fallbackChange={null} /></dd></div>
-                  <div><dt className="font-black uppercase tracking-wide text-rose-700">Stop</dt><dd className="font-mono font-bold text-slate-800">₹{px(h.stop)}</dd></div>
-                  <div><dt className="font-black uppercase tracking-wide text-slate-400"><Term k="exit50">50-day avg</Term></dt><dd className="font-mono font-bold text-slate-800">{a.sma50 != null ? `₹${px(a.sma50)}` : "—"}</dd></div>
-                  <div><dt className="font-black uppercase tracking-wide text-slate-400">At last close</dt><dd className={`font-mono font-bold ${a.pnl != null ? tone(a.pnl) : ""}`}>{a.pnl != null ? signedMoney(a.pnl) : "—"}{a.pnlPercent != null ? ` (${a.pnlPercent >= 0 ? "+" : "−"}${Math.abs(a.pnlPercent).toFixed(1)}%)` : ""}</dd></div>
-                  <div><dt className="font-black uppercase tracking-wide text-slate-400">In R</dt><dd className={`font-mono font-bold ${a.rNow != null ? tone(a.rNow) : ""}`}>{a.rNow != null ? signedR(a.rNow) : "—"}</dd></div>
-                  <div><dt className="font-black uppercase tracking-wide text-slate-400">Last close</dt><dd className="font-mono font-bold text-slate-800">{a.lastDate ? dayLabel(a.lastDate) : "—"}</dd></div>
-                </dl>
-                {h.note && <p className="mt-2 text-[11.5px] italic text-slate-500">“{h.note}”</p>}
+                <div className="mt-1 flex flex-wrap items-center gap-x-1 text-[11px] text-slate-600">
+                  <span className="font-bold text-slate-500">Algo / screener:</span>
+                  <span>{h.source ?? "Not recorded"}</span>
+                  {editingSource === h.id ? null : <button type="button" onClick={() => { setEditingSource(h.id); setSourceDraft(h.source ?? ""); setSelling(null); setRemoving(null); }} className="ml-1 font-bold text-emerald-700 hover:underline">Edit</button>}
+                </div>
+                {editingSource === h.id && (
+                  <form onSubmit={(event) => { event.preventDefault(); void saveSource(h.id); }} className="mt-2 flex flex-wrap items-end gap-2" aria-label={`Edit ${h.symbol} strategy or screener`}>
+                    <label className={`${label} min-w-[200px] flex-1`}>Algo / screener<input className={`${field} w-full`} value={sourceDraft} maxLength={80} onChange={(event) => setSourceDraft(event.target.value)} placeholder="e.g. Blue sky, RSI Edge" /></label>
+                    <button type="submit" disabled={sourceBusy} className="h-9 rounded-lg bg-emerald-700 px-3 text-[11px] font-bold text-white disabled:opacity-50">{sourceBusy ? "Saving…" : "Save source"}</button>
+                    <button type="button" onClick={() => setEditingSource(null)} className="h-9 rounded-lg border border-slate-200 px-3 text-[11px] font-bold text-slate-600">Cancel</button>
+                  </form>
+                )}
+                <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 sm:grid-cols-4">
+                  <div className="text-[11px]"><span className="text-slate-400">Price now </span><b className="text-slate-800"><LivePrice symbol={h.symbol} fallbackPrice={a.last ?? h.buyPrice} fallbackChange={null} /></b></div>
+                  <div className="text-[11px]"><span className="text-slate-400">P/L at close </span><b className={a.pnl != null ? tone(a.pnl) : ""}>{a.pnl != null ? `${signedMoney(a.pnl)}${a.pnlPercent != null ? ` (${a.pnlPercent >= 0 ? "+" : "−"}${Math.abs(a.pnlPercent).toFixed(1)}%)` : ""}` : "—"}</b></div>
+                  <div className="text-[11px]"><span className="text-rose-700">Stop </span><b className="font-mono text-slate-800">₹{px(h.stop)}</b></div>
+                  <div className="text-[11px]"><span className="text-slate-400"><Term k="exit50">50-day avg</Term> </span><b className="font-mono text-slate-800">{a.sma50 != null ? `₹${px(a.sma50)}` : "—"}</b></div>
+                </div>
+                <details className="mt-1.5 text-[11px] text-slate-600">
+                  <summary className="cursor-pointer font-bold text-slate-700">Exit check &amp; trade details</summary>
+                  <p className="mt-1 font-semibold text-slate-800">{a.headline}</p>
+                  <p>{a.action}</p>
+                  {a.rNow != null && <p>Current result: {signedR(a.rNow)} · last candle {a.lastDate ? dayLabel(a.lastDate) : "—"}.</p>}
+                  {h.plannedPrice != null && fillSlippagePercent(h) != null && <p>Planned ₹{px(h.plannedPrice)} · paid <b className={fillSlippagePercent(h)! > 0.05 ? "text-amber-700" : "text-slate-700"}>{fillSlippagePercent(h)! >= 0 ? "+" : "−"}{Math.abs(fillSlippagePercent(h)!).toFixed(2)}%</b> {fillSlippagePercent(h)! >= 0 ? "above" : "below"} the plan.</p>}
+                  {h.note && <p className="italic">Note: “{h.note}”</p>}
+                </details>
                 {selling === h.id ? (
                   <SellForm holding={h} status={a.status} onDone={accept} onError={setMessage} onCancel={() => setSelling(null)} />
                 ) : (
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <button type="button" onClick={() => { setSelling(h.id); setRemoving(null); }} className={`rounded-lg px-3 py-1.5 text-[12px] font-extrabold ${NEEDS_ACTION.has(a.status) ? "bg-rose-600 text-white hover:bg-rose-700" : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}>I sold it</button>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <button type="button" onClick={() => { setSelling(h.id); setRemoving(null); setEditingSource(null); }} className={`rounded-lg px-3 py-1 text-[11px] font-extrabold ${NEEDS_ACTION.has(a.status) ? "bg-rose-600 text-white hover:bg-rose-700" : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}>I sold it</button>
                     {removing === h.id ? (
                       <>
                         <span className="text-[11.5px] text-slate-600">Delete this entry (a typo, not a sale)?</span>
@@ -337,7 +430,7 @@ export function PositionsPage() {
       </section>
 
       <section className="space-y-3 rounded-2xl border border-border bg-surface p-4" aria-label="Journal">
-        <h2 className="text-[13px] font-extrabold text-slate-900">Journal: how your real trades went</h2>
+        <h3 className="text-[13px] font-extrabold text-slate-900">Journal: how your real trades went</h3>
         {!j || j.count === 0 ? (
           <p className="text-[12.5px] text-slate-600">{j?.lines[0] ?? "Loading…"}</p>
         ) : (
@@ -359,12 +452,13 @@ export function PositionsPage() {
             )}
             <div className="overflow-x-auto">
               <p className="mb-1 text-[11px] text-slate-500">Prices in rupees (₹). R is the profit as a multiple of the amount risked on the trade.</p>
-              <table className="w-full min-w-[640px] text-left text-[12px]">
-                <thead><tr className="text-[11.5px] font-bold uppercase tracking-[0.06em] text-slate-500"><th className="py-1 pr-3">Stock</th><th className="py-1 pr-3">Bought</th><th className="py-1 pr-3">Sold</th><th className="py-1 pr-3">Why</th><th className="py-1 pr-3">Result</th><th className="py-1">R</th></tr></thead>
+              <table className="w-full min-w-[760px] text-left text-[12px]">
+                <thead><tr className="text-[11.5px] font-bold uppercase tracking-[0.06em] text-slate-500"><th className="py-1 pr-3">Stock</th><th className="py-1 pr-3">Algo / screener</th><th className="py-1 pr-3">Bought</th><th className="py-1 pr-3">Sold</th><th className="py-1 pr-3">Why</th><th className="py-1 pr-3">Result</th><th className="py-1">R</th></tr></thead>
                 <tbody>
                   {view!.closed.map((t) => (
                     <tr key={t.holding.id} className="border-t border-border">
                       <td className="py-1.5 pr-3 font-bold text-slate-900">{t.holding.symbol}</td>
+                      <td className="py-1.5 pr-3 text-slate-600">{t.holding.source ?? "Not recorded"}</td>
                       <td className="py-1.5 pr-3">₹{px(t.holding.buyPrice)} · {dayLabel(t.holding.buyDate)}</td>
                       <td className="py-1.5 pr-3">₹{px(t.holding.sold!.price)} · {dayLabel(t.holding.sold!.date)}</td>
                       <td className="py-1.5 pr-3">{EXIT_LABEL[t.holding.sold!.reason]}</td>
@@ -378,6 +472,12 @@ export function PositionsPage() {
           </>
         )}
       </section>
+      </section>
+
+      <OrdersPanel />
+
+      <TrackerPage />
+      <EmailActivityPanel />
     </div>
     </AppShell>
   );

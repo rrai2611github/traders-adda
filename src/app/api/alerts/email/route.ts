@@ -6,6 +6,7 @@ import {
   testEmailConnection,
 } from "@/lib/alerts/hourlyEmail";
 import { withPreviewLogo } from "@/lib/alerts/brand";
+import { MarketEmailBlockedError } from "@/lib/alerts/marketEmailPolicy";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +57,6 @@ export async function POST(request: Request) {
     return Response.json({
       ok: false,
       error: error instanceof Error ? error.message : String(error),
-    }, { status: 502, headers: noStore });
+    }, { status: error instanceof MarketEmailBlockedError ? 409 : 502, headers: noStore });
   }
 }

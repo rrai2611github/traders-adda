@@ -566,6 +566,8 @@ interface EmailAlertInfo {
   lastError: string | null;
   preview: AlertTable | null;
   previewError: string | null;
+  sendBlockedReason: string | null;
+  calendarWarning: string | null;
 }
 
 async function fetchEmailAlertInfo(): Promise<EmailAlertInfo | null> {
@@ -645,7 +647,7 @@ function HourlyEmailPanel() {
           </button>
           <button
             type="button"
-            disabled={!info?.configured || busy}
+            disabled={!info?.configured || busy || Boolean(info?.sendBlockedReason)}
             onClick={() => void post(false)}
             className="rounded-lg bg-[#1f5fbf] px-2.5 py-1.5 font-bold text-white disabled:opacity-50"
           >
@@ -660,6 +662,8 @@ function HourlyEmailPanel() {
       </p>
       {info?.preview && <p className="mt-1 font-semibold text-foreground">Current email contains {Math.min(10, info.preview.rows.length)} picks.</p>}
       {info?.previewError && <p className="mt-1 font-semibold text-down">{info.previewError}</p>}
+      {info?.sendBlockedReason && <p role="status" className="mt-1 font-semibold text-muted">{info.sendBlockedReason}</p>}
+      {info?.calendarWarning && <p role="alert" className="mt-1 font-semibold text-down">{info.calendarWarning}</p>}
       {info?.lastError && <p className="mt-1 font-semibold text-down">Last error: {info.lastError}</p>}
       {message && <p role="status" className="mt-1 font-semibold text-foreground">{message}</p>}
     </div>

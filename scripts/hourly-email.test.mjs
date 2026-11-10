@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildHourlyEmail, emailSlotKey } from "../src/lib/alerts/hourlyEmailFormat.ts";
+import { isTradingDay } from "../src/lib/market/marketHours.ts";
 import { buildEmailTableSvg, renderEmailTablePng } from "../src/lib/alerts/emailImage.ts";
 import { topConfluence, withConfluence } from "../src/lib/alerts/hourlyConfluence.ts";
 
@@ -13,6 +14,13 @@ test("hourly email slots start at 09:15 and stop when NSE closes", () => {
   assert.equal(emailSlotKey(atIst("2026-09-28T10:15:00")), "2026-09-28:1");
   assert.equal(emailSlotKey(atIst("2026-09-28T15:29:59")), "2026-09-28:6");
   assert.equal(emailSlotKey(atIst("2026-09-28T15:30:00")), null);
+});
+
+test("hourly email slots are suppressed on NSE holidays", () => {
+  const holidayOpen = atIst("2026-11-10T10:15:00");
+  assert.equal(isTradingDay(holidayOpen), false);
+  assert.equal(emailSlotKey(holidayOpen), null);
+  assert.equal(emailSlotKey(atIst("2026-11-11T10:15:00")), "2026-11-11:1");
 });
 
 const baseRow = {

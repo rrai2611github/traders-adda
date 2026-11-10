@@ -205,7 +205,7 @@ export function TradePlanCard({ symbol }: { symbol: string }) {
       </div>
 
       <a
-        href={`/positions?symbol=${encodeURIComponent(symbol)}&buy=${plan.entry}&stop=${plan.stop}`}
+        href={`/positions?symbol=${encodeURIComponent(symbol)}&buy=${plan.entry}&stop=${plan.stop}&source=${encodeURIComponent("Blue sky / Multi-year breakouts")}`}
         className="mt-3 block rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:border-emerald-500 hover:text-emerald-700"
       >
         Bought it? Add it to My positions with this plan filled in →

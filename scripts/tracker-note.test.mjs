@@ -28,6 +28,7 @@ test("the daily note says what the account did, what closed or was bought today,
   assert.match(text, /FAR: .*\(40\.0% away\)/);
   assert.doesNotMatch(text.split("FAR:")[1] ?? "", /close to its exit/);
   assert.match(text, /Next open the rules would buy: NEW \(RS 96, about 50 shares, stop ₹276\)/);
+  assert.match(text, /sent after the daily price refresh and replay, not as an instant trade alert/);
 });
 
 test("with the market check red the note says no buys, and with nothing held it says so", () => {

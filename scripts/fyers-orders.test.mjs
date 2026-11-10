@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buyPayload, floorToTick, fyersSymbol, orderTag, planFingerprint, sendBlocks } from "../src/lib/orders/fyersOrders.ts";
+import { brokerOrderState, buyPayload, floorToTick, fyersSymbol, orderTag, planFingerprint, sendBlocks } from "../src/lib/orders/fyersOrders.ts";
 
 const o = (symbol, shares = 10, skipAbove = 105.07, invested = 1000) => ({ symbol, shares, skipAbove, invested });
 const ok = { accountSize: 100_000, planDay: "2026-10-30", dataDay: "2026-10-30", killed: false };
@@ -26,6 +26,17 @@ test("symbols and tags are safe for the broker", () => {
   assert.equal(orderTag("2026-10-30", "BAJAJ-AUTO"), "TA261030BAJAJAUTO");
   assert.ok(orderTag("2026-10-30", "A_VERY_LONG_SYMBOL_NAME_HERE").length <= 20);
   assert.match(orderTag("2026-10-30", "M&M"), /^[A-Za-z0-9]+$/);
+});
+
+test("broker status codes distinguish pending, partial, filled, and terminal outcomes", () => {
+  assert.equal(brokerOrderState(4, 0, 10), "pending");
+  assert.equal(brokerOrderState(6, 0, 10), "pending");
+  assert.equal(brokerOrderState(2, 4, 6), "partially-filled");
+  assert.equal(brokerOrderState(2, 10, 0), "filled");
+  assert.equal(brokerOrderState(1, 0, 10), "cancelled");
+  assert.equal(brokerOrderState(5, 0, 10), "rejected");
+  assert.equal(brokerOrderState(7, 0, 10), "expired");
+  assert.equal(brokerOrderState(99, 0, 10), "unknown");
 });
 
 test("the fingerprint changes when anything about the orders changes", () => {

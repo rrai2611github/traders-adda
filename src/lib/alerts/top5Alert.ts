@@ -3,7 +3,8 @@ import { join } from "node:path";
 import { isTradingDay, getMarketStatus, getActiveSession } from "@/lib/market/marketHours";
 import { getWeeklyTop5 } from "@/lib/screen/weeklyTop5Results";
 import { notifyOwner, ownerAlertAddress } from "./personal";
-import { decideTop5Alert, EMPTY_TOP5_STATE, top5AlertMessage, type Top5AlertState } from "./top5AlertRules";
+import { acknowledgeTop5Alert, decideTop5Alert, EMPTY_TOP5_STATE, top5AlertMessage, type Top5AlertState } from "./top5AlertRules";
+import { deliverAlertBatch } from "./alertDelivery";
 
 /**
  * Emails the owner (PERSONAL_ALERT_EMAIL) when the Weekly Top 5's market tier changes, or, after the close, when the
@@ -45,12 +46,11 @@ async function check(now = Date.now()) {
       day: shifted.toISOString().slice(0, 10),
     };
     const prev = readState();
-    const { state, alerts } = decideTop5Alert(prev, reading);
-    for (const alert of alerts) {
+    const decision = decideTop5Alert(prev, reading);
+    await deliverAlertBatch(prev, decision, async (alert) => {
       const message = top5AlertMessage(alert, payload.picks, payload.breadth50);
-      await notifyOwner(message.subject, message.lines);
-    }
-    writeState(state);
+      return notifyOwner(message.subject, message.lines);
+    }, (state, alert) => acknowledgeTop5Alert(state, alert, reading), writeState);
   } catch (error) {
     console.error("[top5-alert] check failed:", error instanceof Error ? error.message : error);
   } finally {

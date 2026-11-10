@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { emailFailureDetail, recordEmailActivity, type EmailActivitySource } from "./emailActivity.ts";
 
 export interface EmailConfig {
   host: string;
@@ -79,19 +80,31 @@ export async function sendEmail(
   attachments: EmailAttachment[] = [],
   /** Overrides EMAIL_TO for a one-off test send. */
   to?: string,
+  source: EmailActivitySource = "other",
 ): Promise<string> {
-  const config = emailConfig();
-  if (!config) throw new Error("Email is not configured: set the SMTP and EMAIL values in .env.local.");
-  const result = await transporter(config).sendMail({
-    from: `"${config.fromName}" <${config.from}>`,
-    to: to ?? config.to,
-    subject,
-    html,
-    text,
-    attachments,
-  });
-  if (!result.messageId) throw new Error("SMTP accepted the request but returned no message id.");
-  console.log(`[email] sent "${subject}" from ${config.from} to ${result.accepted.length} recipient(s): ${result.accepted.join(", ")}` +
-    (result.rejected.length ? ` | rejected: ${result.rejected.join(", ")}` : ""));
-  return result.messageId;
+  const activity = { source, subject, test: subject.startsWith("[TEST]") };
+  try {
+    const config = emailConfig();
+    if (!config) throw new Error("Email is not configured: set the SMTP and EMAIL values in .env.local.");
+    const result = await transporter(config).sendMail({
+      from: `"${config.fromName}" <${config.from}>`,
+      to: to ?? config.to,
+      subject,
+      html,
+      text,
+      attachments,
+    });
+    if (!result.messageId) throw new Error("SMTP accepted the request but returned no message id.");
+    if (!result.accepted.length) throw new Error("SMTP did not accept any recipients.");
+    recordEmailActivity({
+      ...activity, status: result.rejected.length ? "partial" : "accepted",
+      detail: `SMTP accepted ${result.accepted.length} recipient(s)${result.rejected.length ? `; rejected ${result.rejected.length}` : ""}. Inbox delivery is not confirmed.`,
+    });
+    console.log(`[email] sent "${subject}" from ${config.from} to ${result.accepted.length} recipient(s): ${result.accepted.join(", ")}` +
+      (result.rejected.length ? ` | rejected: ${result.rejected.join(", ")}` : ""));
+    return result.messageId;
+  } catch (error) {
+    recordEmailActivity({ ...activity, status: "failed", detail: emailFailureDetail(error) });
+    throw error;
+  }
 }

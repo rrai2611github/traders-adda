@@ -26,6 +26,12 @@ export type ReadyAlert =
 
 export const EMPTY_READY_STATE: ReadyAlertState = { lastReady: [], lastListDay: null, announced: {} };
 
+export function acknowledgeReadyAlert(state: ReadyAlertState, alert: ReadyAlert, reading: ReadyReading): ReadyAlertState {
+  return alert.kind === "breakout"
+    ? { ...state, announced: { ...state.announced, [alert.symbol]: reading.day } }
+    : { ...state, lastReady: reading.ready.map((stock) => stock.symbol), lastListDay: reading.day };
+}
+
 export function decideReadyAlert(prev: ReadyAlertState, now: ReadyReading): { state: ReadyAlertState; alerts: ReadyAlert[] } {
   const alerts: ReadyAlert[] = [];
   const announced: Record<string, string> = {};

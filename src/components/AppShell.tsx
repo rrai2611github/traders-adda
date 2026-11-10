@@ -9,13 +9,12 @@ import { NavIcon } from "./NavIcons";
 import { useNow } from "@/hooks/useNow";
 import { getMarketStatus } from "@/lib/market/marketHours";
 
-export type ShellPage = "positions" | "tracker" | "backtest" | "radar";
+export type ShellPage = "positions" | "backtest" | "radar";
 
 const USER_NAME = "Rupesh Rai";
 
 const TITLES: Record<ShellPage, string> = {
-  positions: "My positions",
-  tracker: "Live strategy check",
+  positions: "Positions & strategy",
   backtest: "Backtest",
   radar: "Email track record",
 };
@@ -47,8 +46,7 @@ export function AppShell({ current, children }: { current: ShellPage; children: 
         <nav aria-label="Primary navigation" className="flex-1 space-y-5 overflow-y-auto overscroll-contain px-3 py-4">
           <SideGroup label="Your workspace" collapsed={false}>
             <SideItem icon="today" label="Today" current={false} collapsed={false} onClick={go("/")} />
-            <SideItem icon="journal" label="My positions" current={current === "positions"} collapsed={false} onClick={go("/positions")} />
-            <SideItem icon="breadth" label="Live strategy check" current={current === "tracker"} collapsed={false} onClick={go("/tracker")} />
+            <SideItem icon="journal" label="Positions & strategy" current={current === "positions"} collapsed={false} onClick={go("/positions")} />
             <SideItem icon="signals" label="Backtest (10 years)" current={current === "backtest"} collapsed={false} onClick={go("/backtest")} />
             <SideItem icon="picks" label="Email track record" current={current === "radar"} collapsed={false} onClick={go("/radar")} />
             <SideItem icon="watchlist" label="Watchlist" current={false} collapsed={false} onClick={go("/#watchlist")} />

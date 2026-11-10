@@ -1,4 +1,4 @@
-import { addHolding, markSold, positionsView, removeHolding } from "@/lib/positions/positionsServer";
+import { addHolding, markSold, positionsView, removeHolding, updateHoldingSource } from "@/lib/positions/positionsServer";
 
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "no-store" };
@@ -14,7 +14,7 @@ function sameOrigin(request: Request): boolean {
   return !origin || !host || new URL(origin).host === host;
 }
 
-/** `{action: "add" | "sell" | "remove", ...}`. The app only records what the user did; it never places an order. */
+/** `{action: "add" | "sell" | "remove" | "source", ...}`. The app only records what the user did; it never places an order. */
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return Response.json({ error: "Cross-origin requests are not allowed." }, { status: 403, headers });
   let body: Record<string, unknown>;
@@ -28,6 +28,7 @@ export async function POST(request: Request) {
   const result = body.action === "add" ? addHolding(body)
     : body.action === "sell" ? markSold(body.id, body)
     : body.action === "remove" ? removeHolding(body.id)
+    : body.action === "source" ? updateHoldingSource(body.id, body.source)
     : null;
   if (!result) return Response.json({ error: "Unknown action." }, { status: 400, headers });
   return result.ok ? Response.json(result.view, { headers }) : Response.json({ error: result.error }, { status: result.status, headers });

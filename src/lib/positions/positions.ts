@@ -14,6 +14,8 @@ export interface Holding {
   stop: number;
   /** The price the plan said to buy at (from a pick), so the real fill can be measured against it. */
   plannedPrice?: number;
+  /** The algorithm, screener, or source the user followed for this trade. */
+  source?: string;
   note?: string;
   sold?: { date: string; price: number; reason: ExitReason };
 }
@@ -78,8 +80,23 @@ export function parseNewHolding(input: Record<string, unknown>, now = Date.now()
   if (stop >= buyPrice) return fail("The stop must be below the price you paid.");
   const planned = input.plannedPrice == null || input.plannedPrice === "" ? null : Number(input.plannedPrice);
   if (planned != null && (!Number.isFinite(planned) || planned <= 0 || planned > 1_000_000)) return fail("The planned price is not a valid price.");
+  const source = parseSource(input.source);
+  if (!source.ok) return source;
   const note = typeof input.note === "string" ? input.note.trim().slice(0, 200) : "";
-  return { ok: true, value: { symbol, qty, buyPrice, buyDate, stop, ...(planned != null ? { plannedPrice: planned } : {}), ...(note ? { note } : {}) } };
+  return { ok: true, value: { symbol, qty, buyPrice, buyDate, stop, ...(planned != null ? { plannedPrice: planned } : {}), ...(source.value ? { source: source.value } : {}), ...(note ? { note } : {}) } };
+}
+
+function parseSource(value: unknown): Parsed<string | null> {
+  if (value == null || value === "") return { ok: true, value: null };
+  if (typeof value !== "string") return fail("The strategy or screener name must be text.");
+  const source = value.trim();
+  if (source.length > 80) return fail("The strategy or screener name must be 80 characters or fewer.");
+  return { ok: true, value: source || null };
+}
+
+/** Validates the source label for an existing position. */
+export function parseHoldingSource(value: unknown): Parsed<string | null> {
+  return parseSource(value);
 }
 
 /** Checks a sale typed in by the user against the position it closes. */
@@ -214,7 +231,7 @@ const csvText = (value: string): string => csvCell(/^[=+\-@\t\r]/.test(value) ? 
 
 /** Every position, open and closed, as a spreadsheet file: the user's own copy of their records. */
 export function holdingsCsv(holdings: ReadonlyArray<Holding>): string {
-  const header = ["Symbol", "Shares", "Buy date", "Buy price", "Stop", "Status", "Sell date", "Sell price", "Why sold", "Profit or loss (Rs)", "Result in R", "Planned price", "Paid vs plan (%)", "Note"];
+  const header = ["Symbol", "Shares", "Buy date", "Buy price", "Stop", "Status", "Sell date", "Sell price", "Why sold", "Profit or loss (Rs)", "Result in R", "Planned price", "Paid vs plan (%)", "Strategy or screener", "Note"];
   const rows = [...holdings]
     .sort((a, b) => a.buyDate.localeCompare(b.buyDate))
     .map((h) => {
@@ -225,7 +242,7 @@ export function holdingsCsv(holdings: ReadonlyArray<Holding>): string {
         csvText(h.symbol), h.qty, h.buyDate, h.buyPrice, h.stop, sold ? "Closed" : "Open",
         sold?.date ?? "", sold?.price ?? "", sold ? csvText(EXIT_LABEL[sold.reason]) : "",
         pnl == null ? "" : Math.round(pnl * 100) / 100, r == null ? "" : Math.round(r * 100) / 100,
-        h.plannedPrice ?? "", fillSlippagePercent(h) == null ? "" : Math.round(fillSlippagePercent(h)! * 100) / 100, csvText(h.note ?? ""),
+        h.plannedPrice ?? "", fillSlippagePercent(h) == null ? "" : Math.round(fillSlippagePercent(h)! * 100) / 100, csvText(h.source ?? ""), csvText(h.note ?? ""),
       ].map(String); // text cells above are already escaped once by csvText; numbers and dates need no escaping
     });
   return [header.map(csvCell).join(","), ...rows.map((row) => row.join(","))].join("\r\n") + "\r\n";

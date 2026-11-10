@@ -18,7 +18,7 @@ if (!CHROME) { console.error("Google Chrome was not found. Set CHROME_PATH to it
 const WIDTHS = [["desktop", 1280, 900], ["phone", 390, 844]];
 const PAGES = [
   { path: "/", name: "home", wait: 4000, expect: ["my positions", "live strategy check", "strategy health"] },
-  { path: "/positions", name: "positions", wait: 2500, expect: ["my positions", "i bought a stock", "plan email"] },
+  { path: "/positions", name: "positions", wait: 2500, expect: ["portfolio", "add a position", "open positions", "live strategy check"] },
   { path: "/tracker", name: "tracker", wait: 3500, expect: ["live strategy check"] },
   { path: "/backtest", name: "backtest", wait: 2500, expect: ["backtest"] },
   { path: "/radar", name: "radar", wait: 3000, expect: ["email track record"] },
@@ -108,7 +108,7 @@ try {
       problems = [];
       await page.goto(`${BASE}/tracker`, { waitUntil: "domcontentloaded" });
       await page.waitForTimeout(2500);
-      if (!(await page.getByRole("button", { name: /Switch to (dark|light|auto) theme/ }).count())) fail(shellWhere, "the light/dark switch is missing on the Live check page");
+      if (!(await page.getByRole("button", { name: /Switch to (dark|light|auto) theme/ }).count())) fail(shellWhere, "the light/dark switch is missing on the combined positions page");
       else if (wname === "desktop") {
         await page.locator('summary[aria-label="Research and older tools"]').click();
         await page.getByRole("button", { name: "Scanner directory" }).first().click();

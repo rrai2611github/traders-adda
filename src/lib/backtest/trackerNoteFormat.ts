@@ -37,6 +37,7 @@ export function trackerNote(result: BacktestResult, capital: number, startDate: 
   } else lines.push("Nothing is held.");
   if (p.signals.length) lines.push(`Next open the rules would buy: ${p.signals.map((s) => `${s.symbol} (RS ${s.rs}, about ${s.quantity} shares, stop ₹${price(s.stop)})`).join("; ")}.`);
   else lines.push(!p.breadthOk || p.niftyOk === false ? "Next open: no buys, the market check is not passed." : p.slotsFree === 0 ? "Next open: no buys, every slot is full." : "Next open: no qualifying breakout.");
+  lines.push("Email timing: this paper-trade summary is sent after the daily price refresh and replay, not as an instant trade alert.");
   lines.push("Paper money only. Judge the rules after at least 30 closed trades; a few weeks prove nothing.");
   const flag = closedToday.length ? `${closedToday.length} closed` : boughtToday.length ? `${boughtToday.length} bought` : "no trades";
   return { subject: `Live strategy check · ${signedPct((profit / capital) * 100)} · ${result.openPositions.length} held · ${flag} · ${day}`, lines };

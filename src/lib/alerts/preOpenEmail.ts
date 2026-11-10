@@ -25,6 +25,8 @@ import { recordEmailedStocks } from "@/lib/radar/radarServer";
 import type { TopPickEmailItem } from "./topPicksEmail";
 import { fetchIndiaHeadlines } from "@/lib/market/indiaNews";
 import type { Top5Pick } from "@/lib/screen/weeklyTop5";
+import { marketEmailBlockReason, marketEmailCalendarWarning, requireMarketEmailDay } from "./marketEmailPolicy";
+import { recordScheduledEmailSkip, scheduledEmailBlockReason } from "./emailScheduleActivity";
 
 export { preOpenSlotKey };
 
@@ -170,11 +172,14 @@ export function preOpenEmailStatus() {
     autoSend: process.env.PREOPEN_EMAIL_AUTO_SEND === "1",
     recipient: process.env.EMAIL_TO?.trim() || null,
     currentSlot: preOpenSlotKey(),
+    sendBlockedReason: marketEmailBlockReason(),
+    calendarWarning: marketEmailCalendarWarning(),
     ...readState(),
   };
 }
 
 export async function sendPreOpenEmailNow(): Promise<{ messageId: string; picks: number; slotKey: string | null }> {
+  requireMarketEmailDay();
   // Captured before the warm-up, which can run past 09:15 and would otherwise
   // leave the day's slot unrecorded.
   const openingSlotKey = preOpenSlotKey();
@@ -186,9 +191,10 @@ export async function sendPreOpenEmailNow(): Promise<{ messageId: string; picks:
   const preview = await buildPreOpenPreview(now);
   const prior = readState();
   try {
+    requireMarketEmailDay();
     // No attachment: the morning brief is a read-in-place email. The ideas PNG
     // belongs to the hourly alert, where the table is the whole message.
-    const messageId = await sendEmail(preview.subject, preview.html, preview.text, [logoAttachment()]);
+    const messageId = await sendEmail(preview.subject, preview.html, preview.text, [logoAttachment()], undefined, "pre-open");
     const slotKey = openingSlotKey ?? preOpenSlotKey(now);
     recordEmailedStocks("pre-open", preview.table, preview.emailed.topPicks, preview.emailed.top5, now);
     writeState({
@@ -215,14 +221,17 @@ export async function sendPreOpenTestEmail(to: string): Promise<{ messageId: str
   const target = to.trim().toLowerCase();
   if (!config.to.toLowerCase().split(",").map((a) => a.trim()).includes(target)) throw new Error("Test address must already be in EMAIL_TO.");
   const preview = await buildPreOpenPreview(Date.now(), { forceTop5: true });
-  const messageId = await sendEmail(`[TEST] ${preview.subject}`, preview.html, preview.text, [logoAttachment()], target);
+  const messageId = await sendEmail(`[TEST] ${preview.subject}`, preview.html, preview.text, [logoAttachment()], target, "pre-open");
   return { messageId, to: target };
 }
 
 let running = false;
 
 async function preOpenTick() {
-  if (running || process.env.PREOPEN_EMAIL_AUTO_SEND !== "1" || !emailConfig()) return;
+  if (running) return;
+  const now = Date.now();
+  const reason = scheduledEmailBlockReason(process.env.PREOPEN_EMAIL_AUTO_SEND === "1", emailConfig() != null, now);
+  if (reason) { recordScheduledEmailSkip("pre-open", reason, now); return; }
   const slotKey = preOpenSlotKey();
   if (!slotKey) return;
   const state = readState();

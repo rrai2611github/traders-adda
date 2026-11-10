@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { BacktestResult } from "@/lib/backtest/types";
 import { EquityChart, Stat, money, num } from "./BacktestPage";
 import { StockSymbolButton } from "./StockDetailContext";
-import { AppShell } from "./AppShell";
 import { StrategyHealthCard } from "./StrategyHealthCard";
 import { useResultsDates } from "@/hooks/useResultsDates";
 import { daysUntil } from "@/lib/market/boardMeetings";
@@ -39,6 +38,7 @@ export function TrackerPage() {
   const [niftyGate, setNiftyGate] = useState(false);
   const [smoother, setSmoother] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [lastCheckedAt, setLastCheckedAt] = useState<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const results = useResultsDates();
 
@@ -48,7 +48,10 @@ export function TrackerPage() {
       const body = (await res.json()) as TrackerPayload;
       if (!res.ok) setMessage(body.error ?? "That did not work.");
       else setMessage(null);
-      if (body.rules) setData(body);
+      if (body.rules) {
+        setData(body);
+        setLastCheckedAt(Date.now());
+      }
       return body;
     } catch {
       setMessage("Could not reach the server.");
@@ -62,7 +65,7 @@ export function TrackerPage() {
       const body = await load();
       if (!alive) return;
       const fast = body && (body.job.status === "running" || body.history.status === "running");
-      timer.current = setTimeout(loop, fast ? 3000 : 60_000);
+      timer.current = setTimeout(loop, fast ? 3000 : 30_000);
     };
     void loop();
     return () => { alive = false; if (timer.current) clearTimeout(timer.current); };
@@ -79,6 +82,9 @@ export function TrackerPage() {
   const closed = result ? result.trades.filter((t) => t.exitReason !== "end") : [];
   const wins = closed.filter((t) => t.pnl > 0).length;
   const profit = result && config ? result.markedValue - config.capital : 0;
+  const amountInvested = result?.openPositions.reduce((total, position) => total + position.spent, 0) ?? 0;
+  const sharesMarketValue = result?.openPositions.reduce((total, position) => total + position.quantity * position.last, 0) ?? 0;
+  const openPnl = sharesMarketValue - amountInvested;
   const nifty = result && result.equity.benchmark.length > 1 ? result.equity.benchmark[result.equity.benchmark.length - 1] / result.equity.benchmark[0] - 1 : null;
   const sessions = result?.data.sessions ?? 0;
   // The risk gate: tomorrow's buys, checked in order against the account, the open positions, and the day's result.
@@ -100,16 +106,22 @@ export function TrackerPage() {
     : [];
 
   return (
-    <AppShell current="tracker">
-    <div className="mx-auto w-full min-w-0 max-w-[1180px] space-y-5 px-4 py-6 lg:px-6">
-      <header className="flex flex-wrap items-center gap-3">
+    <section id="strategy-check" aria-labelledby="strategy-check-title" className="scroll-mt-20 space-y-5 border-t border-border pt-5">
+      <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-[20px] font-extrabold tracking-[-0.02em] text-slate-900">Live strategy check</h1>
-          <p className="text-[12.5px] text-slate-500">Follows the backtested rules day by day on real, finished prices, so you can see whether they work now, not only in the past. Paper money only.</p>
+          <p className="text-[11px] font-black uppercase tracking-[0.12em] text-blue-700">Simulated account · no real orders</p>
+          <h2 id="strategy-check-title" className="text-[20px] font-extrabold tracking-[-0.02em] text-slate-900">Live strategy check</h2>
+          <p className="text-[12.5px] text-slate-500">A paper-money replay of the tested rules on finished daily prices. Starting or stopping this check never sends an order.</p>
         </div>
+        <span className="rounded-full border border-slate-200 bg-surface px-3 py-1.5 text-[11px] font-semibold text-slate-600" role="status">
+          {lastCheckedAt ? `Status checked ${new Date(lastCheckedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}` : "Checking status…"}
+        </span>
       </header>
 
       {message && <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-800">{message}</p>}
+      <p className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-[11px] leading-5 text-blue-900">
+        Paper trades only. This check follows completed daily prices; trade emails are sent after the daily refresh and replay, not instantly when a simulated trade opens.
+      </p>
 
       <section className="space-y-3 rounded-2xl border border-border bg-surface p-4" aria-label="Rules">
         <details key={config ? "following" : "setup"} open={!config} className="group">
@@ -134,7 +146,7 @@ export function TrackerPage() {
               <input type="checkbox" checked={smoother} onChange={(e) => setSmoother(e.target.checked)} />
               12% stop with smaller positions (the main plan: a higher win rate, about the same return and a shallower worst drop in the test). Untick for the tighter 8% stop.
             </label>
-            <button type="button" disabled={busy} onClick={() => void act("start")} className="btn-gold h-10 rounded-xl px-5 text-sm font-extrabold">Start following from today</button>
+            <button type="button" disabled={busy} onClick={() => void act("start")} className="btn-gold h-10 rounded-xl px-5 text-sm font-extrabold">{busy ? "Starting…" : "Start paper test"}</button>
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-3 border-t border-border pt-3 text-[12.5px] text-slate-600">
@@ -176,7 +188,8 @@ export function TrackerPage() {
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <Stat label="Account value" value={money(result.markedValue)} tone={profit >= 0 ? "good" : "bad"} note={`${profit >= 0 ? "+" : "−"}${money(Math.abs(profit))} (${signedPct((profit / config.capital) * 100)}) since the start`} />
             <Stat label="Nifty 50 over the same days" value={nifty == null ? "—" : signedPct(nifty * 100)} note={`${sessions} session${sessions === 1 ? "" : "s"} followed`} />
-            <Stat label="Open positions" value={`${result.openPositions.length} of 10`} note={`${money(result.openPositions.reduce((a, p) => a + p.quantity * p.last, 0))} in shares`} />
+            <Stat label="Amount invested" value={money(amountInvested)} tone={openPnl >= 0 ? "good" : "bad"} note={`${money(sharesMarketValue)} market value · ${signedMoney(openPnl)} open P/L before costs`} />
+            <Stat label="Open positions" value={`${result.openPositions.length} of 10`} note="paper trades currently held" />
             <Stat label="Closed trades" value={`${closed.length}`} note={closed.length ? `${wins} won · ${closed.length - wins} lost` : "none yet"} />
           </div>
 
@@ -275,7 +288,6 @@ export function TrackerPage() {
       )}
 
       <StrategyHealthCard />
-    </div>
-    </AppShell>
+    </section>
   );
 }

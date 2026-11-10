@@ -35,6 +35,9 @@ test("a new position is validated, and the stop and date default sensibly", () =
   assert.match(bad({ buyDate: "2026-11-02" }).error, /future/);
   assert.match(bad({ buyDate: "2026-02-31" }).error, /real date/);
   assert.equal(bad({ note: "x".repeat(500) }).value.note.length, 200);
+  assert.equal(parseNewHolding({ symbol: "ABC", qty: 10, buyPrice: 100, source: " Blue sky " }, NOW).value.source, "Blue sky");
+  assert.equal(parseNewHolding({ symbol: "ABC", qty: 10, buyPrice: 100, source: "" }, NOW).value.source, undefined);
+  assert.match(parseNewHolding({ symbol: "ABC", qty: 10, buyPrice: 100, source: "x".repeat(81) }, NOW).error, /80 characters/);
 });
 
 test("a sale must follow the buy, not be in the future, and say why", () => {
@@ -149,9 +152,9 @@ test("the CSV lists open and closed positions with profit and R, oldest first, a
   const closed = { ...holding({ id: "c", symbol: "CLOSEDCO", buyDate: "2026-09-01", qty: 10, buyPrice: 100, stop: 88 }), sold: { date: "2026-09-20", price: 76, reason: "stop" } };
   const lines = holdingsCsv([open, closed]).trim().split("\r\n");
   assert.equal(lines.length, 3);
-  assert.match(lines[0], /^Symbol,Shares,Buy date,Buy price,Stop,Status,Sell date,Sell price,Why sold,Profit or loss \(Rs\),Result in R,Planned price,Paid vs plan \(%\),Note$/);
-  assert.equal(lines[1], "CLOSEDCO,10,2026-09-01,100,88,Closed,2026-09-20,76,Stop was hit,-240,-2,,,");
-  assert.equal(lines[2], 'OPENCO,100,2026-10-01,100,92,Open,,,,,,,,"say ""hi"", ok"');
+  assert.match(lines[0], /^Symbol,Shares,Buy date,Buy price,Stop,Status,Sell date,Sell price,Why sold,Profit or loss \(Rs\),Result in R,Planned price,Paid vs plan \(%\),Strategy or screener,Note$/);
+  assert.equal(lines[1], "CLOSEDCO,10,2026-09-01,100,88,Closed,2026-09-20,76,Stop was hit,-240,-2,,,,");
+  assert.equal(lines[2], 'OPENCO,100,2026-10-01,100,92,Open,,,,,,,,,"say ""hi"", ok"');
 });
 
 test("text that would run as a spreadsheet formula is neutralised, but negative numbers are not touched", () => {
@@ -160,7 +163,7 @@ test("text that would run as a spreadsheet formula is neutralised, but negative 
   assert.match(csv, /^'=CMD\(\),/m);
   assert.match(csv, /,'\+SUM\(A1\)\r$/m);
   assert.match(csv, /LOSS,100,2026-10-02,100,92,Closed,2026-10-05,90,My own call,-1000,-1.25,/);
-  assert.equal(holdingsCsv([]).trim(), "Symbol,Shares,Buy date,Buy price,Stop,Status,Sell date,Sell price,Why sold,Profit or loss (Rs),Result in R,Planned price,Paid vs plan (%),Note");
+  assert.equal(holdingsCsv([]).trim(), "Symbol,Shares,Buy date,Buy price,Stop,Status,Sell date,Sell price,Why sold,Profit or loss (Rs),Result in R,Planned price,Paid vs plan (%),Strategy or screener,Note");
 });
 
 test("only the newest 30 daily backups are kept, and unrelated files are never deleted", () => {
@@ -195,7 +198,8 @@ test("a planned price is optional, validated, saved, and shows in the CSV with h
   assert.match(parseNewHolding({ symbol: "ABC", qty: 10, buyPrice: 101, plannedPrice: -3 }, NOW).error, /planned price/);
   assert.match(parseNewHolding({ symbol: "ABC", qty: 10, buyPrice: 101, plannedPrice: "abc" }, NOW).error, /planned price/);
   const csv = holdingsCsv([{ ...holding({ id: "p", symbol: "PLANNED", buyPrice: 101, stop: 88 }), plannedPrice: 100 }]);
-  assert.match(csv, /PLANNED,100,2026-09-01,101,88,Open,,,,,,100,1,/);
+  assert.match(csv, /PLANNED,100,2026-09-01,101,88,Open,,,,,,100,1,,/);
+  assert.match(holdingsCsv([{ ...holding({ id: "s", symbol: "SOURCE" }), source: "Blue sky" }]), /SOURCE,100,2026-09-01,100,92,Open,,,,,,,,Blue sky,/);
 });
 
 test("fill slippage: positive means paid more than planned; no plan means no figure", () => {

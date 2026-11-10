@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { TrackerPage } from "@/components/TrackerPage";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Live strategy check — Traders Adda",
-  description: "Follow the backtested Blue sky + Multi-year breakouts rules day by day on real prices, with open positions, stops and results.",
+  title: "Positions & strategy — Traders Adda",
+  description: "Your real positions and the paper-money live strategy check.",
 };
 
 export default function Page() {
-  return <TrackerPage />;
+  redirect("/positions#strategy-check");
 }

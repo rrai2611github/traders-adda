@@ -1,11 +1,11 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { historyLastDay } from "../backtest/historyRefresh.ts";
-import { FyersApiError, FyersAuthError, fyersConnected, fyersPlaceOrder } from "../fyers/fyersClient.ts";
+import { FyersApiError, FyersAuthError, fyersConnected, fyersOrderBook, fyersPlaceOrder, type FyersOrderBookRow } from "../fyers/fyersClient.ts";
 import { getMarketStatus } from "../market/marketHours.ts";
 import { readAccount } from "../positions/account.ts";
 import { readSavedPlan } from "../positions/planServer.ts";
-import { buyPayload, planFingerprint, sendBlocks, type FyersOrderPayload } from "./fyersOrders.ts";
+import { brokerOrderState, buyPayload, planFingerprint, sendBlocks, type BrokerOrderState, type FyersOrderPayload } from "./fyersOrders.ts";
 
 /**
  * Sends the approved "Tomorrow's plan" buys to Fyers. Safe by default:
@@ -24,7 +24,17 @@ export const ordersMode = (): OrderMode => (process.env.FYERS_ORDERS_ENABLED ===
 const killed = () => existsSync(KILL_FILE);
 
 interface SentRecord { fingerprint: string; sentAt: number; results: OrderResult[] }
-export interface OrderResult { symbol: string; status: "placed" | "rejected" | "unknown" | "dry-run" | "skipped"; detail: string; orderId?: string }
+export interface OrderResult {
+  symbol: string;
+  status: "placed" | "rejected" | "unknown" | "dry-run" | "skipped";
+  detail: string;
+  orderId?: string;
+  brokerState?: BrokerOrderState;
+  filledQty?: number;
+  remainingQuantity?: number;
+  tradedPrice?: number;
+  brokerMessage?: string;
+}
 
 function readSent(): SentRecord | null {
   try { return JSON.parse(readFileSync(SENT_FILE, "utf8")) as SentRecord; } catch { return null; }
@@ -60,6 +70,45 @@ export function ordersView(now = Date.now()) {
     sentResults: sent && sent.fingerprint === fingerprint ? sent.results : null,
     fyers: { configured: fyers.configured, connected: fyers.connected },
   };
+}
+
+function validNumber(value: unknown): number | undefined {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : undefined;
+}
+
+function withBrokerStatus(result: OrderResult, order: FyersOrderBookRow | undefined): OrderResult {
+  if (!order) return { ...result, brokerState: "unknown", brokerMessage: "Not found in today's Fyers order book. Check the broker before taking any action." };
+  const brokerState = brokerOrderState(order.status, order.filledQty, order.remainingQuantity);
+  return {
+    ...result,
+    brokerState,
+    filledQty: validNumber(order.filledQty),
+    remainingQuantity: validNumber(order.remainingQuantity),
+    tradedPrice: validNumber(order.tradedPrice),
+    brokerMessage: typeof order.message === "string" && order.message ? order.message : undefined,
+  };
+}
+
+/** Adds broker-confirmed status only for submitted live orders; a missing or failed sync is surfaced rather than guessed. */
+export async function ordersViewWithBrokerStatus(now = Date.now()) {
+  const view = ordersView(now);
+  const sent = readSent();
+  const results = sent && sent.fingerprint === view.fingerprint ? sent.results : null;
+  if (view.mode !== "live" || !results?.some((result) => result.orderId)) return view;
+
+  try {
+    const orderBook = await fyersOrderBook();
+    const byId = new Map(orderBook.filter((order) => typeof order.id === "string").map((order) => [order.id as string, order]));
+    return {
+      ...view,
+      sentResults: results.map((result) => withBrokerStatus(result, result.orderId ? byId.get(result.orderId) : undefined)),
+    };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error("[orders] broker status refresh failed:", detail);
+    return { ...view, orderStatusError: `Could not refresh broker status: ${detail}` };
+  }
 }
 
 export async function sendOrders(fingerprint: unknown, now = Date.now()): Promise<{ ok: true; mode: OrderMode; results: OrderResult[] } | { ok: false; status: number; error: string }> {

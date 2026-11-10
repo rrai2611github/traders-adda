@@ -1,5 +1,6 @@
 import { buildPreOpenPreview, preOpenEmailStatus, sendPreOpenEmailNow, sendPreOpenTestEmail } from "@/lib/alerts/preOpenEmail";
 import { withPreviewLogo } from "@/lib/alerts/brand";
+import { MarketEmailBlockedError } from "@/lib/alerts/marketEmailPolicy";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +49,6 @@ export async function POST(request: Request) {
       ok: false,
       error: error instanceof Error ? error.message : String(error),
       ...preOpenEmailStatus(),
-    }, { status: 502, headers: noStore });
+    }, { status: error instanceof MarketEmailBlockedError ? 409 : 502, headers: noStore });
   }
 }

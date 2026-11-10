@@ -30,6 +30,12 @@ export type Top5Alert =
   | { kind: "list"; added: string[]; removed: string[] };
 
 export const EMPTY_TOP5_STATE: Top5AlertState = { tier: null, pendingTier: null, pendingCount: 0, lastSymbols: [], lastListDay: null };
+export function acknowledgeTop5Alert(state: Top5AlertState, alert: Top5Alert, reading: Top5Reading): Top5AlertState {
+  return alert.kind === "tier"
+    ? { ...state, tier: alert.to, pendingTier: null, pendingCount: 0 }
+    : { ...state, lastSymbols: [...reading.symbols], lastListDay: reading.day };
+}
+
 /** Readings in a row (about 15 minutes apart) before a tier change counts. */
 export const TIER_CONFIRMATIONS = 2;
 

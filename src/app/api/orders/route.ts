@@ -1,11 +1,11 @@
-import { ordersView, sendOrders } from "@/lib/orders/orderServer";
+import { ordersViewWithBrokerStatus, sendOrders } from "@/lib/orders/orderServer";
 
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "no-store" };
 
 /** Tomorrow's plan as broker orders, the mode (dry run or live) and anything that blocks sending. */
 export async function GET() {
-  return Response.json(ordersView(), { headers });
+  return Response.json(await ordersViewWithBrokerStatus(), { headers });
 }
 
 function sameOrigin(request: Request): boolean {

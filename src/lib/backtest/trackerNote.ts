@@ -28,7 +28,7 @@ export async function sendTrackerNote(): Promise<void> {
     if (job?.status === "done") {
       if (lastNoteDay() === job.result.data.lastDay) return;
       const note = trackerNote(job.result, config.capital, config.startDate);
-      await notifyOwner(note.subject, note.lines);
+      if (!(await notifyOwner(note.subject, note.lines))) return;
       mkdirSync(join(process.cwd(), ".cache"), { recursive: true });
       writeFileSync(FILE, JSON.stringify({ lastDay: job.result.data.lastDay }));
       return;

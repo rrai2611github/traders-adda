@@ -33,6 +33,8 @@ import { GET as screenGET } from "@/app/api/market/screen/route";
 import { getTopPicks } from "@/lib/screen/topPicksResults";
 import { withNews } from "@/lib/ai/withNews";
 import type { TopPicksEmailInput } from "./topPicksEmail";
+import { marketEmailBlockReason, marketEmailCalendarWarning, requireMarketEmailDay } from "./marketEmailPolicy";
+import { recordScheduledEmailSkip, scheduledEmailBlockReason } from "./emailScheduleActivity";
 
 export { buildHourlyEmail, emailSlotKey };
 
@@ -252,12 +254,15 @@ export function hourlyEmailStatus() {
     autoSend: process.env.EMAIL_AUTO_SEND === "1",
     recipient: process.env.EMAIL_TO?.trim() || null,
     nextEligibleSlot: emailSlotKey(),
+    sendBlockedReason: marketEmailBlockReason(),
+    calendarWarning: marketEmailCalendarWarning(),
     ...readState(),
   };
 }
 
 /** Every eligible hourly slot carries index context, even with unchanged stock lists. */
 export async function sendHourlyEmailNow(): Promise<{ messageId: string; picks: number; slotKey: string | null; skipped: false }> {
+  requireMarketEmailDay();
   const fresh = await getFreshUniverseSnapshot();
   if (fresh.status === "warming") throw new Error("The NSE universe is still loading.");
   if (fresh.status === "failed") throw new Error("Could not refresh market data for the hourly email.");
@@ -277,7 +282,8 @@ export async function sendHourlyEmailNow(): Promise<{ messageId: string; picks: 
     lastSetup: preview.setupSymbols ?? prior.lastSetup ?? null,
   };
   try {
-    const messageId = await sendEmail(preview.subject, preview.html, preview.text, [logoAttachment()]);
+    requireMarketEmailDay();
+    const messageId = await sendEmail(preview.subject, preview.html, preview.text, [logoAttachment()], undefined, "hourly");
     recordEmailedStocks("hourly", preview.table, preview.emailedPicks, null, now);
     writeState({
       ...prior,
@@ -302,7 +308,10 @@ export async function sendHourlyEmailNow(): Promise<{ messageId: string; picks: 
 let autoSendRunning = false;
 
 async function autoEmailTick() {
-  if (autoSendRunning || process.env.EMAIL_AUTO_SEND !== "1" || !emailConfig()) return;
+  if (autoSendRunning) return;
+  const now = Date.now();
+  const reason = scheduledEmailBlockReason(process.env.EMAIL_AUTO_SEND === "1", emailConfig() != null, now);
+  if (reason) { recordScheduledEmailSkip("hourly", reason, now); return; }
   const slotKey = emailSlotKey();
   if (!slotKey) return;
   const state = readState();
@@ -329,7 +338,7 @@ export async function sendHourlyTestEmail(to: string): Promise<{ messageId: stri
   if (!config.to.toLowerCase().split(",").map((a) => a.trim()).includes(target)) throw new Error("Test address must already be in EMAIL_TO.");
   const preview = await hourlyEmailPreview(Date.now());
   if (!preview.ok) throw new Error(preview.reason);
-  const messageId = await sendEmail(`[TEST] ${preview.subject}`, preview.html, preview.text, [logoAttachment()], target);
+  const messageId = await sendEmail(`[TEST] ${preview.subject}`, preview.html, preview.text, [logoAttachment()], target, "hourly");
   return { messageId, to: target };
 }
 

@@ -6,14 +6,13 @@ import { NavIcon, type NavIconName } from "./NavIcons";
 
 const TABS: ReadonlyArray<{ href: string; label: string; icon: NavIconName }> = [
   { href: "/", label: "Today", icon: "today" },
-  { href: "/positions", label: "Positions", icon: "journal" },
-  { href: "/tracker", label: "Live check", icon: "breadth" },
+  { href: "/positions", label: "Portfolio", icon: "journal" },
   { href: "/backtest", label: "Backtest", icon: "signals" },
   { href: "/radar", label: "Emails", icon: "picks" },
 ];
 
 /**
- * The five pages you use every week, one thumb-tap apart at the bottom of a phone screen. Shown only on those pages and only on narrow
+ * The pages you use every week, one thumb-tap apart at the bottom of a phone screen. Shown only on those pages and only on narrow
  * screens (the stylesheet hides it from 640px up, where the sidebar and the top buttons do the job).
  */
 export function MobileTabBar() {

@@ -157,7 +157,7 @@ special-session candles. Monthly checks include annual NSE holiday circulars
 [2024](https://nsearchives.nseindia.com/content/circulars/CMTR59722.pdf),
 [2025](https://nsearchives.nseindia.com/content/circulars/FAOP65588.pdf) and
 [2026](https://nsearchives.nseindia.com/content/circulars/CMTR71775.pdf), plus
-`MARKET_HOLIDAYS`. This does not change other workspaces' calendars. It does not
+`MARKET_HOLIDAYS`. These dates now also supply the shared market-day calendar. It does not
 audit all internal daily gaps; maintain configured closures beyond these years.
 Incomplete/stale histories
 and provider failures are visible. Available history may be too short for ADX,
@@ -244,7 +244,54 @@ so a reader who missed one still sees everything. A separate "Bullish confluence
 section lists the top 10 liquid stocks where 2+ scanner families agree (3+ first),
 labelled **not a buy** because agreement alone had no backtest edge. Stock rules,
 scanners and paper execution are unchanged.
+Automatic hourly sends are suppressed on weekends and dates in the built-in NSE
+holiday calendar; keep that calendar updated from each annual exchange circular.
 Weekends, configured holidays and simulated sessions cannot trigger auto sends.
+Normal hourly and pre-open manual sends also reject closed days and simulated
+sessions, with HTTP 409 and an explanation; the guard runs before loading data
+and again just before SMTP sending. Manual sends still bypass the clock window
+on genuine trading days. Explicit `[TEST]` copies and previews remain available
+outside trading days without updating sent-email state.
+
+Both email status APIs expose `sendBlockedReason` and `calendarWarning`; the
+hourly email panel displays these and disables normal sending on blocked days.
+The published calendar currently covers 2024-2026. A warning appears outside
+that range; it does not automatically fetch annual updates. This is a regular
+session calendar, not a scheduler for special/Muhurat session hours.
+
+Ready-to-run and Weekly Top-5 owner alerts checkpoint each email only after
+SMTP acceptance. Failed sends leave that alert eligible for the next scheduled
+check, while successfully accepted alerts in the same batch are not repeated.
+Retries remain subject to the normal trading-day/check window and current
+signal eligibility. SMTP acceptance does not prove inbox delivery.
+Validate with `node --test scripts/alert-delivery.test.mjs scripts/market-email-policy.test.mjs scripts/ready-alert.test.mjs scripts/top5-alert.test.mjs scripts/hourly-email.test.mjs scripts/preopen-email.test.mjs`.
+
+#### Email Activity
+
+The portfolio's Email Activity section (`/positions#email-activity`) refreshes
+every 30 seconds while the page is visible. Its read-only API is
+`GET /api/alerts/activity`; opening it does not send emails or generate previews.
+Current hourly/pre-open scheduler cards explain paused, waiting, eligible,
+already-accepted and retry-pending states. Retry eligibility is conditional on
+the app running and the send window remaining open, not a delivery guarantee.
+
+All email attempts reaching the shared SMTP transport now record accepted,
+partially accepted or failed results. Automatic hourly/pre-open scheduler skips
+for holidays, simulation, disabled sending or missing settings are recorded once
+per IST day per source/reason, when that scheduler checks. SMTP acceptance does
+not confirm inbox receipt. Test copies are explicitly tagged.
+
+History begins with this feature; existing server logs are not backfilled.
+The latest 200 events persist in `.cache/email-activity.json` (50 matching rows
+shown). It stores subjects, timestamps, categories and outcome summaries, not
+recipient addresses, message bodies or credentials. Raw SMTP errors stay in
+server logs. Keep the local file private; subjects may describe trades.
+Writes use atomic replacement for this single app process. Logging failures are
+reported to server logs without changing send outcomes or causing duplicate
+retries; read/corruption failures are shown explicitly rather than reset.
+Special/Muhurat session support remains outside this regular-session calendar.
+
+Validate with `node --test scripts/email-activity.test.mjs scripts/smtp-config.test.mjs`.
 
 Hourly prices carry provider quote timestamps, change from the previous session
 close, opening gap and session high/low where supplied. Quotes older than five minutes

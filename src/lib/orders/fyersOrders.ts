@@ -27,6 +27,24 @@ export interface FyersOrderPayload {
   orderTag: string;
 }
 
+export type BrokerOrderState = "pending" | "partially-filled" | "filled" | "cancelled" | "rejected" | "expired" | "unknown";
+
+/** FYERS order-book status codes; filled quantity takes precedence for partial fills. */
+export function brokerOrderState(status: unknown, filledQty: unknown, remainingQuantity: unknown): BrokerOrderState {
+  const filled = Number(filledQty);
+  const remaining = Number(remainingQuantity);
+  if (Number.isFinite(filled) && filled > 0 && Number.isFinite(remaining) && remaining > 0) return "partially-filled";
+  switch (Number(status)) {
+    case 1: return "cancelled";
+    case 2: return "filled";
+    case 4:
+    case 6: return "pending";
+    case 5: return "rejected";
+    case 7: return "expired";
+    default: return "unknown";
+  }
+}
+
 /** The smallest price step on NSE equities. */
 const TICK = 0.05;
 /** The most one order may be worth, as a guard against a sizing bug (percent of the account). */

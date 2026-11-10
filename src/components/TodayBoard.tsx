@@ -357,7 +357,7 @@ function TopPicksSection({ rows, onAll }: { rows: ReadonlyArray<ScanRow>; onAll:
                     {p.sector && <span className="rounded bg-white px-1.5 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">{p.sector}</span>}
                     <CompanyHealthTag symbol={p.symbol} sector={p.sector} />
                     {p.buy != null && p.stop != null && (p.tag === "ready" || p.tag === "broke") && (
-                      <a href={`/positions?symbol=${encodeURIComponent(p.symbol)}&buy=${p.buy}&stop=${p.stop}`} className="ml-auto rounded bg-slate-900 px-2 py-0.5 text-[11px] font-bold text-white hover:bg-slate-700" title="Open My positions with this pick's symbol, buy price and stop filled in, once you have bought it">I bought it →</a>
+                      <a href={`/positions?symbol=${encodeURIComponent(p.symbol)}&buy=${p.buy}&stop=${p.stop}&source=${encodeURIComponent("Blue sky / Multi-year breakouts")}`} className="ml-auto rounded bg-slate-900 px-2 py-0.5 text-[11px] font-bold text-white hover:bg-slate-700" title="Open My positions with this pick's symbol, buy price, stop and strategy filled in, once you have bought it">I bought it →</a>
                     )}
                   </div>
                 </li>

@@ -19,7 +19,7 @@ export async function notifyOwner(subject: string, lines: string[]): Promise<boo
   if (!to || !lines.length) return false;
   const html = `<div style="font:14px/1.6 -apple-system,Segoe UI,Arial,sans-serif;color:#0f172a;max-width:560px">${lines.map((line) => `<p style="margin:0 0 12px 0;white-space:pre-line">${esc(line)}</p>`).join("")}</div>`;
   try {
-    await sendEmail(subject, html, lines.join("\n\n"), [], to);
+    await sendEmail(subject, html, lines.join("\n\n"), [], to, "owner");
     return true;
   } catch (error) {
     console.error("[alerts] owner email failed:", error instanceof Error ? error.message : error);

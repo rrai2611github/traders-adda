@@ -177,6 +177,42 @@ export async function fyersOptionChain(underlying: string, strikecount: number) 
   return body.data;
 }
 
+export interface FyersOrderBookRow {
+  id?: unknown;
+  symbol?: unknown;
+  status?: unknown;
+  filledQty?: unknown;
+  remainingQuantity?: unknown;
+  tradedPrice?: unknown;
+  message?: unknown;
+}
+
+/** Reads today's broker order book so an explicitly submitted order can be tracked without guessing from the submit response. */
+export async function fyersOrderBook(): Promise<FyersOrderBookRow[]> {
+  const config = fyersConfig();
+  if (!config) throw new FyersAuthError("Fyers is not configured. Add FYERS_APP_ID and FYERS_SECRET_ID to .env.local.");
+  const token = readToken();
+  if (!token) throw new FyersAuthError();
+  return throttled(async () => {
+    const response = await fetch(`${API}/api/v3/orders`, {
+      headers: { Authorization: `${config.appId}:${token.accessToken}`, "User-Agent": USER_AGENT },
+      cache: "no-store",
+      signal: AbortSignal.timeout(10_000),
+    });
+    const body = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+    const code = typeof body.code === "number" ? body.code : undefined;
+    if (response.status === 401 || (code != null && AUTH_ERROR_CODES.has(code))) {
+      clearFyersToken();
+      throw new FyersAuthError("Fyers session expired. Click Connect Fyers to log in again.");
+    }
+    if (!response.ok || body.s !== "ok") {
+      throw new FyersApiError(String(body.message || `Fyers HTTP ${response.status}`), response.status, code);
+    }
+    if (!Array.isArray(body.orderBook)) throw new FyersApiError("Fyers returned an invalid order book.", response.status, code);
+    return body.orderBook as FyersOrderBookRow[];
+  });
+}
+
 /**
  * Places ONE order. Only src/lib/orders/orderServer.ts calls this, and only after its guards. Never retried: a timeout may still have
  * placed the order, so the caller reports "check your broker" instead of sending again.
