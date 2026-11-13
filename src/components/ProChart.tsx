@@ -1042,7 +1042,7 @@ export function ProChart({ candles, levels: levelsProp, symbol, intraday = false
 
       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-bold text-slate-500">
         {settings.on.pivots && pivots && <Legend color={COLORS.pivot} label={`Pivots from ${pivots.label}`} dashed />}
-        {levels.map((level) => <Legend key={level.label} color={level.color} label={level.label} dashed />)}
+        {levels.map((level) => <Legend key={level.label} color={level.color} label={level.label} title={`${level.label}: ₹${formatPrice(level.value)}`} dashed />)}
         {settings.on.levels && sr.length > 0 && (
           <span title="S/R = clustered swing highs/lows; ×n = touches; ↺ = flipped (old resistance now support, or the reverse)" className="inline-flex gap-3">
             <Legend color={COLORS.support} label="Support" dashed />
@@ -1233,9 +1233,9 @@ function ArbmPanel({ map, bars, timeframe }: { map: ArbmMap; bars: Candle[]; tim
   );
 }
 
-function Legend({ color, label, dashed = false }: { color: string; label: string; dashed?: boolean }) {
+function Legend({ color, label, dashed = false, title }: { color: string; label: string; dashed?: boolean; title?: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5">
+    <span className="inline-flex items-center gap-1.5" title={title}>
       <span className="inline-block w-5 border-t-2" style={{ borderColor: color, borderStyle: dashed ? "dashed" : "solid" }} />
       {label}
     </span>

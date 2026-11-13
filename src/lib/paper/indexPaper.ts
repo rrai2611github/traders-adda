@@ -3,6 +3,7 @@
  * Pure state machine over saved orders: every function takes the order and a quote and returns a new order,
  * so the server loop, the API and the tests agree. Simulation only; no broker order is ever placed.
  */
+import { quoteEntryIssue } from "../market/quoteQuality.ts";
 
 export type IndexKey = "NIFTY" | "BANKNIFTY";
 export type IndexSide = "long" | "short";
@@ -101,6 +102,10 @@ export interface IndexQuote {
   price: number;
   timestamp: number;
   contract: string;
+  source?: "fyers";
+  fetchedAt?: number;
+  tradeTimestamp?: number | null;
+  timestampBasis?: "trade" | "session" | "fetch";
 }
 
 export interface AdvanceContext {
@@ -132,7 +137,7 @@ export function advanceIndexOrder(order: IndexOrder, quote: IndexQuote, ctx: Adv
     if (istDay(ctx.now) !== next.day || (next.squareOff === "intraday" && squareOffTime)) {
       return note({ ...next, status: "expired", closedAt: timestamp }, timestamp, "Not triggered before the end of the day; the order expired.");
     }
-    if (ctx.entryBlocked) return next;
+    if (ctx.entryBlocked || quoteEntryIssue(quote, ctx.now, MAX_INDEX_QUOTE_AGE_MS)) return next;
     const triggered = next.trigger == null || (price - next.trigger) * d >= 0;
     if (!triggered) return next;
     next = note({ ...next, status: "open", openedAt: timestamp, entryPrice: price, contract: quote.contract },

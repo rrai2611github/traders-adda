@@ -89,7 +89,7 @@ export function MarketStrip() {
   }, []);
 
   if (!breadth?.latest || !breadth.mode) {
-    return failed ? <p role="status" className="rounded-xl border border-border bg-surface px-4 py-2 text-xs text-muted">Market check is unavailable right now. It retries every minute.</p> : null;
+    return <p role="status" className="py-3 text-sm text-muted">{failed ? "Market check is unavailable right now. It retries every minute." : "Checking market conditions. No trading permission is confirmed yet."}</p>;
   }
   const { latest, mode } = breadth;
   // The same setup check the Top picks and the emails use: breadth at least 35% (the Nifty's 200-day average is shown for information only).

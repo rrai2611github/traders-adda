@@ -3,7 +3,8 @@
  * day's legs are replayed from the actual contracts' 1-minute candles (no
  * orders are ever placed). Pure functions; I/O lives in `paperStraddleRun.ts`.
  */
-import { shortLegCost } from "./premium.ts";
+import { actualExpiry, scheduledExpiry, shortLegCost } from "./premium.ts";
+import { isTradingDay } from "../market/marketHours.ts";
 import type { CostModel } from "./backtest.ts";
 import { istDayKey, istMinute, type Bar, type ScalpIndex, type Side } from "./scalpLogic.ts";
 
@@ -45,6 +46,37 @@ export interface PaperDay {
   grossRs: number;
   netRs: number;
   updatedAt: number;
+}
+
+export function paperDayIntegrity(day: PaperDay, today: string): "closed" | "current" | "incomplete" | "expired-incomplete" {
+  if (day.status === "closed") return "closed";
+  if (day.expiry < today) return "expired-incomplete";
+  return day.day < today ? "incomplete" : "current";
+}
+
+export function recordingFrom(days: PaperDay[], index: ScalpIndex, now: number): number {
+  const saved = days.filter((d) => d.index === index);
+  if (!saved.length) return now - 40 * 86_400_000;
+  const today = istDayKey(now);
+  const earliest = saved.filter((d) => d.status === "open" && d.expiry >= today)
+    .map((d) => d.day).sort()[0] ?? today;
+  return Date.parse(`${earliest}T09:15:00+05:30`);
+}
+
+export function recordingExpiry(index: ScalpIndex, day: string, sessions: string[]): string {
+  const scheduled = scheduledExpiry(index, day);
+  if (sessions.length && scheduled <= sessions[sessions.length - 1]) return actualExpiry(index, day, sessions);
+  let at = Date.parse(`${scheduled}T12:00:00+05:30`);
+  while (!isTradingDay(at)) at -= 86_400_000;
+  return istDayKey(at);
+}
+
+/** Never replace an existing day's legs with contracts from a different expiry. */
+export function replaySymbols(existing: PaperDay | undefined, nearest: string, expected: string,
+  strike: number, liveLegs: Array<{ strike: number; type: Side; symbol: string }>): string[] {
+  if (existing) return ["CE", "PE"].map((side) => existing.legs.find((l) => l.side === side)?.symbol ?? "");
+  if (nearest !== expected) return [];
+  return (["CE", "PE"] as const).map((side) => liveLegs.find((l) => l.strike === strike && l.type === side)?.symbol ?? "");
 }
 
 /**

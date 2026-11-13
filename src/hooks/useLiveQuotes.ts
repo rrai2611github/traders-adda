@@ -21,6 +21,7 @@ export interface LiveQuotes {
   asOf: number | null;
   /** The market is in continuous trading, so prices are moving. */
   live: boolean;
+  error?: string | null;
 }
 
 const EMPTY: LiveQuotes = { quotes: new Map(), asOf: null, live: false };
@@ -52,10 +53,12 @@ async function poll() {
       const quotes = new Map(snapshot.quotes);
       for (const r of responses) for (const quote of r.quotes) quotes.set(quote.symbol, quote);
       const live = responses.some((r) => r.status.isLive);
-      snapshot = { quotes, asOf: Date.now(), live };
+      snapshot = { quotes, asOf: Date.now(), live, error: null };
       delay = live ? POLL_LIVE_MS : POLL_IDLE_MS;
       emit();
-    } catch {
+    } catch (error) {
+      snapshot = { ...snapshot, error: `Quote refresh failed: ${error instanceof Error ? error.message : "Request failed"}. Retrying; retained quotes may be stale.` };
+      emit();
       delay = POLL_LIVE_MS * 2; // keep the last prices; retry
     } finally {
       fetching = false;

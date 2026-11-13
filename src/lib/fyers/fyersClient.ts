@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { assertDataAvailable, currentUsage, dataBackoff, FYERS_DATA_MIN_GAP_MS, FYERS_DATA_PER_MINUTE, FyersReadCache, type FyersDataUsage } from "./dataPolicy.ts";
 
 /**
  * Minimal Fyers API v3 client: market data, plus one guarded call to place an order (fyersPlaceOrder).
@@ -10,6 +11,7 @@ import { join } from "node:path";
 
 const API = "https://api-t1.fyers.in";
 const TOKEN_FILE = join(process.cwd(), ".cache", "fyers-token.json");
+const USAGE_FILE = join(process.cwd(), ".cache", "fyers-data-usage.json");
 // Fyers' edge rejects some default library user agents with a bare 403.
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) TradersAdda/1.0";
 const AUTH_ERROR_CODES = new Set([-8, -15, -16, -17]);
@@ -35,9 +37,13 @@ export class FyersAuthError extends Error {
 }
 
 export class FyersApiError extends Error {
-  constructor(message: string, readonly status: number, readonly code?: number) {
+  readonly status: number;
+  readonly code?: number;
+  constructor(message: string, status: number, code?: number) {
     super(message);
     this.name = "FyersApiError";
+    this.status = status;
+    this.code = code;
   }
 }
 
@@ -103,10 +109,9 @@ export async function exchangeFyersAuthCode(code: string): Promise<void> {
 
 /* ---------- throttled data requests ---------- */
 
-// Fyers allows 10 req/s and 200 req/min, and blocks the user for the day after
-// three per-minute breaches, so stay well below both.
-const MIN_GAP_MS = 150;
-const PER_MINUTE = 120;
+// Leave headroom under the Standard plan's five/second and fifty/minute limits.
+const MIN_GAP_MS = FYERS_DATA_MIN_GAP_MS;
+const PER_MINUTE = FYERS_DATA_PER_MINUTE;
 // Shared across route bundles in the same server process.
 const pacer = ((globalThis as { __fyersPacer?: { sent: number[]; chain: Promise<unknown> } }).__fyersPacer ??= {
   sent: [],
@@ -114,6 +119,37 @@ const pacer = ((globalThis as { __fyersPacer?: { sent: number[]; chain: Promise<
 });
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const dataState = ((globalThis as { __fyersData?: { loaded: boolean; usage: FyersDataUsage | null; cache: FyersReadCache } }).__fyersData ??=
+  { loaded: false, usage: null, cache: new FyersReadCache() });
+
+export function fyersDataUsage(now = Date.now()): FyersDataUsage {
+  if (!dataState.loaded) {
+    try {
+      const saved = JSON.parse(readFileSync(USAGE_FILE, "utf8")) as FyersDataUsage;
+      if (!saved || typeof saved.day !== "string" || !Number.isInteger(saved.requests) || saved.requests < 0 ||
+        !Number.isFinite(saved.blockedUntil) || !(saved.reason === null || typeof saved.reason === "string") ||
+        !saved.endpoints || typeof saved.endpoints !== "object" ||
+        !Object.values(saved.endpoints).every((n) => Number.isInteger(n) && n >= 0)) {
+        throw new Error("Saved Fyers data usage is invalid; inspect .cache/fyers-data-usage.json.");
+      }
+      dataState.usage = saved;
+    } catch (error) {
+      if (!(error && typeof error === "object" && "code" in error && error.code === "ENOENT")) throw error;
+    }
+    dataState.loaded = true;
+  }
+  dataState.usage = currentUsage(dataState.usage, now);
+  return { ...dataState.usage, endpoints: { ...dataState.usage.endpoints } };
+}
+
+function saveUsage(usage: FyersDataUsage) {
+  mkdirSync(join(process.cwd(), ".cache"), { recursive: true });
+  const tmp = `${USAGE_FILE}.tmp`;
+  writeFileSync(tmp, JSON.stringify(usage));
+  renameSync(tmp, USAGE_FILE);
+  dataState.usage = usage;
+}
 
 function throttled<T>(task: () => Promise<T>): Promise<T> {
   const { sent } = pacer;
@@ -126,25 +162,43 @@ function throttled<T>(task: () => Promise<T>): Promise<T> {
       await sleep(sent.length >= PER_MINUTE ? 60_000 - (now - sent[0]) + 10 : MIN_GAP_MS - (now - last));
     }
     sent.push(Date.now());
-    return task();
+    try {
+      return await task();
+    } finally {
+      sent[sent.length - 1] = Date.now();
+    }
   });
   pacer.chain = run.catch(() => undefined);
   return run;
 }
 
-async function dataGet(path: string, params: Record<string, string | number>): Promise<Record<string, unknown>> {
+async function dataGet(path: string, params: Record<string, string | number>, ttl = 15_000): Promise<Record<string, unknown>> {
   const config = fyersConfig();
   if (!config) throw new FyersAuthError("Fyers is not configured. Add FYERS_APP_ID and FYERS_SECRET_ID to .env.local.");
   const token = readToken();
   if (!token) throw new FyersAuthError();
   const url = new URL(`${API}${path}`);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, String(value));
-  return throttled(async () => {
-    const response = await fetch(url, {
-      headers: { Authorization: `${config.appId}:${token.accessToken}`, "User-Agent": USER_AGENT },
-      cache: "no-store",
-      signal: AbortSignal.timeout(10_000),
-    });
+  const key = `${token.issuedAt}:${url}`;
+  return dataState.cache.get(key, ttl, Date.now(), () => throttled(async () => {
+    // Re-check after queueing: a preceding request may have exhausted the quota.
+    const usage = fyersDataUsage();
+    assertDataAvailable(usage, Date.now());
+    if (readToken()?.issuedAt !== token.issuedAt) throw new FyersAuthError("Fyers session changed while data requests were queued. Retry after connecting.");
+    saveUsage({ ...usage, requests: usage.requests + 1, endpoints: { ...usage.endpoints, [path]: (usage.endpoints[path] ?? 0) + 1 } });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        headers: { Authorization: `${config.appId}:${token.accessToken}`, "User-Agent": USER_AGENT },
+        cache: "no-store",
+        signal: AbortSignal.timeout(10_000),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      saveUsage({ ...fyersDataUsage(), ...dataBackoff(Date.now(), 0, message) });
+      console.error("[fyers] data transport failed; backing off:", message);
+      throw error;
+    }
     const body = (await response.json().catch(() => ({}))) as Record<string, unknown>;
     const code = typeof body.code === "number" ? body.code : undefined;
     if (response.status === 401 || (code != null && AUTH_ERROR_CODES.has(code))) {
@@ -152,28 +206,35 @@ async function dataGet(path: string, params: Record<string, string | number>): P
       throw new FyersAuthError("Fyers session expired. Click Connect Fyers to log in again.");
     }
     if (!response.ok || body.s !== "ok") {
-      throw new FyersApiError(String(body.message || `Fyers HTTP ${response.status}`), response.status, code);
+      const message = String(body.message || `Fyers HTTP ${response.status}`);
+      const backoff = dataBackoff(Date.now(), response.status, message);
+      if (backoff) {
+        saveUsage({ ...fyersDataUsage(), ...backoff });
+        console.error("[fyers] data requests paused:", message);
+      }
+      throw new FyersApiError(message, response.status, code);
     }
-    return body;
-  });
+    return { ...body, fetchedAt: Date.now() };
+  }));
 }
 
 /** 1-minute (or other resolution) candles between two epoch-second times. */
 export async function fyersHistory(symbol: string, resolution: string, fromSec: number, toSec: number) {
   const body = await dataGet("/data/history", {
     symbol, resolution, date_format: 0, range_from: Math.floor(fromSec), range_to: Math.floor(toSec), cont_flag: 1,
-  });
+  }, resolution === "D" ? 5 * 60_000 : 30_000);
   return body.candles;
 }
 
 /** Live quotes for up to 50 Fyers symbols per call (e.g. NSE:SBIN-EQ, NSE:NIFTY50-INDEX). Rows carry their own s: ok | error. */
 export async function fyersQuotes(symbols: string[]) {
-  const body = await dataGet("/data/quotes", { symbols: symbols.join(",") });
-  return Array.isArray(body.d) ? body.d : [];
+  const body = await dataGet("/data/quotes", { symbols: [...new Set(symbols)].sort().join(",") });
+  return Array.isArray(body.d) ? body.d.map((row: unknown) =>
+    row && typeof row === "object" ? { ...row, fetchedAt: body.fetchedAt } : row) : [];
 }
 
 export async function fyersOptionChain(underlying: string, strikecount: number) {
-  const body = await dataGet("/data/options-chain-v3", { symbol: underlying, strikecount });
+  const body = await dataGet("/data/options-chain-v3", { symbol: underlying, strikecount }, 60_000);
   return body.data;
 }
 

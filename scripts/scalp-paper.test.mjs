@@ -1,12 +1,40 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { DEFAULT_COSTS } from "../src/lib/scalp/backtest.ts";
-import { chainDate, priceDay, replayLeg, summarizePaper } from "../src/lib/scalp/paperStraddle.ts";
+import { chainDate, paperDayIntegrity, priceDay, recordingExpiry, recordingFrom, replayLeg, replaySymbols, summarizePaper } from "../src/lib/scalp/paperStraddle.ts";
 import { shortLegCost } from "../src/lib/scalp/premium.ts";
 
 const DAY = "2026-10-05";
 const at = (hhmm) => Date.parse(`${DAY}T${hhmm}:00+05:30`);
 const minute = (i) => at("09:15") + i * 60_000;
+
+test("recorder refreshes current/recoverable sessions rather than repeating a 40-day backfill", () => {
+  const now = Date.parse("2026-11-11T10:00:00+05:30");
+  assert.equal(recordingFrom([], "NIFTY", now), now - 40 * 86_400_000);
+  const old = { index: "NIFTY", day: "2026-10-29", expiry: "2026-10-29", status: "open" };
+  assert.equal(recordingFrom([old], "NIFTY", now), Date.parse("2026-11-11T09:15:00+05:30"));
+  const recoverable = { ...old, day: "2026-11-09", expiry: "2026-11-17" };
+  assert.equal(recordingFrom([old, recoverable], "NIFTY", now), Date.parse("2026-11-09T09:15:00+05:30"));
+  assert.equal(recordingFrom([{ ...recoverable, status: "closed" }], "NIFTY", now), Date.parse("2026-11-11T09:15:00+05:30"));
+  assert.equal(recordingFrom([old], "BANKNIFTY", now), now - 40 * 86_400_000);
+});
+
+test("future recorder expiry respects known exchange holidays before candles reach expiry day", () => {
+  assert.equal(recordingExpiry("BANKNIFTY", "2026-11-11", ["2026-11-11"]), "2026-11-23");
+  assert.equal(recordingExpiry("NIFTY", "2026-11-09", ["2026-11-09"]), "2026-11-09");
+  assert.equal(recordingExpiry("NIFTY", "2026-11-11", ["2026-11-11"]), "2026-11-17");
+  assert.equal(recordingExpiry("BANKNIFTY", "2026-10-29", ["2026-10-29", "2026-11-23", "2026-11-25"]), "2026-11-23");
+});
+
+test("incomplete days retain their original contracts and cannot be replaced with the next expiry", () => {
+  const old={day:"2026-10-29",expiry:"2026-10-29",status:"open",legs:[{side:"CE",symbol:"old-call"},{side:"PE",symbol:"old-put"}]};
+  assert.equal(paperDayIntegrity(old,"2026-10-30"),"expired-incomplete");
+  assert.equal(paperDayIntegrity({...old,expiry:"2026-11-03"},"2026-10-30"),"incomplete");
+  assert.equal(paperDayIntegrity({...old,status:"closed"},"2026-10-30"),"closed");
+  assert.deepEqual(replaySymbols(old,"2026-11-03","2026-10-29",22000,[]),["old-call","old-put"]);
+  assert.deepEqual(replaySymbols(undefined,"2026-11-03","2026-10-29",22000,[]),[]);
+  assert.deepEqual(replaySymbols(undefined,"2026-11-03","2026-11-03",22000,[{strike:22000,type:"CE",symbol:"new-call"},{strike:22000,type:"PE",symbol:"new-put"}]),["new-call","new-put"]);
+});
 
 /** One option's session: `price(i)` per minute from 09:15, high = price + `wick`. */
 function bars(price, { wick = 0.5, upTo = 374 } = {}) {

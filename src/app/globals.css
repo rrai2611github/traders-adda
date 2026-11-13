@@ -461,6 +461,20 @@ a {
 .dashboard-shell {
   background: radial-gradient(ellipse at 80% 0%, color-mix(in srgb, #2f5fb8 8%, transparent), transparent 46%), var(--background);
 }
+.today-board { container-type: inline-size; }
+.market-overview-grid { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
+.top-picks-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); align-items: stretch; }
+@container (min-width: 600px) {
+  .market-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .market-stats-card { grid-column: 1 / -1; }
+  .market-stats-items { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@container (min-width: 1050px) {
+  .market-overview-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1fr); }
+  .market-stats-card { grid-column: auto; }
+  .market-stats-items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .top-picks-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 .workspace-hero-featured {
   isolation: isolate;
   overflow: hidden;
@@ -513,7 +527,7 @@ a {
 @media (max-width: 639px) {
   :root { --tabbar-h: calc(58px + env(safe-area-inset-bottom, 0px)); }
   body:has(.tabbar) { padding-bottom: var(--tabbar-h); }
-  .dashboard-shell > .sidenav { height: calc(100dvh - var(--tabbar-h)); }
+  .dashboard-shell > .sidenav { display: none; }
   .tabbar {
     position: fixed; inset: auto 0 0 0; z-index: 30; display: flex; height: var(--tabbar-h);
     padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
@@ -561,3 +575,37 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 @media (max-width: 639px) {
   .btn-gold, main select, main input[type="text"], main input[type="number"], main input[type="date"], main input:not([type]), main button.border { min-height: 44px; }
 }
+
+/* Click-to-sort headers (useHeaderSort): pointer, focus ring, and an arrow on the sorted column. */
+.sortable-table thead th[data-sortable] { cursor: pointer; user-select: none; }
+.sortable-table thead th[data-sortable]:hover { color: var(--foreground); }
+.sortable-table thead th[data-sortable]:focus-visible { outline: 2px solid var(--gold-strong); outline-offset: -2px; }
+.sortable-table thead th[aria-sort="ascending"]::after,
+.sortable-table thead th[aria-sort="descending"]::after { margin-left: 4px; color: var(--accent); font-size: 9px; }
+.sortable-table thead th[aria-sort="ascending"]::after { content: "\25B2"; }
+.sortable-table thead th[aria-sort="descending"]::after { content: "\25BC"; }
+.sortable-table thead th[aria-sort="ascending"],
+.sortable-table thead th[aria-sort="descending"] { color: var(--foreground); }
+
+/* Pinned stock column: the first column stays put while a wide table scrolls sideways. Cells need an
+   opaque background, so the column takes the surface colour (and the row tint on hover). */
+.pin-table tbody td:first-child,
+.pin-table thead th:first-child {
+  position: sticky; left: 0;
+  box-shadow: inset -1px 0 0 var(--border);
+}
+.pin-table tbody td:first-child { z-index: 3; background-color: var(--surface); }
+.pin-table thead th:first-child { z-index: 8; background-color: var(--surface-raised); }
+.pin-table tbody tr:hover td:first-child { background-color: color-mix(in srgb, var(--gold) 9%, var(--surface)); }
+/* "#" then stock (Today's Picks): fixed-width rank column, stock column pinned right after it. */
+.pin-table.pin-second :is(td, th):first-child { width: 44px; min-width: 44px; max-width: 44px; padding-left: 8px; padding-right: 8px; box-shadow: none; }
+.pin-table.pin-second :is(td, th):nth-child(2) { position: sticky; left: 44px; box-shadow: inset -1px 0 0 var(--border); }
+.pin-table.pin-second tbody td:nth-child(2) { z-index: 3; background-color: var(--surface); }
+.pin-table.pin-second thead th:nth-child(2) { z-index: 8; background-color: var(--surface-raised); }
+.pin-table.pin-second tbody tr:hover td:nth-child(2) { background-color: color-mix(in srgb, var(--gold) 9%, var(--surface)); }
+
+/* Sidebar match counts and their movement since the last visit. Neutral tones on purpose: more matches is not profit, fewer is not a loss. */
+.sidenav-count-live { color: var(--gold); font-weight: 800; }
+.sidenav-count-arrow { margin-right: 3px; font-size: 8px; vertical-align: 1px; }
+.sidenav-count-arrow.is-up { color: #fde68a; }
+.sidenav-count-arrow.is-down { color: rgba(255, 255, 255, 0.45); }

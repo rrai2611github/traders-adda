@@ -18,10 +18,12 @@ import { TRADE_STATUS_STYLE } from "./TradeStatusBadge";
 import backtest from "@/lib/screen/scannerBacktest.json";
 import { formatPercent, toneClass } from "@/lib/format";
 import { staleLabel, useLiveQuotes } from "@/hooks/useLiveQuotes";
+import { useHeaderSort } from "@/hooks/useHeaderSort";
 import type { AlertTable } from "@/lib/alerts/scannerAlert";
 import { EmptyState, LoadingState, WorkspaceFrame, WorkspaceHero } from "./WorkspaceShell";
 import { StyleTag } from "./ScannerDirectory";
 import { PaRatingPill } from "./PriceActionRating";
+import type { IntradayDevelopmentSummary } from "@/lib/alerts/hourlyIntraday";
 
 const priceLabel = (price: number) => `₹${price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const dateLabel = (timestamp: number) =>
@@ -220,6 +222,8 @@ export function ChartinkScannerSection({
       : sort === "pa" ? (b.paRating?.score ?? -1) - (a.paRating?.score ?? -1)
       : sort === "checks" ? b.readiness.passed - a.readiness.passed || (b.rs ?? -1) - (a.rs ?? -1)
       : (b.turnoverCr ?? 0) - (a.turnoverCr ?? 0));
+  // Clicking a column header re-sorts the rows above by what that column shows.
+  const { bindTable, rows: sortedRows } = useHeaderSort(rows, (row) => row.symbol);
   // Latest prices for the rows on screen (the first 120); rows beyond them use the server's scan price.
   const { quotes: liveQuotes, live: marketLive } = useLiveQuotes(rows.slice(0, 120).map((row) => row.symbol));
   const columns = COLUMNS[active];
@@ -378,7 +382,7 @@ export function ChartinkScannerSection({
         </EmptyState>
       ) : (
         <div className="mt-4 max-h-[640px] overflow-auto">
-          <table className="w-full min-w-[900px] text-left text-sm">
+          <table ref={bindTable} className="pin-table w-full min-w-[900px] text-left text-sm">
             <thead className="sticky top-0 z-10 border-b border-border bg-white text-xs font-black uppercase tracking-wide text-muted">
               <tr>
                 <th scope="col" className="whitespace-nowrap px-3 py-3">Stock</th>
@@ -395,11 +399,11 @@ export function ChartinkScannerSection({
               </tr>
             </thead>
             <tbody className="divide-y divide-border/70">
-              {rows.map((row) => {
+              {sortedRows.map((row) => {
                 const symbol = `NSE:${row.symbol}`;
                 const added = watchlistSymbols.includes(row.symbol);
                 return (
-                  <tr key={row.symbol} className="align-top hover:bg-[#f5f8fd]">
+                  <tr key={row.symbol} data-sort-key={row.symbol} className="align-top hover:bg-[#f5f8fd]">
                     <td className="px-3 py-3">
                       <StockSymbolButton symbol={row.symbol} className="block font-bold text-foreground">{row.name}</StockSymbolButton>
                       <span className="text-xs text-muted">{symbol}{row.sector ? ` · ${row.sector}` : ""}</span>
@@ -566,6 +570,7 @@ interface EmailAlertInfo {
   lastError: string | null;
   preview: AlertTable | null;
   previewError: string | null;
+  intraday: IntradayDevelopmentSummary | null;
   sendBlockedReason: string | null;
   calendarWarning: string | null;
 }
@@ -637,6 +642,22 @@ function HourlyEmailPanel() {
           </span>
         )}
         <span className="ml-auto flex gap-2">
+          <a
+            href="/api/alerts/email?html=1"
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-lg border border-border bg-white px-2.5 py-1.5 font-bold text-[#1f5fbf]"
+          >
+            Preview email
+          </a>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void load()}
+            className="rounded-lg border border-border bg-white px-2.5 py-1.5 font-bold text-[#1f5fbf] disabled:opacity-50"
+          >
+            Refresh
+          </button>
           <button
             type="button"
             disabled={!info?.configured || busy}
@@ -658,8 +679,36 @@ function HourlyEmailPanel() {
       <p className="mt-1.5 text-muted">
         Sends once per hourly NSE slot (09:15, 10:15, … 15:15 IST) while the app is running and the market is open.
         Index analysis is included even when stock lists are unchanged. Latest available data, not verified real time;
-        analysis uses the forming daily candle, not hourly candles, and can change before the close.
+        daily stock setups use the forming daily candle and can change before the close.
+        The separate Intraday developments section checks completed hourly candles.
       </p>
+      {info?.intraday && (
+        <section aria-label="Intraday developments" className="mt-3 rounded-lg border border-border bg-white p-3">
+          <h4 className="font-black text-foreground">Intraday developments · informational</h4>
+          <p className="text-muted">
+            {info.intraday.checked} checked · {info.intraday.stale} stale · {info.intraday.unavailable} unavailable · {info.intraday.events.length} new events.
+          </p>
+          {info.intraday.events.length ? (
+            <ul className="mt-2 space-y-1">
+              {info.intraday.events.map((event) => (
+                <li key={event.eventKey}>
+                  <StockSymbolButton symbol={event.symbol} /> · {({
+                    "prior-high-cross": "Closed above prior-day high",
+                    "prior-low-break": "Closed below prior-day low",
+                    "vwap-reclaim": "Hourly VWAP reclaim",
+                    "vwap-loss": "Hourly VWAP loss",
+                  })[event.kind]} {priceLabel(event.level)} · hourly close {priceLabel(event.close)} · {new Intl.DateTimeFormat("en-IN", {
+                    timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit",
+                  }).format(event.eventAt)} IST
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-muted">{info.intraday.reason ?? "No new crossings in the checked candidates. Missing coverage is not a no-signal result."}</p>
+          )}
+          <p className="mt-2 text-muted">Current Buy ready/watch candidates only. Yahoo 60-minute candles; latency unverified. VWAP is an hourly-bar estimate, not a five-minute signal. Daily status, Picks and plans are unchanged.</p>
+        </section>
+      )}
       {info?.preview && <p className="mt-1 font-semibold text-foreground">Current email contains {Math.min(10, info.preview.rows.length)} picks.</p>}
       {info?.previewError && <p className="mt-1 font-semibold text-down">{info.previewError}</p>}
       {info?.sendBlockedReason && <p role="status" className="mt-1 font-semibold text-muted">{info.sendBlockedReason}</p>}

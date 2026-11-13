@@ -1,13 +1,14 @@
 import { refreshHistory } from "@/lib/backtest/historyRefresh";
 import { LIVE_RULES, startTracker, stopTracker, trackerState } from "@/lib/backtest/tracker";
 import { getMarketStatus } from "@/lib/market/marketHours";
+import { trackerAlertStatus } from "@/lib/backtest/trackerAlertServer";
 
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "no-store" };
 
 /** The live strategy check: its configuration, the price-file status and the result so far. */
 export async function GET() {
-  return Response.json({ ...trackerState(), rules: LIVE_RULES }, { headers });
+  return Response.json({ ...trackerState(), rules: LIVE_RULES, alertStatus: trackerAlertStatus() }, { headers });
 }
 
 function sameOrigin(request: Request): boolean {
@@ -27,5 +28,5 @@ export async function POST(request: Request) {
     if (getMarketStatus().isLive) return Response.json({ error: "The market is open: today's candle is still forming. Update after about 4:30 pm IST." }, { status: 409, headers });
     void refreshHistory();
   }
-  return Response.json({ ...trackerState(), rules: LIVE_RULES }, { headers });
+  return Response.json({ ...trackerState(), rules: LIVE_RULES, alertStatus: trackerAlertStatus() }, { headers });
 }

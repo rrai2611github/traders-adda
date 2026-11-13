@@ -4,6 +4,8 @@ import type { PickAnalysis, PickVerdict } from "../screen/pickAnalysis.ts";
 import type { PickTag } from "../screen/topPicks.ts";
 import type { NewsNote } from "../ai/newsCheck.ts";
 import { setupStatus } from "../screen/setupGate.ts";
+import { callProgress, shortDay, type PickCall } from "../radar/pickCalls.ts";
+import { pickTerm } from "../screen/pickTerm.ts";
 
 /** What the email needs of one analysed pick (the full AnalysedPick satisfies it). */
 export interface TopPickEmailItem {
@@ -18,6 +20,8 @@ export interface TopPickEmailItem {
   /** Percent under (negative) or past (positive) the breakout level. */
   ext: number | null;
   analysis: PickAnalysis;
+  /** The first call and time on the list; absent when the email was built without the track record. */
+  firstCall?: PickCall | null;
 }
 
 export interface TopPicksEmailInput {
@@ -47,22 +51,52 @@ const PAPER_DAY_CARDS = 3;
 const buyable = (p: TopPickEmailItem) => p.tag === "ready" || p.tag === "broke";
 const cell = (label: string, value: string, sub: string | null, color: string) => `<td width="33%" valign="top" style="padding-right:4px"><div style="font:700 9px ${FONT};letter-spacing:0.6px;text-transform:uppercase;color:#64748b">${label}</div><div style="font:800 14px/1.25 ${FONT};color:${color}">${value}</div>${sub ? `<div style="font:600 10px ${FONT};color:#64748b">${sub}</div>` : ""}</td>`;
 
+const TAG_NAME: Record<string, string> = { ready: "Ready", broke: "Just broke out", watch: "Watch", extended: "Extended" };
+/** Two decimals, so a first call reads exactly as it does on the Today page (the email's usual rounding would turn 381.25 into 381.3). */
+const price2 = (v: number) => `₹${v.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const signedPercent = (v: number) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)}%`;
+
+/**
+ * What the email says about a pick's history. A buyable pick with a saved call keeps that call's levels fixed (the levels in the card's
+ * numbers move every day); one that has been on the list but has no buy call yet, or is new, says that today's levels are the first call.
+ */
+export function firstCallParts(p: TopPickEmailItem): { lines: string[]; hasCall: boolean } {
+  const saved = p.firstCall ?? null;
+  const call = saved?.call ?? null;
+  if (!call) {
+    const since = saved ? `On the list since ${shortDay(saved.onListSince)}${saved.firstTag && saved.firstTag !== p.tag ? ` (first as ${TAG_NAME[saved.firstTag] ?? saved.firstTag})` : ""}. ` : "New today. ";
+    return { lines: [`${since}The levels above are the first call.`], hasCall: false };
+  }
+  const progress = callProgress(call, p.price);
+  const levels = [`buy ${price2(call.buy)}`, call.stop != null ? `stop ${price2(call.stop)}` : null, call.target1 != null ? `T1 ${price2(call.target1)}` : null, call.target2 != null ? `T2 ${price2(call.target2)}` : null].filter(Boolean).join(" · ");
+  const now = progress
+    ? `Now ${signedPercent(progress.changePercent)} against the call${progress.key === "in-zone" ? "" : ` (${progress.label.toLowerCase()})`}${saved && saved.sessions > 0 ? ` · session ${saved.sessions}` : ""} · on the list since ${shortDay(saved!.onListSince)}`
+    : `On the list since ${shortDay(saved!.onListSince)}`;
+  return { lines: [`First call ${shortDay(call.day)} (${TAG_NAME[call.tag]}): ${levels}`, now], hasCall: true };
+}
+
+const TERM = pickTerm();
+const FIRST_CALL_NOTE = `First call: the first Ready or Just-broke-out listing, its levels kept fixed while the stock stays on the list; the "today" levels move every day. ${TERM.label}: ${TERM.headline.split(": ")[1]} in the 10-year test, not a time limit.`;
+
 /** One short card: name and verdict, the three numbers that matter, then a single line of reasons and cautions. */
 function compactCard(p: TopPickEmailItem, index: number): string {
   const a = p.analysis;
   const v = VERDICT[a.verdict];
   const plan = a.plan;
+  const history = firstCallParts(p);
+  const today = history.hasCall ? " today" : "";
   const position = p.ext == null ? "" : `${Math.abs(p.ext).toFixed(1)}% ${p.ext <= 0 ? "under" : "past"} its level`;
   const cells = plan
-    ? `${cell("Buy", px(plan.buy), p.tag === "ready" ? "close above" : "near", "#1d4ed8")}${cell("Stop", px(plan.stop), `−${plan.stopPercent}%`, "#b42318")}${plan.targets ? cell("Target", px(plan.targets.t1), `+${plan.targets.t1Percent}% · T2 ${px(plan.targets.t2)}`, "#12814c") : cell("RS", String(Math.round(p.rs)), null, "#0f172a")}`
+    ? `${cell(`Buy${today}`, px(plan.buy), p.tag === "ready" ? "close above" : "near", "#1d4ed8")}${cell(`Stop${today}`, px(plan.stop), `−${plan.stopPercent}%`, "#b42318")}${plan.targets ? cell(`Target${today}`, px(plan.targets.t1), `+${plan.targets.t1Percent}% · T2 ${px(plan.targets.t2)}`, "#12814c") : cell("RS", String(Math.round(p.rs)), null, "#0f172a")}`
     : `${cell("Last close", px(p.price), null, "#0f172a")}${cell("Position", position || "—", null, "#0f172a")}${cell("RS", String(Math.round(p.rs)), null, "#0f172a")}`;
   const chips = [`<span style="color:#334155">RS ${Math.round(p.rs)}${position ? ` · ${esc(position)}` : ""}</span>`, ...a.chips.map((c) => `<span style="color:#12814c">✓ ${esc(c)}</span>`), ...a.flags.map((f) => `<span style="color:#b45309">⚠ ${esc(f)}</span>`)].join(" &nbsp; ");
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e2e8f0;border-left:4px solid ${v.bar};border-radius:10px;background:#ffffff;margin-bottom:8px"><tr><td style="padding:9px 12px">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
       <td style="font:800 14px ${FONT};color:#0f172a">${index}. ${esc(p.symbol)}</td>
-      <td align="right">${pill(esc(a.status), v.bg, v.fg)}</td></tr></table>
+      <td align="right">${pill(esc(a.status), v.bg, v.fg)} ${pill(esc(TERM.label), "#eef2ff", "#3730a3")}</td></tr></table>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:6px"><tr>${cells}</tr></table>
     ${chips ? `<div style="font:600 11px/1.5 ${FONT};padding-top:6px">${chips}</div>` : ""}
+    <div style="font:600 11px/1.5 ${FONT};color:#1e3a8a;background:#eff6ff;border-radius:6px;padding:5px 8px;margin-top:6px">${history.lines.map((line, i) => (i === 0 && history.hasCall ? `<b>${esc(line)}</b>` : esc(line))).join("<br>")}</div>
     ${p.news ? `<div style="font:500 11px/1.45 ${FONT};color:${NEWS_COLOR[p.news.flag]};padding-top:4px"><b>News check:</b> ${esc(p.news.note)}</div>` : ""}
   </td></tr></table>`;
 }
@@ -136,7 +170,7 @@ export function topPicksBlock(input: TopPicksEmailInput): { html: string; text: 
     ? `<div style="font:400 12px/1.5 ${FONT};color:#475569;padding:2px 0 4px"><b>Strong, but wait:</b> ${esc(waits.map(waitText).join(" · "))}</div>`
     : "";
   const hasNews = input.picks.some((p) => p.news);
-  const html = `${cards}${restHtml}${waitHtml}${spacer(2)}<div style="font:400 11px/1.5 ${FONT};color:#64748b">${esc(CAVEAT)}${hasNews ? ` ${esc(NEWS_NOTE)}` : ""}</div>`;
+  const html = `${cards}${restHtml}${waitHtml}${spacer(2)}<div style="font:400 11px/1.5 ${FONT};color:#64748b">${esc(CAVEAT)}${shown.length ? ` ${esc(FIRST_CALL_NOTE)}` : ""}${hasNews ? ` ${esc(NEWS_NOTE)}` : ""}</div>`;
   const text = [
     ...shown.map((p, i) => {
       const a = p.analysis;
@@ -144,11 +178,15 @@ export function topPicksBlock(input: TopPicksEmailInput): { html: string; text: 
       const position = p.ext == null ? "" : ` · ${Math.abs(p.ext).toFixed(1)}% ${p.ext <= 0 ? "under" : "past"} its level`;
       const notes = [...a.chips.map((c) => `+ ${c}`), ...a.flags.map((f) => `! ${f}`)].join(", ");
       const target = a.plan?.targets ? ` · target ${px(a.plan.targets.t1)} (+${a.plan.targets.t1Percent}%) / ${px(a.plan.targets.t2)} (+${a.plan.targets.t2Percent}%)` : "";
-      return `${i + 1}. ${p.symbol} · ${a.status.toUpperCase()} · RS ${Math.round(p.rs)} · ${levels}${target}${position}${notes ? ` · ${notes}` : ""}${p.news ? ` · NEWS CHECK (${p.news.flag}): ${p.news.note}` : ""}`;
+      const history = firstCallParts(p);
+      const todays = history.hasCall ? "today's levels: " : "";
+      return `${i + 1}. ${p.symbol} · ${a.status.toUpperCase()} · RS ${Math.round(p.rs)} · ${todays}${levels}${target}${position} · ${TERM.label.toUpperCase()}${notes ? ` · ${notes}` : ""}${p.news ? ` · NEWS CHECK (${p.news.flag}): ${p.news.note}` : ""}
+   ${history.lines.join(" | ")}`;
     }),
     ...(restText ? [restText] : []),
     ...(waits.length ? [`Strong, but wait: ${waits.map(waitText).join(" · ")}`] : []),
     CAVEAT,
+    ...(shown.length ? [FIRST_CALL_NOTE] : []),
     ...(hasNews ? [NEWS_NOTE] : []),
   ];
   return { html, text };

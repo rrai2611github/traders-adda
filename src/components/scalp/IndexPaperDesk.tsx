@@ -1,6 +1,7 @@
 "use client";
 
 import { ScalpNav } from "./ScalpNav";
+import { quoteSourceLabel } from "@/lib/market/quoteQuality";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { IndexPaperSnapshot, frameworkSignal } from "@/lib/paper/indexPaperServer";
 import type { IndexKey, IndexSide, SquareOff } from "@/lib/paper/indexPaper";
@@ -127,6 +128,7 @@ export function IndexPaperDesk() {
           </div>
         )}
         {snap?.engine.pausedReason && snap.engine.fyers && <div className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-300">Engine paused: {snap.engine.pausedReason}.</div>}
+        {snap?.engine.lastError && <div role="alert" className="rounded-lg border border-red-900 bg-red-950/60 px-3 py-2 text-xs text-red-200">{snap.engine.lastError}</div>}
         {snap && snap.risk.reasons.length > 0 && <div className="rounded-lg border border-rose-900 bg-rose-950/40 px-3 py-2 text-xs font-bold text-rose-200">{snap.risk.reasons.join(" ")} New orders are blocked; open positions keep their stops and targets.</div>}
         {error && <div role="alert" className="flex justify-between gap-3 rounded-lg border border-red-900 bg-red-950/60 px-3 py-2 text-xs text-red-200"><span>{error}</span><button type="button" className="font-bold underline" onClick={() => setError(null)}>Dismiss</button></div>}
 
@@ -145,6 +147,11 @@ export function IndexPaperDesk() {
 
         {snap && (
           <section className="rounded-xl border border-slate-800 bg-[#0b1220] p-4">
+            <p className="mb-3 text-xs text-amber-300">Fyers quotes poll/reuse 15 seconds. A fetch timestamp or session date is not an exchange tick: new entries require a recent explicit trade time. Existing stops still use sampled quotes; fills are estimates.</p>
+            {(["NIFTY", "BANKNIFTY"] as IndexKey[]).map((index) => {
+              const quote = snap.quotes[index];
+              return quote ? <p key={index} className="mb-2 text-xs text-slate-400">{NAMES[index]}: {quoteSourceLabel(quote)} · Provider/session {clock(quote.timestamp)} IST{quote.fetchedAt ? ` · Fetched ${clock(quote.fetchedAt)} IST` : ""}</p> : null;
+            })}
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-sm font-black text-white">Auto-paper mode</h2>
               <button
@@ -179,7 +186,7 @@ export function IndexPaperDesk() {
               <ul className="mt-2 space-y-0.5 text-[11px]">
                 {snap.auto.log.slice(0, 6).map((entry) => (
                   <li key={`${entry.at}-${entry.index}`} className={entry.result === "placed" ? "text-emerald-300" : "text-slate-500"}>
-                    {clock(entry.at)} · {NAMES[entry.index]} · {entry.result === "placed" ? "PLACED" : "skipped"}: {entry.message}
+                    {clock(entry.at)} · {NAMES[entry.index]} · {entry.result === "placed" ? "PLACED" : entry.result === "error" ? "ERROR - retry pending" : entry.result === "blocked" ? "BLOCKED" : "skipped"}: {entry.message}
                   </li>
                 ))}
               </ul>
@@ -267,6 +274,7 @@ function FrameworkCard({ index, signal, loading, onCheck, onUse }: { index: Inde
       {ok && (
         <div className="mt-3 space-y-3">
           <p className={`rounded-lg px-3 py-2 text-xs font-bold ${ok.setup?.allPass ? "bg-emerald-950/60 text-emerald-200" : "bg-slate-900 text-slate-300"}`}>{ok.verdict}</p>
+          {ok.riskReasons.length > 0 && <p className="text-xs text-amber-300">{ok.riskReasons.join(" ")}</p>}
           {regime && <Checks title={`Daily regime · ${regime.state === "bull" ? "BULLISH" : regime.state === "bear" ? "BEARISH" : "not aligned"}`} checks={regime.state === "bear" ? regime.bear : regime.bull} />}
           {ok.setup && <Checks title={`Hourly ${ok.setup.dir === 1 ? "long" : "short"} setup${ok.setup.breakoutConfirmed ? " · breakout confirmed" : " · waiting for the breakout"}`} checks={ok.setup.checks} />}
           {ok.proposal && ok.setup && (

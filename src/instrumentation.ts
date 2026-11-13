@@ -20,6 +20,8 @@ export async function register() {
   startReadyAlert();
   const { startHistoryRefreshScheduler } = await import("./lib/backtest/historyRefresh");
   const { readTracker, trackerState } = await import("./lib/backtest/tracker");
+  const { startTrackerAlerts } = await import("./lib/backtest/trackerAlertServer");
+  startTrackerAlerts();
   // After the close, add the day's candle to the price files and recompute the live strategy check, if one is running.
   const { sendTrackerNote } = await import("./lib/backtest/trackerNote");
   const { sendWeeklyReviewIfDue } = await import("./lib/ai/weeklyReviewServer");

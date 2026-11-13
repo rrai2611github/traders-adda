@@ -2,7 +2,7 @@
 
 import { ScalpNav } from "./ScalpNav";
 import { useCallback, useEffect, useState } from "react";
-import type { PaperDay, PaperLeg, PaperSummary } from "@/lib/scalp/paperStraddle";
+import { paperDayIntegrity, type PaperDay, type PaperLeg, type PaperSummary } from "@/lib/scalp/paperStraddle";
 import type { PaperStraddleReport } from "@/lib/scalp/paperStraddleRun";
 import type { ScalpIndex } from "@/lib/scalp/scalpLogic";
 
@@ -69,6 +69,10 @@ export function PaperStraddle() {
         {report?.refreshError || report?.lastError ? (
           <div className="rounded-lg border border-red-900 bg-red-950/60 px-3 py-2 text-xs text-red-200">{report.refreshError ?? report.lastError}</div>
         ) : null}
+        {!!report?.integrity?.length && <div role="alert" className="rounded-lg border border-amber-900 bg-amber-950/40 px-3 py-2 text-xs text-amber-200">
+          {report.integrity.length} older records are incomplete. Expired contracts cannot be recovered through the current live-contract history path.
+          Historical open marks are not current P&amp;L and are excluded from closed results. Existing records are retained, never replaced with another expiry.
+        </div>}
         {error ? <div className="rounded-lg border border-red-900 bg-red-950/60 px-3 py-2 text-xs text-red-200">{error}</div> : null}
         {!report && !error ? (
           <div className="rounded-xl border border-slate-800 bg-[#0b1220] px-4 py-8 text-center text-sm text-slate-400">Loading the paper record…</div>
@@ -78,10 +82,10 @@ export function PaperStraddle() {
           <>
             <div className="grid gap-3 md:grid-cols-2">
               {(["NIFTY", "BANKNIFTY"] as const).map((index) => (
-                <SummaryCard key={index} index={index} summary={report.summary[index]} today={report.days.find((d) => d.index === index && d.status === "open")} />
+                <SummaryCard key={index} index={index} summary={report.summary[index]} today={report.days.find((d) => d.index === index && d.day === report.asOfDay && d.status === "open")} />
               ))}
             </div>
-            <DayTable days={report.days} />
+            <DayTable days={report.days} today={report.asOfDay} />
             <p className="text-[11px] text-slate-500">
               Last updated {report.lastRunAt ? new Date(report.lastRunAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }) : "never"}.
               While Fyers is connected, the app follows today&apos;s trade from 09:21 every 5 minutes (every minute while this page is open) and closes it after 15:15.
@@ -107,7 +111,7 @@ function SummaryCard({ index, summary, today }: { index: ScalpIndex; summary: Pa
         </span>
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Stat label="Net, after costs" value={rs(summary.netRs)} className={tone(summary.netRs)} />
+        <Stat label="Closed net, after costs" value={rs(summary.netRs)} className={tone(summary.netRs)} />
         <Stat label="Winning days" value={summary.closedDays ? `${summary.winDays}/${summary.closedDays}` : "—"} />
         <Stat label="Max drawdown" value={summary.maxDrawdown ? rs(-summary.maxDrawdown) : "—"} className="text-rose-400" />
         <Stat label="Real ÷ model premium" value={ratio == null ? "—" : `${ratio.toFixed(2)}×`} className={ratio == null ? "text-white" : ratio >= 1 ? "text-emerald-400" : "text-amber-300"} />
@@ -150,7 +154,7 @@ function LegCell({ leg }: { leg: PaperLeg }) {
   );
 }
 
-function DayTable({ days }: { days: PaperDay[] }) {
+function DayTable({ days, today }: { days: PaperDay[]; today: string }) {
   if (!days.length) {
     return (
       <div className="rounded-xl border border-slate-800 bg-[#0b1220] px-4 py-6 text-center text-sm text-slate-400">
@@ -171,17 +175,19 @@ function DayTable({ days }: { days: PaperDay[] }) {
           </thead>
           <tbody>
             {days.map((d) => {
+              const integrity = paperDayIntegrity(d, today);
+              const incomplete = integrity === "incomplete" || integrity === "expired-incomplete";
               const real = d.legs.reduce((a, l) => a + l.sold, 0);
               const model = d.legs.reduce((a, l) => a + (l.modelSold ?? 0), 0);
               return (
                 <tr key={`${d.index}-${d.day}`} className="border-t border-slate-800">
-                  <td className="py-1.5">{shortDate(d.day)}{d.status === "open" ? <span className="ml-1 text-sky-300">· open</span> : null}</td>
+                  <td className="py-1.5">{shortDate(d.day)}{incomplete ? <span className="ml-1 text-amber-300">· {integrity === "expired-incomplete" ? "expired / incomplete" : "incomplete"}</span> : d.status === "open" ? <span className="ml-1 text-sky-300">· open</span> : null}</td>
                   <td>{NAMES[d.index]}</td>
                   <td>{d.strike}</td>
                   <td>{shortDate(d.expiry)}{d.expiry === d.day ? <span className="ml-1 text-amber-300">· expiry day</span> : null}</td>
                   {d.legs.map((leg) => <td key={leg.side}><LegCell leg={leg} /></td>)}
                   <td className="text-right text-slate-400">{model > 0 ? `${(real / model).toFixed(2)}×` : "—"}</td>
-                  <td className={`text-right font-bold ${tone(d.netRs)}`}>{rs(d.netRs)}</td>
+                  <td className={`text-right font-bold ${incomplete ? "text-amber-300" : tone(d.netRs)}`} title={incomplete ? "Stored historical mark, not a complete/current result." : undefined}>{incomplete ? "Incomplete" : rs(d.netRs)}</td>
                 </tr>
               );
             })}

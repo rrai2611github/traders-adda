@@ -1,0 +1,66 @@
+{
+  "generated": "2026-11-13",
+  "source": ".cache/backtest-results/0b1be103c0ae5827.json",
+  "from": "2016-12-01",
+  "trades": 305,
+  "hold": {
+    "p25": 17,
+    "median": 33,
+    "p75": 54,
+    "p90": 78,
+    "max": 230
+  },
+  "winnersMedian": 55,
+  "losersMedian": 19,
+  "shareLonger": {
+    "short": 56.1,
+    "mid": 15.7,
+    "long": 0
+  },
+  "predictors": {
+    "matchedTrades": 255,
+    "noiseLevel": 0.13,
+    "features": [
+      {
+        "key": "baseSessions",
+        "label": "Base length",
+        "spearman": 0.1
+      },
+      {
+        "key": "baseDepth",
+        "label": "Base depth",
+        "spearman": 0.07
+      },
+      {
+        "key": "atrPercent",
+        "label": "Volatility (ATR %)",
+        "spearman": -0.02
+      },
+      {
+        "key": "return63",
+        "label": "63-day return",
+        "spearman": -0.07
+      },
+      {
+        "key": "rs",
+        "label": "Relative strength",
+        "spearman": -0.02
+      },
+      {
+        "key": "above200",
+        "label": "Distance above the 200-day",
+        "spearman": -0.05
+      },
+      {
+        "key": "above50",
+        "label": "Distance above the 50-day",
+        "spearman": -0.03
+      }
+    ],
+    "strongest": {
+      "key": "baseSessions",
+      "label": "Base length",
+      "spearman": 0.1
+    }
+  }
+}

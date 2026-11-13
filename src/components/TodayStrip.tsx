@@ -13,28 +13,32 @@ const TONE: Record<StripTone, { card: string; dot: string; big: string }> = {
 };
 
 /** Polls one of the app's own JSON endpoints; `again` says how long to wait before the next look (null stops). Failures keep what is shown. */
-function usePolled<T>(url: string, again: (body: T) => number | null): T | null {
+function usePolled<T>(url: string, again: (body: T) => number | null): { data: T | null; error: boolean } {
   const [data, setData] = useState<T | null>(null);
+  const [error, setError] = useState(false);
   useEffect(() => {
     let alive = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const look = () => {
       fetch(url, { cache: "no-store" })
-        .then((res) => (res.ok ? (res.json() as Promise<T>) : null))
+        .then((res) => {
+          if (!res.ok) throw new Error(`Refresh failed (${res.status})`);
+          return res.json() as Promise<T>;
+        })
         .then((body) => {
           if (!alive) return;
-          if (body) setData(body);
+          if (body) { setData(body); setError(false); }
           const wait = body ? again(body) : 60_000;
           if (wait != null) timer = setTimeout(look, wait);
         })
-        .catch(() => { if (alive) timer = setTimeout(look, 60_000); });
+        .catch(() => { if (alive) { setError(true); timer = setTimeout(look, 60_000); } });
     };
     look();
     return () => { alive = false; if (timer) clearTimeout(timer); };
     // `again` is a plain function of the body; the endpoint is what identifies the poll.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]);
-  return data;
+  return { data, error };
 }
 
 function Tile({ tile }: { tile: StripTile }) {
@@ -49,28 +53,29 @@ function Tile({ tile }: { tile: StripTile }) {
       <p className="mt-1 text-[11.5px] leading-4 text-slate-600">{tile.sub}</p>
     </>
   );
-  const cls = `block min-w-0 rounded-xl border p-3 shadow-sm transition ${t.card} ${tile.href ? "hover:shadow-md" : ""}`;
+  const cls = `block h-full min-w-0 rounded-xl border p-3 shadow-sm transition ${t.card} ${tile.href ? "hover:shadow-md" : ""}`;
   return tile.href ? <Link href={tile.href} className={cls}>{body}</Link> : <div className={cls}>{body}</div>;
 }
 
-/** "What to do today" in three tiles: must I sell, how is the paper test, is the strategy still working. */
+/** Real holdings, the paper test and strategy health, kept as separate cards. */
 export function TodayStrip() {
   const positions = usePolled<PositionsSlice>("/api/positions", () => 60_000);
   const tracker = usePolled<TrackerSlice>("/api/tracker", (b) => (b.job.status === "running" ? 4_000 : 120_000));
   const health = usePolled<HealthSlice>("/api/strategy-health", (b) => (b.status === "running" ? 4_000 : 300_000));
-  const tiles = [positionsTile(positions), liveTile(tracker), healthTile(health)];
+  const tiles = [positionsTile(positions.data), liveTile(tracker.data), healthTile(health.data)].map((tile, index) => {
+    const source = [positions, tracker, health][index];
+    return source.error ? { ...tile, big: source.data ? tile.big : "Unavailable", sub: `Refresh failed. ${source.data ? "Previously loaded data may be stale." : "Retrying automatically."}`, tone: "warn" as const } : tile;
+  });
   // The clock is state, not read during render, so the page stays pure; it only needs to be roughly right.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 300_000);
     return () => clearInterval(id);
   }, []);
-  const freshness = tracker?.history ? dataFreshness({ lastCandleDay: tracker.history.lastCandleDay, refreshedDay: tracker.history.lastDay, now }) : null;
+  const freshness = tracker.data?.history ? dataFreshness({ lastCandleDay: tracker.data.history.lastCandleDay, refreshedDay: tracker.data.history.lastDay, now }) : null;
   return (
     <section aria-label="What to do today" className="space-y-2">
-      <div className="grid gap-3 md:grid-cols-3">
-        {tiles.map((tile) => <Tile key={tile.key} tile={tile} />)}
-      </div>
+      <div className="grid items-stretch gap-3 md:grid-cols-3">{tiles.map((tile) => <Tile key={tile.key} tile={tile} />)}</div>
       {freshness?.state === "stale" && (
         <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11.5px] font-semibold leading-5 text-amber-900">⚠ {freshness.message}</p>
       )}

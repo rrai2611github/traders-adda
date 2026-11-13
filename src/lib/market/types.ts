@@ -36,6 +36,12 @@ export interface Quote {
   volume: number;
   /** Epoch milliseconds of the last update. */
   timestamp: number;
+  source?: "fyers" | "yahoo" | "kite" | "mock";
+  /** Transport receipt time; never proof of an exchange tick. */
+  fetchedAt?: number;
+  /** Explicit trade time, null when only a session date/fetch time is available. */
+  tradeTimestamp?: number | null;
+  timestampBasis?: "trade" | "session" | "fetch";
 }
 
 export type MarketPhase =

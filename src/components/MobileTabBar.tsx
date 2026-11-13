@@ -29,7 +29,6 @@ export function MobileTabBar() {
             aria-current={current ? "page" : undefined}
             className="tabbar-item"
             onClick={(event) => {
-              // The Dashboard shows its views from the address hash, so "Today" while on the Dashboard must reset that itself.
               if (tab.href === "/" && current) {
                 event.preventDefault();
                 window.history.pushState(null, "", "/");

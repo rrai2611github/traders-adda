@@ -253,7 +253,7 @@ function EnginePanel({ snapshot }: { snapshot: PaperSnapshot }) {
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-700">
         <span className={`font-black ${engine.running ? "text-emerald-700" : "text-rose-700"}`}>● Engine {engine.running ? "running on the server" : "not running"}</span>
         <span>Source: {engine.source || "—"}</span>
-        <span>Freshest quote: {ago(engine.quoteAgeMs)}</span>
+        <span>Latest provider/session stamp: {ago(engine.quoteAgeMs)} · trade freshness may be unverified</span>
         <span>Email alerts: {engine.alerts ? "on" : "not configured"}</span>
         {engine.lastError && <span className="font-bold text-rose-700">Last error: {engine.lastError}</span>}
       </div>

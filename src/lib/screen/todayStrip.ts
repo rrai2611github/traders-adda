@@ -48,7 +48,7 @@ export interface TrackerSlice {
 
 /** The paper test of the rules on real prices. */
 export function liveTile(payload: TrackerSlice | null | undefined): StripTile {
-  const href = "/tracker";
+  const href = "/positions#strategy-check";
   if (!payload) return loading("live", "Live strategy check", href);
   if (!payload.config) return { key: "live", title: "Live strategy check", big: "Not started", sub: "Start it to test the rules on real prices with paper money.", tone: "neutral", href };
   const since = payload.config.startDate;
@@ -75,7 +75,7 @@ const HEALTH_TONE: Record<keyof typeof HEALTH_BIG, StripTone> = { "on-track": "g
 
 /** Is the strategy's edge still there? */
 export function healthTile(payload: HealthSlice | null | undefined): StripTile {
-  const href = "/tracker";
+  const href = "/positions#strategy-check";
   if (!payload || payload.status === "running") return loading("health", "Strategy health", href);
   if (payload.status === "failed" || !payload.report) return { key: "health", title: "Strategy health", big: "Unavailable", sub: "The check could not run right now.", tone: "neutral", href };
   const v = payload.report.verdict;

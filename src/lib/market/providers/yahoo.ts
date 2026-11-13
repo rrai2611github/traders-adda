@@ -121,6 +121,10 @@ function buildQuoteFromDailyChart(symbol: string, chart: YahooChartResult): Quot
     low: Number(low.toFixed(2)),
     volume,
     timestamp,
+    source: "yahoo",
+    fetchedAt: Date.now(),
+    tradeTimestamp: meta.regularMarketTime ? timestamp : null,
+    timestampBasis: meta.regularMarketTime ? "trade" : "session",
   };
 }
 class YahooProvider implements MarketDataProvider {

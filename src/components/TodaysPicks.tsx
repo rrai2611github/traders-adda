@@ -12,6 +12,7 @@ import { StockSymbolButton } from "./StockDetailContext";
 import { ListChangeNote, NewTag } from "./ListChangeNote";
 import { WeeklyTop5 } from "./WeeklyTop5";
 import { useListChanges } from "@/hooks/useListChanges";
+import { useHeaderSort } from "@/hooks/useHeaderSort";
 import type { ListChanges } from "@/lib/listChanges";
 import { TradeStatusLegend, TradeStatusPill } from "./TradeStatusBadge";
 import { EmptyState, LoadingState, WorkspaceFrame, WorkspaceHero } from "./WorkspaceShell";
@@ -226,9 +227,10 @@ function PicksTable({
   paperReady?: boolean;
 }) {
   const { quotes, live } = useLiveQuotes(picks.map((pick) => pick.symbol));
+  const { bindTable, rows: sortedRows } = useHeaderSort(picks, (pick) => pick.symbol);
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[1040px] text-left text-sm">
+      <table ref={bindTable} className="pin-table pin-second w-full min-w-[1040px] text-left text-sm">
         <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-[0.1em] text-slate-400">
           <tr>
             <th className="px-5 py-2.5">#</th>
@@ -246,10 +248,10 @@ function PicksTable({
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {picks.map((pick, index) => {
+          {sortedRows.map((pick, index) => {
             const wide = pick.plan.riskPercent > WIDE_RISK_PERCENT;
             return (
-              <tr key={pick.symbol} className="hover:bg-slate-50/70">
+              <tr key={pick.symbol} data-sort-key={pick.symbol} className="hover:bg-slate-50/70">
                 <td className="px-5 py-3 font-mono text-xs font-black text-slate-400">{index + 1}</td>
                 <td className="px-3 py-3">
                   <StockSymbolButton symbol={pick.symbol} className="font-black text-slate-900">{pick.symbol}</StockSymbolButton>

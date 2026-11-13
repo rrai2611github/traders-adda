@@ -31,6 +31,7 @@ export interface FyersQuoteRow {
   n?: string;
   s?: string;
   v?: Record<string, unknown>;
+  fetchedAt?: number;
 }
 
 const num = (value: unknown): number | null => {
@@ -64,6 +65,19 @@ export interface QuoteBase {
   sector?: string;
 }
 
+export function fyersQuoteTiming(tt: number | null, fetchedAt: number) {
+  const timestamp = tradeTime(tt, fetchedAt);
+  const raw = tt == null ? null : tt < 1e12 ? tt * 1000 : tt;
+  const dateOnly = raw != null && raw % 86_400_000 === 0;
+  const verified = raw != null && raw > 1e12 && !dateOnly &&
+    (raw <= fetchedAt || (raw > fetchedAt + 60_000 && Math.abs(raw - IST_MS - fetchedAt) < 10 * 60_000));
+  return {
+    timestamp, fetchedAt, tradeTimestamp: verified ? timestamp : null,
+    timestampBasis: verified ? "trade" as const : dateOnly ? "session" as const : "fetch" as const,
+    source: "fyers" as const,
+  };
+}
+
 /**
  * Returns null for an errored row, a missing price, or a non-positive previous close, so the caller
  * can fall back to another source instead of showing a made-up quote. `now` stamps a row without a trade time.
@@ -74,7 +88,7 @@ export function normalizeFyersQuote(symbol: string, base: QuoteBase, row: FyersQ
   const ltp = num(v.lp);
   const previousClose = num(v.prev_close_price);
   if (ltp == null || ltp <= 0 || previousClose == null || previousClose <= 0) return null;
-  const timestamp = tradeTime(num(v.tt), now);
+  const timing = fyersQuoteTiming(num(v.tt), row.fetchedAt ?? now);
   const change = num(v.ch) ?? ltp - previousClose;
   const changePercent = num(v.chp) ?? (change / previousClose) * 100;
   const round = (x: number) => Number(x.toFixed(2));
@@ -91,6 +105,6 @@ export function normalizeFyersQuote(symbol: string, base: QuoteBase, row: FyersQ
     high: round(num(v.high_price) || ltp),
     low: round(num(v.low_price) || ltp),
     volume: Math.max(0, num(v.volume) ?? 0),
-    timestamp,
+    ...timing,
   };
 }

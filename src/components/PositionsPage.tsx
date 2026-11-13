@@ -209,6 +209,25 @@ export function PositionsPage() {
   const [sourceDraft, setSourceDraft] = useState("");
   const [sourceBusy, setSourceBusy] = useState(false);
   const [prefill, setPrefill] = useState<Prefill | null>(null);
+  useEffect(() => {
+    const revealSection = () => {
+      const id = window.location.hash.slice(1);
+      const section = Array.from(document.querySelectorAll<HTMLDetailsElement>("[data-portfolio-section]"))
+        .find((element) => element.dataset.portfolioSection === id);
+      if (section) section.open = true;
+      const target = document.getElementById(id) ?? section;
+      if (!target) return;
+      let ancestor: HTMLElement | null = target;
+      while (ancestor) {
+        if (ancestor instanceof HTMLDetailsElement) ancestor.open = true;
+        ancestor = ancestor.parentElement;
+      }
+      target.scrollIntoView({ block: "start" });
+    };
+    const timer = setTimeout(revealSection, 0);
+    window.addEventListener("hashchange", revealSection);
+    return () => { clearTimeout(timer); window.removeEventListener("hashchange", revealSection); };
+  }, []);
   // "Add to My positions" on a pick opens this page with the symbol, planned buy price and planned stop in the address.
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
@@ -299,14 +318,6 @@ export function PositionsPage() {
           <div className="border-t border-white/10 px-5 py-3 sm:border-t-0 sm:px-7"><p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">At risk if stops hit</p><p className="mt-1 font-mono text-[14px] font-bold text-rose-300">{view ? signedMoney(view.exposure.ifAllStopsHit) : "—"}</p></div>
         </div>
       </section>
-
-      <nav aria-label="Portfolio sections" className="flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface p-1.5 shadow-sm">
-        <a href="#my-positions" className="rounded-lg bg-[#0b1a34] px-3 py-2 text-[11px] font-bold text-white">Holdings <span className="ml-1 text-slate-300">{view ? open.length : "…"}</span></a>
-        <a href="#order-approvals" className="rounded-lg px-3 py-2 text-[11px] font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900">Order review</a>
-        <a href="#strategy-check" className="rounded-lg px-3 py-2 text-[11px] font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900">Paper strategy</a>
-        <a href="#email-activity" className="rounded-lg px-3 py-2 text-[11px] font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900">Email Activity</a>
-        <span className="ml-auto hidden px-3 text-[10px] text-slate-500 sm:inline">Quotes update during market hours · exit rules use completed daily candles</span>
-      </nav>
 
       {message && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-800">{message}</p>}
       {refreshError && <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900">{refreshError}</p>}
@@ -429,8 +440,8 @@ export function PositionsPage() {
         <p className="text-[11px] text-slate-500">The rules sell on only two things: the price touching your stop, or a close under the 50-day average (sell at the next open). The stop and the 50-day check use finished daily prices{view?.lastDay ? `, up to ${dayLabel(view.lastDay)}` : ""}, refreshed after about 4:30 pm IST. A stop can be hit during the day, so also set it with your broker. When a position needs a decision, you get an email at your own address (not the group list) after the refresh.</p>
       </section>
 
-      <section className="space-y-3 rounded-2xl border border-border bg-surface p-4" aria-label="Journal">
-        <h3 className="text-[13px] font-extrabold text-slate-900">Journal: how your real trades went</h3>
+      <details className="space-y-3 rounded-2xl border border-border bg-surface p-4" aria-label="Journal">
+        <summary className="cursor-pointer text-[13px] font-extrabold text-slate-900">Real-trade journal · closed trades</summary>
         {!j || j.count === 0 ? (
           <p className="text-[12.5px] text-slate-600">{j?.lines[0] ?? "Loading…"}</p>
         ) : (
@@ -471,13 +482,21 @@ export function PositionsPage() {
             </div>
           </>
         )}
-      </section>
+      </details>
       </section>
 
-      <OrdersPanel />
-
-      <TrackerPage />
-      <EmailActivityPanel />
+      <details data-portfolio-section="order-approvals" className="scroll-mt-20 rounded-xl border border-border bg-surface p-4">
+        <summary className="cursor-pointer text-sm font-bold text-foreground">Order review · optional broker workflow</summary>
+        <div className="mt-4"><OrdersPanel /></div>
+      </details>
+      <details data-portfolio-section="strategy-check" className="scroll-mt-20 rounded-xl border border-amber-200 bg-surface p-4">
+        <summary className="cursor-pointer text-sm font-bold text-foreground">Practice strategy · paper money, not real holdings</summary>
+        <div className="mt-4"><TrackerPage /></div>
+      </details>
+      <details data-portfolio-section="email-activity" className="scroll-mt-20 rounded-xl border border-border bg-surface p-4">
+        <summary className="cursor-pointer text-sm font-bold text-foreground">Email delivery activity</summary>
+        <div className="mt-4"><EmailActivityPanel /></div>
+      </details>
     </div>
     </AppShell>
   );

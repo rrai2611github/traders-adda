@@ -38,8 +38,9 @@ const POLL_INTERVAL_MS = 5000;
  * connection failures, so the dashboard keeps updating behind proxies that
  * buffer or block streaming responses.
  */
-export function useMarketStream(symbols: string[]) {
+export function useMarketStream(symbols: string[], options?: { movers?: boolean }) {
   const [state, setState] = useState<StreamState>(INITIAL);
+  const wantMovers = options?.movers !== false;
 
   // Stringify so the effect re-runs on content change, not array identity.
   const symbolKey = useMemo(
@@ -62,7 +63,7 @@ export function useMarketStream(symbols: string[]) {
     let pollTimer: ReturnType<typeof setInterval> | null = null;
     let failures = 0;
 
-    const query = symbolKey ? `?symbols=${encodeURIComponent(symbolKey)}` : "";
+    const query = `?symbols=${encodeURIComponent(symbolKey)}${wantMovers ? "" : "&movers=0"}`;
 
     const startPolling = () => {
       if (disposed || pollTimer) return;
@@ -72,14 +73,14 @@ export function useMarketStream(symbols: string[]) {
         try {
           const [quotesRes, moversRes] = await Promise.all([
             fetch(`/api/market/quotes${query}`, { cache: "no-store" }),
-            fetch("/api/market/movers", { cache: "no-store" }),
+            wantMovers ? fetch("/api/market/movers", { cache: "no-store" }) : Promise.resolve(null),
           ]);
           if (disposed) return;
-          if (!quotesRes.ok || !moversRes.ok) {
-            throw new Error(`Market data request failed: ${quotesRes.status}/${moversRes.status}`);
+          if (!quotesRes.ok || (moversRes && !moversRes.ok)) {
+            throw new Error(`Market data request failed: ${quotesRes.status}/${moversRes?.status ?? "not requested"}`);
           }
           const quotesJson = await quotesRes.json();
-          const movers = (await moversRes.json()) as MoversPayload;
+          const movers = moversRes ? (await moversRes.json()) as MoversPayload : null;
           if (disposed) return;
 
           setState((prev) => {
@@ -139,6 +140,7 @@ export function useMarketStream(symbols: string[]) {
     source.addEventListener("provider-error", () => {
       source?.close();
       setState((prev) => ({ ...prev, connection: "offline" }));
+      startPolling();
     });
 
     source.addEventListener("quotes", (event) => {
@@ -169,7 +171,7 @@ export function useMarketStream(symbols: string[]) {
       source?.close();
       if (pollTimer) clearInterval(pollTimer);
     };
-  }, [symbolKey, mergeQuotes]);
+  }, [symbolKey, mergeQuotes, wantMovers]);
 
   return state;
 }

@@ -10,6 +10,7 @@ import { StockSymbolButton } from "./StockDetailContext";
 import { BuyingStatusBadge } from "./BuyingStatusBadge";
 import { EmptyState, LoadingState, WorkspaceFrame, WorkspaceHero, WorkspaceTabs } from "./WorkspaceShell";
 import { DataQualityNotice } from "./DataQualityNotice";
+import { useHeaderSort } from "@/hooks/useHeaderSort";
 
 export function MonthlySetups({ scan, scanError, keep }: {
   scan: ScreenScan | null;
@@ -52,6 +53,7 @@ export function MonthlySetups({ scan, scanError, keep }: {
     return () => { alive = false; controller.abort(); clearTimeout(timer); };
   }, []);
   const rows = useMemo(() => (data?.rows ?? []).filter((row) => (!keep || keep(row.symbol)) && (tab === "breakout" ? row.setup.breakout : row.setup.compression)), [data, keep, tab]);
+  const { bindTable, rows: sortedRows } = useHeaderSort(rows, (row) => row.symbol);
   const scanRows = useMemo(() => new Map((scan?.rows ?? []).map((row) => [row.symbol, row])), [scan]);
   const breadth = useMemo(() => marketRegime(scan?.marketRows ?? scan?.rows ?? []).breadth50, [scan]);
   const value = (number: number | null) => number == null ? "—" : number.toFixed(1);
@@ -91,15 +93,15 @@ export function MonthlySetups({ scan, scanError, keep }: {
         {!data ? error ? <EmptyState tone="error" title="Monthly analysis unavailable">The feed will retry automatically.</EmptyState> : <LoadingState rows={5} message={progress ?? "Building completed monthly setups."} /> :
           !rows.length ? <EmptyState title="No matching monthly setups">No stock meets these rules in the selected universe. Empty results are valid; no candidates are manufactured.</EmptyState> :
             <div className="max-h-[650px] overflow-auto rounded-xl border border-border">
-              <table className="w-full min-w-[1100px] border-separate border-spacing-0 text-left text-xs">
+              <table ref={bindTable} className="w-full min-w-[1100px] border-separate border-spacing-0 text-left text-xs">
                 <thead className="sticky top-0 z-20 bg-raised text-[11px] uppercase tracking-wide text-muted"><tr>
                   <th className="sticky left-0 z-30 bg-raised px-4 py-3">Stock / RS</th><th className="px-3 py-3">Monthly structure</th><th className="px-3 py-3">Structure references</th><th className="px-3 py-3">Monthly DMI / ADX</th><th className="px-3 py-3">Liquidity / volume</th><th className="px-3 py-3">Current month · provisional</th><th className="px-3 py-3">Daily entry readiness</th>
                 </tr></thead>
-                <tbody>{rows.map(({ symbol, name, rs, turnoverCr, setup }) => {
+                <tbody>{sortedRows.map(({ symbol, name, rs, turnoverCr, setup }) => {
                   const row = scanRows.get(symbol);
                   const aligned = scan && !scanError && scan.updatedAt === data.updatedAt;
                   const status = row && aligned ? horizonBuySignal(row, "short", breadth).status : null;
-                  return <tr key={symbol} className="odd:bg-white even:bg-slate-50 hover:bg-emerald-50">
+                  return <tr key={symbol} data-sort-key={symbol} className="odd:bg-white even:bg-slate-50 hover:bg-emerald-50">
                     <td className="sticky left-0 z-10 max-w-[220px] border-b border-border bg-inherit px-4 py-3"><StockSymbolButton symbol={symbol} className="font-bold">{symbol}</StockSymbolButton><div className="mt-1 truncate text-muted">{name}</div><div className="mt-1 font-mono text-accent">RS {rs ?? "—"}</div></td>
                     <td className="border-b border-border px-3 py-3"><span className={`inline-flex rounded-lg border px-2 py-1 text-[11px] font-bold ${tab === "breakout" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-sky-200 bg-sky-50 text-sky-800"}`}>{tab === "breakout" ? "Monthly breakout confirmed" : "Monthly compression active"}</span><div className="mt-2 font-bold">As of {setup.signalMonth}</div><div className="mt-1 font-mono">Close ₹{formatPrice(setup.close)}</div><div className="mt-1 text-muted">{setup.completedMonths} complete months</div></td>
                     <td className="border-b border-border px-3 py-3">{tab === "breakout" && setup.breakout ? <><div>Prior high ₹{formatPrice(setup.breakout.level)}</div><div className="mt-1 font-mono">{formatPercent(setup.breakout.distancePercent)} above</div></> : setup.compression ? <><div>Mother {setup.compression.motherMonth} · {setup.compression.insideMonths} inside months</div><div className="mt-1">Range ₹{formatPrice(setup.compression.low)}–₹{formatPrice(setup.compression.high)}</div><div className="mt-1 text-muted">Projections ↑ ₹{formatPrice(setup.compression.upsideProjection)} / ↓ {setup.compression.downsideProjection == null ? "Unavailable" : `₹${formatPrice(setup.compression.downsideProjection)}`}</div></> : "—"}</td>

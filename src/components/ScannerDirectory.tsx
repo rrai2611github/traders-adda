@@ -14,7 +14,7 @@ import {
   type DirectoryTarget,
 } from "@/lib/screen/scannerDirectory";
 
-/** The same two groups as the "Research & older tools" menu: tools that find stocks, then tools that time an entry. */
+/** Research tools that find stocks, followed by tools that time an entry. */
 const GROUPS: Array<{ title: string; note: string; families: DirectoryFamily[] }> = [
   { title: "Stock lists", note: "Setups that find stocks worth a closer look.", families: ["Core Setups", "Monthly Setups", "Reversals"] },
   { title: "Signals", note: "Momentum readings and entry triggers on stocks already moving.", families: ["Trade Triggers", "RSI Edge", "RPCI & Oscillators"] },

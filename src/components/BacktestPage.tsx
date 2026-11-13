@@ -360,7 +360,7 @@ export function BacktestPage() {
           <Field label="Cost per side %" hint="Brokerage, tax, slippage"><input className={inputCls} type="number" min={0} max={3} step={0.05} value={form.cost} onChange={(e) => set("cost", Number(e.target.value))} /></Field>
           </div>
         </details>
-        <p className="text-[12px] text-slate-500">Want to see these rules on today&apos;s real prices instead of the past? Follow them with paper money on the <Link href="/tracker" className="font-bold text-emerald-700 underline">Live strategy check</Link>.</p>
+        <p className="text-[12px] text-slate-500">Want to see these rules on today&apos;s real prices instead of the past? Follow them with paper money in the <Link href="/positions#strategy-check" className="font-bold text-emerald-700 underline">Live strategy check</Link>.</p>
         <div className="flex flex-wrap items-center gap-3">
           <button type="button" onClick={run} disabled={job?.status === "running"} className="btn-gold h-10 rounded-xl px-5 text-sm font-extrabold">{job?.status === "running" ? "Running…" : "Run backtest"}</button>
           {job?.status === "running" && <span className="text-xs font-semibold text-slate-500">{job.message || "working"} — the first run builds ranks and can take a minute or two.</span>}

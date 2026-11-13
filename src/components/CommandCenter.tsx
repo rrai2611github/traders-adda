@@ -40,7 +40,7 @@ import { NavIcon } from "./NavIcons";
 import { EmptyState, LoadingState, WorkspaceFrame, WorkspaceHero } from "./WorkspaceShell";
 import { TodayBoard } from "./TodayBoard";
 
-export type CommandCenterTarget = "today" | "journal" | "research" | "directory" | "picks" | "screens" | "watchlist" | "breakouts" | "sectors" | "breadth" | DirectoryTarget;
+export type CommandCenterTarget = "today" | "journal" | "learn" | "research" | "directory" | "picks" | "screens" | "watchlist" | "breakouts" | "sectors" | "breadth" | DirectoryTarget;
 
 const IDEA_LIMIT = 8;
 const NEAREST_LIMIT = 6;
@@ -340,16 +340,16 @@ export function CommandCenter({
     <WorkspaceFrame id={view} bare={view === "today"} className="scroll-mt-28">
       {view !== "today" && <WorkspaceHero
         eyebrow={`Daily briefing${session ? ` · ${session}` : ""}`}
-        title={view === "metrics" ? METRIC_LABELS[metric] : research ? "Stock research & session changes" : "Scanner directory"}
+        title={view === "metrics" ? METRIC_LABELS[metric] : research ? "Stock research & session changes" : "Research"}
         icon="today"
-        description="Detailed screening context, not investment advice or the curated Today's Picks list."
+        description="Watchlists and screening context, not investment advice or the tested Top Picks list."
         action={<button type="button" onClick={() => onNavigate("today")} className="rounded-xl border border-border bg-surface px-4 py-2 text-sm font-bold text-foreground">Back to Today</button>}
       />}
 
       <div className={view === "today" ? "space-y-4" : "space-y-4 bg-slate-50/60 p-3 sm:p-5"}>
         {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-800">Scan refresh failed; figures may be stale. Retrying automatically.</p>}
         <DataQualityNotice health={scan} updatedAt={scan?.updatedAt} />
-        {loading && <p className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs text-slate-500">{loadingMessage ?? "Loading the NSE universe scan…"}</p>}
+        {loading && view !== "today" && <p className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs text-slate-500">{loadingMessage ?? "Loading the NSE universe scan…"}</p>}
 
         {view === "today" && (
           <TodayBoard
@@ -425,26 +425,12 @@ export function CommandCenter({
           )}
         </section>}
 
-        {view === "today" && <>
-        <div className="flex flex-wrap gap-3 text-xs">
-          <LinkButton label="Stock research" onClick={() => onNavigate("research")} />
-          <LinkButton label="Scanner directory" onClick={() => onNavigate("directory")} />
-        </div>
-
-        <details className="dashboard-details">
+        {view === "today" && <details className="dashboard-details">
           <summary><span className="dashboard-detail-icon"><NavIcon name="sun" /></span><span className="min-w-0 flex-1"><span className="block font-bold">Morning brief & global cues</span><span className="mt-1 block text-xs font-normal text-muted">Opening context, overseas markets and reference levels</span></span><NavIcon name="chevron-down" /></summary>
           <div className="border-t border-border p-3 sm:p-4">
-            <MorningBriefCard
-              cues={cues.data}
-              error={cues.error}
-              sessionLabel={session ?? "latest session"}
-              ideas={briefIdeas}
-              horizonLabel={horizonLabel}
-              ideasLoading={loading}
-            />
+            <MorningBriefCard cues={cues.data} error={cues.error} sessionLabel={session ?? "latest session"} ideas={briefIdeas} horizonLabel={horizonLabel} ideasLoading={loading} />
           </div>
-        </details>
-        </>}
+        </details>}
 
         {research && <details open className="dashboard-details">
           <summary><span className="dashboard-detail-icon"><NavIcon name="signals" /></span><span className="min-w-0 flex-1"><span className="block font-bold">Stock research & session changes</span><span className="mt-1 block text-xs font-normal text-muted">Long / short ideas, confluence, sectors and breakout activity · not a recommendation list</span></span><NavIcon name="chevron-down" /></summary>
@@ -479,7 +465,7 @@ export function CommandCenter({
                     </button>
                   ))}
                 </div>
-                <LinkButton label="Today's Picks" onClick={() => onNavigate("picks")} />
+                <LinkButton label="Older scanner picks" onClick={() => onNavigate("picks")} />
               </div>
             }
           >
@@ -671,16 +657,39 @@ export function CommandCenter({
           </div>
         </details>}
 
-        {view === "directory" && <details open className="dashboard-details">
+        {view === "directory" && <>
+          <section aria-label="Research tasks" className="grid gap-3 sm:grid-cols-3">
+            {([
+              ["Watchlist", "Review the stocks you follow.", "watchlist"],
+              ["Stock research", "Explore ideas, charts and technical checks.", "research"],
+              ["Market overview", "Review breadth, sectors and breakouts.", "breadth"],
+            ] as const).map(([label, description, target]) => (
+              <button key={target} type="button" onClick={() => onNavigate(target)} className="rounded-xl border border-border bg-surface p-4 text-left hover:border-emerald-500">
+                <span className="block text-sm font-black text-foreground">{label}</span>
+                <span className="mt-1 block text-xs text-muted">{description}</span>
+              </button>
+            ))}
+          </section>
+          <details className="dashboard-details">
           <summary><span className="dashboard-detail-icon"><NavIcon name="triggers" /></span><span className="min-w-0 flex-1"><span className="block font-bold">Find a scanner</span><span className="mt-1 block text-xs font-normal text-muted">Browse setup rules and open the right tool</span></span><NavIcon name="chevron-down" /></summary>
           <div className="border-t border-border p-3 sm:p-4">
             <ScannerDirectory scan={scan} scanners={scanners} rsiEdge={rsiEdge} onOpen={onNavigate} />
           </div>
-        </details>}
+          </details>
+          <details className="dashboard-details">
+            <summary><span className="min-w-0 flex-1 font-bold">Practice, older tools and help</span><NavIcon name="chevron-down" /></summary>
+            <div className="flex flex-wrap gap-3 border-t border-border p-4">
+              <LinkButton label="Older scanner picks · experimental" onClick={() => onNavigate("picks")} />
+              <LinkButton label="Paper trades & journal" onClick={() => onNavigate("journal")} />
+              <a href="/scalp" className="px-2 py-1 text-xs font-bold text-emerald-700">Index Scalp Desk</a>
+              <LinkButton label="About & risk" onClick={() => onNavigate("learn")} />
+            </div>
+          </details>
+        </>}
 
-        <p className="text-[11px] leading-5 text-slate-400">
+        {view !== "today" && <p className="text-[11px] leading-5 text-slate-400">
           Ratings are the share of required technical checks passing, not a probability of profit. Click any symbol for its chart, plan and checks.
-        </p>
+        </p>}
       </div>
     </WorkspaceFrame>
   );

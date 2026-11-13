@@ -16,6 +16,7 @@ import { logoAttachment } from "./brandAssets";
 import { getWeeklyTop5, type WeeklyTop5Payload } from "@/lib/screen/weeklyTop5Results";
 import { getTopPicks, type TopPicksPayload } from "@/lib/screen/topPicksResults";
 import { withNews } from "@/lib/ai/withNews";
+import { withFirstCalls } from "@/lib/radar/withFirstCalls";
 import { istDateKey } from "@/lib/market/marketHours";
 import { briefingFor } from "@/lib/ai/briefingServer";
 import { buildBriefingFacts } from "@/lib/ai/briefingFacts";
@@ -145,7 +146,7 @@ export async function buildPreOpenPreview(now: number = Date.now(), options: { f
   let topPicks: TopPicksPayload | null = null;
   try {
     // One Claude call a day writes the news-check notes (cached for the hourly emails); with no API key the section is simply left out.
-    topPicks = await withNews(await getTopPicks("completed"));
+    topPicks = withFirstCalls(await withNews(await getTopPicks("completed")));
   } catch (error) {
     console.error("[email] top picks skipped:", error instanceof Error ? error.message : error);
   }

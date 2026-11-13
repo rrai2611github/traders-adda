@@ -145,6 +145,16 @@ export function hourlySetup(input: { bars: ReadonlyArray<Bar>; vwap: number | nu
 
 export type AutoDecision = { action: "place" } | { action: "skip"; message: string };
 
+export function autoEvaluationFailed(entry: { result: string; message: string }): boolean {
+  return entry.result === "error" || entry.message.startsWith("Could not evaluate:");
+}
+
+export function shouldEvaluateAuto(lastKey: string | undefined, key: string,
+  last: { at: number; result: string; message: string } | undefined, now: number): boolean {
+  if (last && autoEvaluationFailed(last)) return now - last.at >= 60_000;
+  return lastKey !== key;
+}
+
 /**
  * Whether auto-paper mode may place an order for one index on this hourly bar. Everything must hold: no open or pending
  * order on the index, no trading limit hit, the daily regime aligned, every hourly condition measured and passing,

@@ -3,7 +3,7 @@ import { RSI_EDGE_SCAN_KEYS, type RsiEdgeScanKey } from "./screen/rsiEdgeSource.
 import type { DashboardMetric } from "./screen/dashboardMetrics";
 
 export type MarketMenuKey = "breakouts" | "breadth" | "rotation" | "sectors" | "map";
-export type ActiveNavKey = "today" | "monthly" | "bottomed" | "metrics" | "research" | "directory" | "picks" | "screens" | "signals" | "scanners" | "rsi-edge" | "market" | "watchlist" | "journal" | "learn";
+export type ActiveNavKey = "today" | "monthly" | "bottomed" | "bases" | "screener" | "sectorStage2" | "dailyChanges" | "setupLab" | "metrics" | "research" | "directory" | "picks" | "screens" | "signals" | "scanners" | "rsi-edge" | "market" | "watchlist" | "journal" | "learn";
 
 /** Everything needed to reproduce a view from a shared link. */
 export interface AppRoute {
@@ -42,6 +42,11 @@ const SIMPLE_HASHES: Partial<Record<ActiveNavKey, string>> = {
   research: "research",
   monthly: "monthly-setups",
   bottomed: "bottomed-out",
+  bases: "stage-2-bases",
+  screener: "stock-screener",
+  sectorStage2: "sector-stage-2",
+  dailyChanges: "daily-changes",
+  setupLab: "setup-lab",
   directory: "scanner-directory",
 };
 

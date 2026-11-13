@@ -202,6 +202,53 @@ test("hourly email without confluence data has no scanner tags or footnote", () 
   const { html, text } = buildHourlyEmail(table, atIst("2026-09-28T11:15:00"), { buy: [], watch: [] });
   assert.doesNotMatch(html + text, /\/5 scanners|n\/5 scanners/);
 });
+
+test("hourly email shows informational intraday developments without changing stock-list status", () => {
+  const intraday = {
+    status: "available",
+    checked: 3,
+    stale: 0,
+    unavailable: 0,
+    events: [{
+      symbol: "AAA<script>",
+      kind: "prior-high-cross",
+      eventAt: atIst("2026-09-28T11:15:00"),
+      close: 111,
+      level: 110,
+      eventKey: "2026-09-28:AAA:prior-high:11:15",
+    }],
+  };
+  const email = buildHourlyEmail(
+    { ...baseTable, rows: [{ ...baseRow, symbol: "AAA<script>" }] },
+    atIst("2026-09-28T11:16:00"),
+    { buy: [listed("AAA<script>")], watch: [] },
+    undefined,
+    null,
+    intraday,
+  );
+  assert.equal(email.hasChanges, false);
+  assert.match(email.text, /INTRADAY DEVELOPMENTS — 1 NEW · 3 CHECKED · INFORMATIONAL/);
+  assert.match(email.text, /AAA<script> · Closed above prior-day high ₹110 · hourly close ₹111 · 11:15 am IST/);
+  assert.match(email.text, /completed Yahoo 60-minute candles; provider latency is unverified/);
+  assert.match(email.html, /Intraday developments/);
+  assert.match(email.html, /AAA&lt;script&gt;/);
+  assert.doesNotMatch(email.html, /<script>/);
+  assert.match(email.html, /daily status, Picks and trade plans are unchanged/);
+});
+
+test("hourly email explains unavailable and partial intraday coverage", () => {
+  const unavailable = {
+    status: "partial",
+    checked: 1,
+    stale: 2,
+    unavailable: 1,
+    events: [],
+  };
+  const email = buildHourlyEmail(baseTable, atIst("2026-09-28T11:16:00"), null, undefined, null, unavailable);
+  assert.match(email.text, /No new confirmed hourly-close crossings among the checked candidates; coverage is incomplete/);
+  assert.match(email.text, /1 checked · 2 stale · 1 unavailable/);
+  assert.doesNotMatch(email.html, /alert[\s\S]*>NaN</i);
+});
 const bottomedPick = (symbol) => ({
   symbol, name: `${symbol} Ltd <x>`, tier: "deep", close: 80, fromHighPercent: 58.2, lowPrice: 55, lowAgeSessions: 44, offLowPercent: 45.5,
   higherLow: 75, ema20: 78, ema50: 85, aboveEma50: false, volumeRatio: 1.2, rsi14: 55, rsiDivergence: true, stop: 73.6, target: 92.8, rs: 40, turnoverCr: 12,

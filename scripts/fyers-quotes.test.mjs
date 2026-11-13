@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { FYERS_INDEX_SYMBOLS, fromFyersSymbol, normalizeFyersQuote, toFyersSymbol, tradeTime } from "../src/lib/market/providers/fyersQuotes.ts";
+import { FYERS_INDEX_SYMBOLS, fromFyersSymbol, fyersQuoteTiming, normalizeFyersQuote, toFyersSymbol, tradeTime } from "../src/lib/market/providers/fyersQuotes.ts";
+import { quoteEntryIssue } from "../src/lib/market/quoteQuality.ts";
 
 const base = { name: "State Bank of India", kind: "EQUITY", sector: "Financial Services" };
 const row = (v, s = "ok") => ({ n: "NSE:SBIN-EQ", s, v });
@@ -22,6 +23,7 @@ test("a Fyers quote row becomes the app's Quote", () => {
   assert.deepEqual(q, {
     symbol: "SBIN", name: "State Bank of India", kind: "EQUITY", sector: "Financial Services",
     ltp: 812.46, previousClose: 806.25, change: 6.2, changePercent: 0.77, open: 806, high: 815.5, low: 804.1, volume: 5_234_100, timestamp: now - 3000,
+    source: "fyers", fetchedAt: now, tradeTimestamp: now - 3000, timestampBasis: "trade",
   });
 });
 
@@ -37,7 +39,25 @@ test("change is derived when Fyers omits it, and open/high/low fall back to the 
   assert.equal(q.change, 10);
   assert.equal(q.changePercent, 1.25);
   assert.deepEqual([q.open, q.high, q.low, q.volume], [810, 810, 810, 0]);
-  assert.equal(q.timestamp, now, "an undated row counts as current");
+  assert.equal(q.timestamp, now, "legacy session/display stamp is retained");
+  assert.equal(q.tradeTimestamp, null, "undated rows do not prove trade freshness");
+  assert.match(quoteEntryIssue(q, now, 120_000), /unverified/);
+});
+
+test("cached rows retain original fetch time and date-only/future rows cannot trigger entries", () => {
+  const fetchedAt = now - 30_000;
+  const q = normalizeFyersQuote("SBIN", base, { ...row({lp:810,prev_close_price:800,tt:now/1000-33}), fetchedAt }, now);
+  assert.equal(q.fetchedAt, fetchedAt);
+  assert.equal(q.timestamp, now - 33_000);
+  assert.equal(quoteEntryIssue(q, now, 60_000), null);
+  assert.match(quoteEntryIssue(q, now + 30_000, 60_000), /Stale/);
+  for (const tt of [null, Date.parse("2026-10-13T00:00:00Z")/1000, now/1000+3600]) {
+    assert.equal(fyersQuoteTiming(tt, now).tradeTimestamp, null);
+    assert.match(quoteEntryIssue(fyersQuoteTiming(tt, now), now, 60_000), /unverified/);
+  }
+  const corrected = fyersQuoteTiming(now/1000+19_800-5, now);
+  assert.equal(corrected.tradeTimestamp, now-5000);
+  assert.match(quoteEntryIssue({source:"fyers",timestamp:now},now,60_000), /unverified/);
 });
 
 test("trade times: Fyers' tt is the trading date, so today means fetched now and an earlier day means that day's close", () => {

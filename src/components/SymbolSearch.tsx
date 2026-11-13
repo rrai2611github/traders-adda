@@ -14,14 +14,20 @@ interface SymbolSearchProps {
   onSelect: (symbol: string) => void;
   /** Symbols already on the watchlist, shown as "Added". */
   existing: string[];
+  equitiesOnly?: boolean;
+  label?: string;
+  fullWidth?: boolean;
+  disabled?: boolean;
+  onChoose?: (stock: SearchResult) => void;
 }
 
-export function SymbolSearch({ onSelect, existing }: SymbolSearchProps) {
+export function SymbolSearch({ onSelect, existing, equitiesOnly = false, label = "Search instruments", fullWidth = false, disabled = false, onChoose }: SymbolSearchProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [resultsFor, setResultsFor] = useState("");
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const listId = useId();
 
@@ -43,11 +49,18 @@ export function SymbolSearch({ onSelect, existing }: SymbolSearchProps) {
           { signal: controller.signal, cache: "no-store" },
         );
         const json = await res.json();
-        setResults(json.results ?? []);
+        if (!res.ok) throw new Error(json.error ?? `Stock search failed (${res.status}).`);
+        if (controller.signal.aborted) return;
+        setResults((json.results ?? []).filter((stock: SearchResult) => !equitiesOnly || stock.kind === "EQUITY"));
         setResultsFor(trimmed);
         setActiveIndex(0);
-      } catch {
-        // Aborted or failed request — keep the previous suggestions.
+        setError(null);
+      } catch (cause) {
+        if (!controller.signal.aborted) {
+          setError(cause instanceof Error ? cause.message : "Stock search unavailable.");
+          setResults([]);
+          setResultsFor(trimmed);
+        }
       }
     }, 150);
 
@@ -55,7 +68,7 @@ export function SymbolSearch({ onSelect, existing }: SymbolSearchProps) {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [query]);
+  }, [query, equitiesOnly]);
 
   useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
@@ -66,14 +79,18 @@ export function SymbolSearch({ onSelect, existing }: SymbolSearchProps) {
   }, []);
 
   const choose = (symbol: string) => {
+    const stock = results.find((r) => r.symbol === symbol);
+    if (stock && onChoose) onChoose(stock);
     onSelect(symbol);
     setQuery("");
     setResults([]);
     setOpen(false);
+    setError(null);
   };
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!results.length) return;
+    if (event.key === "Escape") { setOpen(false); return; }
+    if (!open || !results.length || resultsFor !== query.trim()) return;
     if (event.key === "ArrowDown") {
       event.preventDefault();
       setActiveIndex((i) => (i + 1) % results.length);
@@ -82,32 +99,35 @@ export function SymbolSearch({ onSelect, existing }: SymbolSearchProps) {
       setActiveIndex((i) => (i - 1 + results.length) % results.length);
     } else if (event.key === "Enter") {
       event.preventDefault();
-      choose(results[activeIndex].symbol);
-    } else if (event.key === "Escape") {
-      setOpen(false);
+      if (!existing.includes(results[activeIndex].symbol)) choose(results[activeIndex].symbol);
     }
   };
 
   return (
-    <div ref={containerRef} className="relative w-full sm:w-72">
+    <div ref={containerRef} className={`relative w-full ${fullWidth ? "" : "sm:w-72"}`}>
       <input
         type="text"
+        role="combobox"
+        disabled={disabled}
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);
           setOpen(true);
+          setError(null);
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
-        placeholder="Search any stock"
-        aria-label="Search instruments"
-        aria-expanded={open && results.length > 0}
+        placeholder={equitiesOnly ? "Type company name or symbol..." : "Search any stock"}
+        aria-label={label}
+        aria-autocomplete="list"
+        aria-expanded={open && results.length > 0 && resultsFor === query.trim()}
+        aria-activedescendant={open && results.length > 0 && resultsFor === query.trim() ? `${listId}-${activeIndex}` : undefined}
         aria-controls={listId}
         autoComplete="off"
         className="w-full rounded-md border border-border bg-raised px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-accent"
       />
 
-      {open && results.length > 0 && (
+      {open && results.length > 0 && resultsFor === query.trim() && (
         <ul
           id={listId}
           role="listbox"
@@ -120,6 +140,7 @@ export function SymbolSearch({ onSelect, existing }: SymbolSearchProps) {
                 <button
                   type="button"
                   role="option"
+                  id={`${listId}-${index}`}
                   aria-selected={index === activeIndex}
                   disabled={added}
                   onMouseEnter={() => setActiveIndex(index)}
@@ -130,7 +151,7 @@ export function SymbolSearch({ onSelect, existing }: SymbolSearchProps) {
                 >
                   <span className="min-w-0">
                     <span className="block font-medium">{result.symbol}</span>
-                    <span className="block truncate text-xs text-muted">
+                    <span className={`block text-xs text-muted ${fullWidth ? "break-words" : "truncate"}`}>
                       {result.name}
                     </span>
                   </span>
@@ -143,7 +164,8 @@ export function SymbolSearch({ onSelect, existing }: SymbolSearchProps) {
           })}
         </ul>
       )}
-      {open && results.length === 0 && query.trim() !== "" && resultsFor === query.trim() && (
+      {open && error && <p role="alert" className="absolute z-20 mt-1 w-full rounded-md border border-border bg-raised p-3 text-sm text-rose-700 shadow-xl">{error}</p>}
+      {open && !error && results.length === 0 && query.trim() !== "" && resultsFor === query.trim() && (
         <p role="status" className="absolute z-20 mt-1 w-full rounded-md border border-border bg-raised px-3 py-2.5 text-sm text-muted shadow-xl">
           No NSE stock or index matches &ldquo;{query.trim()}&rdquo;. Try the symbol (e.g. TCS) or part of the company name.
         </p>

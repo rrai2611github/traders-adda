@@ -1,5 +1,6 @@
 import { isTradingDay, istDateKey } from "../market/marketHours.ts";
 import type { MarketPhase, MarketStatus, Quote } from "../market/types.ts";
+import { quoteEntryIssue, type QuoteTiming } from "../market/quoteQuality.ts";
 import type { TodaysPick } from "./todaysPicks.ts";
 
 export const PAPER_ENTRY_WINDOW_SESSIONS = 3;
@@ -72,7 +73,7 @@ export interface CreatePaperOrderInput {
   readonly source?: string;
 }
 
-export interface PaperQuote {
+export interface PaperQuote extends QuoteTiming {
   readonly price: number;
   readonly timestamp: number;
   readonly symbol?: string;
@@ -97,6 +98,7 @@ export type PaperAdvanceRejection =
   | "quote-symbol-mismatch"
   | "future-quote"
   | "stale-quote"
+  | "unverified-quote"
   | "quote-not-new";
 
 export type PaperAdvanceResult =
@@ -231,6 +233,10 @@ export function advancePaperOrder(
     const result = advancePaperOrderCore(order, {
       price: quotePrice,
       timestamp: quote.timestamp,
+      ...("source" in quote ? { source: quote.source } : {}),
+      ...("fetchedAt" in quote ? { fetchedAt: quote.fetchedAt } : {}),
+      ...("tradeTimestamp" in quote ? { tradeTimestamp: quote.tradeTimestamp } : {}),
+      ...("timestampBasis" in quote ? { timestampBasis: quote.timestampBasis } : {}),
       ...("symbol" in quote ? { symbol: quote.symbol } : {}),
     }, {
       phase: market.phase,
@@ -470,6 +476,7 @@ function advancePaperOrderCore(
   }
 
   if (order.stage === "pending") {
+    if (quoteEntryIssue(quote, market.now, MAX_PAPER_QUOTE_AGE_MS)) return reject("unverified-quote");
     if (quote.price > order.plan.buyZoneHigh) {
       return accept({
         ...order,

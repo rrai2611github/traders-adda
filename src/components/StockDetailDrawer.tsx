@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { TradePlanCard } from "./TradePlanCard";
 import { TradeChecklist } from "./TradeChecklist";
 import { PlanRehearsal } from "./PlanRehearsal";
@@ -11,14 +11,15 @@ import type { ScreenScan } from "@/hooks/useScreenScan";
 import { formatPercent, formatPrice } from "@/lib/format";
 import { isFnO } from "@/lib/market/indexUniverses";
 import type { Quote } from "@/lib/market/types";
+import { quoteSourceLabel } from "@/lib/market/quoteQuality";
 import { movingAverageBreadth } from "@/lib/screen/breadth";
 import { SETUP_BREADTH_MIN, setupStatus } from "@/lib/screen/setupGate";
 import type { RatedCheck } from "@/lib/screen/buyingStatus";
 import type { ScannerPayload } from "@/lib/screen/chartinkScans";
 import { groupScanBySector } from "@/lib/screen/commandCenter";
 import { SCAN_STAGE_LABELS, stockConfluence, type SignalTone } from "@/lib/screen/confluence";
-import { HORIZON_HOLDING, HORIZON_RESEARCH_NOTE, horizonBuySignal, targetOddsLines, type BuyHorizon, type HorizonPlan } from "@/lib/screen/horizonSignal";
-import { horizonTargetOdds } from "@/lib/screen/horizonOdds";
+import { HORIZON_HOLDING, horizonBuySignal, type BuyHorizon } from "@/lib/screen/horizonSignal";
+import type { TradePlan } from "@/lib/screen/tradePlan";
 import { macroSector, UNCLASSIFIED } from "@/lib/industry";
 import { timeframeAgreement } from "@/lib/screen/multiTimeframe";
 import { TimeframeAgreementBadge } from "./TimeframeAgreementBadge";
@@ -34,6 +35,7 @@ import { ShortSellingStatusBadge } from "./ShortSellingStatusBadge";
 import { PaRatingCard } from "./PriceActionRating";
 import { ProChart, type ChartLevel } from "./ProChart";
 import { StockQuickRead } from "./StockQuickRead";
+import { StockSupportResistance } from "./StockSupportResistance";
 
 const HORIZONS: { key: BuyHorizon; label: string; holding: string }[] = [
   { key: "short", label: "Short term", holding: HORIZON_HOLDING.short },
@@ -73,42 +75,6 @@ function CheckList({ checks }: { checks: RatedCheck[] }) {
         </li>
       ))}
     </ul>
-  );
-}
-
-function LevelCell({ label, value, sub, odds, tone }: { label: string; value: string; sub: string; odds?: string; tone: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
-      <div className="text-[10.5px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</div>
-      <div className={`mt-1 font-mono text-base font-black tabular-nums ${tone}`}>{value}</div>
-      <div className="text-[11px] text-slate-500">{sub}</div>
-      {odds && <div className="mt-1 text-[11px] font-bold text-slate-700">{odds}</div>}
-    </div>
-  );
-}
-
-/** Horizon entry/stop/targets with how often each target was reached in the backtest. */
-function ReferenceLevels({ plan, horizon }: { plan: HorizonPlan; horizon: BuyHorizon }) {
-  const odds = horizonTargetOdds(horizon);
-  const lines = odds ? targetOddsLines(odds) : null;
-  const move = (value: number) => `${value >= plan.entry ? "+" : "−"}${Math.abs((value / plan.entry - 1) * 100).toFixed(1)}%`;
-  return (
-    <div className="space-y-2">
-      <div className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">Reference levels · not a recommendation</div>
-      <div className="grid gap-2 sm:grid-cols-4">
-        <LevelCell label="Entry above" value={`₹${formatPrice(plan.entry)}`} sub={`Zone to ₹${formatPrice(plan.buyZoneHigh)}`} tone="text-blue-700" />
-        <LevelCell label="Stop-loss" value={`₹${formatPrice(plan.stop)}`} sub={`Risk ${plan.riskPercent.toFixed(1)}%`} odds={lines?.stop} tone="text-rose-700" />
-        <LevelCell label="Target 1" value={`₹${formatPrice(plan.target1)}`} sub={`${move(plan.target1)} · ${plan.rewardRisk1}R`} odds={lines?.t1} tone="text-emerald-700" />
-        <LevelCell label="Target 2" value={`₹${formatPrice(plan.target2)}`} sub={`${move(plan.target2)} · ${plan.rewardRisk2}R`} odds={lines?.t2} tone="text-emerald-800" />
-      </div>
-      <p className="text-[11px] text-slate-500">
-        {plan.stopBasis && <>{plan.stopBasis} </>}
-        {plan.targetBasis && <>{plan.targetBasis} </>}
-        {lines
-          ? <>Hit rates: {lines.sample}, Buy ready signals, after costs; book half at T1 and move the stop to entry. Average {odds!.avgR >= 0 ? "+" : "−"}{Math.abs(odds!.avgR).toFixed(2)}R a trade.</>
-          : "No backtest sample for this horizon yet."}
-      </p>
-    </div>
   );
 }
 
@@ -223,6 +189,10 @@ export function StockDetailDrawer({
   onAddToWatchlist: (symbol: string) => void;
 }) {
   const [horizon, setHorizon] = useState<BuyHorizon>("mid");
+  const [resolvedPlan, setResolvedPlan] = useState<{ symbol: string; plan: TradePlan | null } | null>(null);
+  const onPlanChange = useCallback((symbol: string, plan: TradePlan | null) => {
+    setResolvedPlan({ symbol, plan });
+  }, []);
   const [linkCopiedFor, setLinkCopiedFor] = useState<string | null>(null);
   const linkCopied = linkCopiedFor === symbol;
   const closeRef = useRef<HTMLButtonElement | null>(null);
@@ -272,21 +242,21 @@ export function StockDetailDrawer({
 
   const levels = useMemo<ChartLevel[]>(() => {
     const result: ChartLevel[] = [];
-    const plan = signal?.plan;
+    const plan = resolvedPlan?.symbol === symbol ? resolvedPlan.plan : null;
     if (plan) {
       result.push(
         { label: "Entry", value: plan.entry, color: "#2563eb" },
         { label: "Stop", value: plan.stop, color: "#e11d48" },
-        { label: "T1", value: plan.target1, color: "#16a34a" },
-        { label: "T2", value: plan.target2, color: "#15803d" },
+        { label: "Optional partial profit", value: plan.t1, color: "#16a34a" },
       );
+      if (plan.trailSma50 != null) result.push({ label: "50-day exit", value: plan.trailSma50, color: "#15803d" });
     }
     const pivot = row?.pivotPrice;
     if (pivot != null && !result.some((level) => Math.abs(level.value - pivot) / pivot < 0.002)) {
       result.push({ label: "Pivot", value: pivot, color: "#d97706" });
     }
     return result;
-  }, [row, signal]);
+  }, [row, resolvedPlan, symbol]);
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -389,10 +359,16 @@ export function StockDetailDrawer({
               </span>
             )}
             <span className="mb-1 text-xs text-slate-400">
-              {quote ? "Live quote" : row ? "Scan snapshot" : "Last daily close"}
+              {quote ? quoteSourceLabel(quote) : row ? "Scan snapshot" : "Last daily close"}
             </span>
             <TimeframeAgreementBadge agreement={agreement} dark />
           </div>
+          {quote && <p className="mt-2 text-xs text-slate-400">
+            Provider/session time {new Date(quote.timestamp).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} IST
+            {quote.fetchedAt ? ` · Fetched ${new Date(quote.fetchedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} IST` : ""}
+            {" · Cached quotes may be stale; do not assume this is an executable price."}
+          </p>}
+          <a href={`/assistant?symbol=${encodeURIComponent(symbol)}`} className="mt-3 inline-block rounded-xl border border-slate-600 px-3 py-2 text-xs font-bold text-slate-200">Ask about this stock</a>
         </header>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3 sm:p-5">
@@ -438,11 +414,17 @@ export function StockDetailDrawer({
             </p>
           </div>
 
-          <TradePlanCard key={symbol} symbol={symbol} />
+          <StockSupportResistance candles={chartCandles} source={fyersCandles ? "Fyers" : "Yahoo Finance (delayed)"} />
+          <TradePlanCard key={symbol} symbol={symbol} onPlanChange={onPlanChange} />
           {row && <TradeChecklist row={row} candles={candles} />}
           <FundamentalsPanel symbol={symbol} sector={sector} />
-          <PlanRehearsal key={symbol} symbol={symbol} />
-          <a href={`/backtest?symbol=${encodeURIComponent(symbol)}`} className="block rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:border-emerald-500 hover:text-emerald-700">How would the rules have traded {symbol} over 10 years? →</a>
+          <details className="rounded-xl border border-slate-200 bg-white p-4">
+            <summary className="cursor-pointer text-xs font-bold text-slate-700">Historical simulation · not a current trade plan</summary>
+            <div className="mt-3 space-y-3">
+              <PlanRehearsal key={symbol} symbol={symbol} />
+              <a href={`/backtest?symbol=${encodeURIComponent(symbol)}`} className="block text-xs font-bold text-emerald-700 underline">Open the full historical backtest for {symbol}</a>
+            </div>
+          </details>
 
           {!row ? (
             unrated?.kind !== "below-floor" ? <UnratedNotice symbol={symbol} reason={unrated} /> : refPa ? <PaRatingCard rating={refPa} /> : null
@@ -466,8 +448,8 @@ export function StockDetailDrawer({
               )}
               <PaRatingCard rating={row.paRating} />
               <Card
-                title="Buy checklist"
-                subtitle={`${activeHorizon.label} · hold ${activeHorizon.holding}. Rating = share of required checks passing, not a probability.`}
+                title="Research checks · not a trade plan"
+                subtitle={`${activeHorizon.label} · hold ${activeHorizon.holding}. Separate experimental research rules; ratings are not probabilities. They do not change the main trade plan.`}
                 action={
                   <div className="flex items-center gap-3">
                     <ConfluenceBadge confluence={confluence} compact />
@@ -498,13 +480,11 @@ export function StockDetailDrawer({
                         {confluence.bear.length} bearish. Treat this stock with extra caution.
                       </p>
                     )}
-                    <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">{HORIZON_RESEARCH_NOTE}</p>
                     {signal.noTrade && (
                       <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-900">
                         <span className="font-black">{signal.noTrade.reason}.</span> {signal.noTrade.detail}
                       </p>
                     )}
-                    {signal.plan && <ReferenceLevels plan={signal.plan} horizon={horizon} />}
                     <CheckList checks={signal.status.checks} />
                   </div>
                 )}

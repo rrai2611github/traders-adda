@@ -45,6 +45,11 @@ import { StockDetailDrawer } from "./StockDetailDrawer";
 import { CommandCenter, type CommandCenterTarget } from "./CommandCenter";
 import { MonthlySetups } from "./MonthlySetups";
 import { BottomedOutScreener } from "./BottomedOutScreener";
+import { Stage2Bases } from "./Stage2Bases";
+import { StockScreener } from "./StockScreener";
+import { SectorStage2 } from "./SectorStage2";
+import { DailyChanges } from "./DailyChanges";
+import { SetupLab } from "./SetupLab";
 import { TodaysPicks } from "./TodaysPicks";
 import { TradeJournal } from "./TradeJournal";
 import { useTradeJournal } from "@/hooks/useTradeJournal";
@@ -62,13 +67,18 @@ import type { BuyHorizon } from "@/lib/screen/horizonSignal";
 const USER_NAME = "Rupesh Rai";
 
 const PAGE_TITLES: Record<ActiveNavKey, string> = {
-  today: "Dashboard",
+  today: "Today",
   monthly: "Monthly Setups",
   bottomed: "Bottomed Out",
+  bases: "Stage 2 Bases",
+  screener: "Stock Screener",
+  sectorStage2: "Sector Stage 2",
+  dailyChanges: "Daily Changes",
+  setupLab: "Setup Lab",
   metrics: "Stock list",
   research: "Stock research",
-  directory: "Scanner directory",
-  picks: "Today's Picks",
+  directory: "Research",
+  picks: "Older scanner picks",
   screens: "Core Setups",
   signals: "RPCI & Oscillators",
   scanners: "Trade Triggers",
@@ -321,13 +331,8 @@ function Greeting({ status }: { status: MarketStatus | null }) {
     <div className="flex min-h-[52px] flex-wrap items-end justify-between gap-3 px-1">
       <div>
         <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-accent">Your daily edge</p>
-        <h2 className="text-[24px] font-extrabold tracking-[-0.03em] text-slate-900">
-          {part ? `${part}, ${USER_NAME}` : USER_NAME}
-        </h2>
-        <p className="mt-0.5 text-xs font-medium text-slate-500">
-          {now == null ? "\u00a0" : IST_DATE.format(now)}
-          {status ? ` · ${status.label}` : ""}
-        </p>
+        <h2 className="text-[24px] font-extrabold tracking-[-0.03em] text-slate-900">{part ? `${part}, ${USER_NAME}` : USER_NAME}</h2>
+        <p className="mt-0.5 text-xs font-medium text-slate-500">{now == null ? "\u00a0" : IST_DATE.format(now)}{status ? ` · ${status.label}` : ""}</p>
       </div>
     </div>
   );
@@ -438,7 +443,7 @@ export function Dashboard() {
   }, [routeReady, activeNav, activeScanner, activeMarketMenu, rsiEdgeTab, detailSymbol, activeMetric]);
   const signalsView = activeNav === "signals";
   const scannersView = activeNav === "scanners";
-  const toolsView = activeNav === "picks" || journalView || activeNav === "market" || activeNav === "monthly" || activeNav === "bottomed" || activeNav === "screens" || signalsView || scannersView || activeNav === "rsi-edge" || activeNav === "research" || activeNav === "directory";
+  const toolsView = activeNav === "picks" || journalView || activeNav === "bottomed" || activeNav === "bases" || activeNav === "screener" || activeNav === "sectorStage2" || activeNav === "dailyChanges" || activeNav === "setupLab" || signalsView || activeNav === "rsi-edge";
   const scanners = useScannerResults(scannersView || activeNav === "research" || activeNav === "directory" || activeNav === "picks" || detailSymbol != null, scannerMode);
   const rsiEdge = useRsiEdgeResults(activeNav === "rsi-edge" || activeNav === "research" || activeNav === "directory" || detailSymbol != null);
   const [universe, setUniverse] = useUniverse();
@@ -446,7 +451,7 @@ export function Dashboard() {
   const universeScan = useMemo(() => filterScan(scan, universeKeep), [scan, universeKeep]);
   const universeScanners = useMemo(() => filterScanners(scanners.data, universeKeep), [scanners.data, universeKeep]);
   const universeRsiEdge = useMemo(() => filterRsiEdge(rsiEdge.data, universeKeep), [rsiEdge.data, universeKeep]);
-  const universeApplies = activeNav === "monthly" || activeNav === "bottomed" || activeNav === "today" || activeNav === "metrics" || activeNav === "research" || activeNav === "directory" || activeNav === "screens" || signalsView || scannersView || activeNav === "rsi-edge";
+  const universeApplies = activeNav === "monthly" || activeNav === "bottomed" || activeNav === "bases" || activeNav === "screener" || activeNav === "today" || activeNav === "metrics" || activeNav === "research" || activeNav === "directory" || activeNav === "screens" || signalsView || scannersView || activeNav === "rsi-edge";
 
   const selectScanner = (key: ScannerKey) => {
     setActiveScanner(key);
@@ -496,7 +501,7 @@ export function Dashboard() {
 
   return (
     <StockDetailProvider value={openStock}>
-    <div className="dashboard-shell flex min-h-screen min-w-0">
+    <div className="dashboard-shell flex min-h-screen min-w-0" data-view={activeNav}>
       <aside data-collapsed={sidebarCollapsed} className="sidenav sticky top-0 flex h-screen shrink-0 flex-col transition-[width] duration-300">
         <div className="sidenav-divider flex h-[60px] shrink-0 items-center gap-2 border-b px-3">
           <button type="button" onClick={() => selectNav("today")} title="Traders Adda — Today" className="flex min-w-0 items-center gap-2.5 rounded-xl px-1.5 py-1 text-left focus-visible:outline-2 focus-visible:outline-[#5fd49a]">
@@ -524,26 +529,34 @@ export function Dashboard() {
             <SideItem icon="watchlist" label="Watchlist" current={activeNav === "watchlist"} collapsed={sidebarCollapsed} onClick={() => selectNav("watchlist")} />
           </SideGroup>
 
+          <SideGroup label="Research & scanners" collapsed={sidebarCollapsed}>
+            <SideItem icon="breadth" label="Market overview" current={activeNav === "market"} collapsed={sidebarCollapsed} onClick={() => selectMarketMenu(activeMarketMenu)} />
+            <SideItem icon="signals" label="Stock research" current={activeNav === "research"} collapsed={sidebarCollapsed} onClick={() => selectNav("research")} />
+            <SideItem icon="search" label="Scanner directory" current={activeNav === "directory"} collapsed={sidebarCollapsed} onClick={() => selectNav("directory")} />
+            <SideItem icon="setups" label="Core Setups" current={activeNav === "screens"} collapsed={sidebarCollapsed} onClick={() => selectNav("screens")} />
+            <SideItem icon="setups" label="Monthly Setups" current={activeNav === "monthly"} collapsed={sidebarCollapsed} onClick={() => selectNav("monthly")} />
+            <SideItem icon="triggers" label="Trade Triggers" current={scannersView} collapsed={sidebarCollapsed} onClick={() => selectScanner(activeScanner)} />
+          </SideGroup>
+
           <details key={toolsView ? "tools-active" : "tools-idle"} open={sidebarCollapsed || toolsView} className="sidenav-tools">
-            <summary aria-label="Research and older tools" title="Research and older tools" className="sidenav-item cursor-pointer">
+            <summary aria-label="More tools" title="More tools" className="sidenav-item cursor-pointer">
               <NavIcon name="setups" />
-              <span className="sidenav-text flex-1">Research & older tools</span>
+              <span className="sidenav-text flex-1">More tools</span>
               <NavIcon name="chevron-down" size={14} className="sidenav-text sidenav-disclosure" />
             </summary>
             <div className="mt-2 space-y-3">
-              <ToolSection label="Market" collapsed={sidebarCollapsed}>
-                <SideItem icon="breadth" label="Market overview" current={activeNav === "market"} collapsed={sidebarCollapsed} onClick={() => selectMarketMenu(activeMarketMenu)} />
-                <SideItem icon="signals" label="Stock research" current={activeNav === "research"} collapsed={sidebarCollapsed} onClick={() => selectNav("research")} />
-                <SideItem icon="search" label="Scanner directory" current={activeNav === "directory"} collapsed={sidebarCollapsed} onClick={() => selectNav("directory")} />
-              </ToolSection>
               <ToolSection label="Stock lists" collapsed={sidebarCollapsed}>
                 <SideItem icon="picks" label="Older scanner picks" current={activeNav === "picks"} collapsed={sidebarCollapsed} onClick={() => selectNav("picks")} />
-                <SideItem icon="setups" label="Core Setups" current={activeNav === "screens"} collapsed={sidebarCollapsed} onClick={() => selectNav("screens")} />
-                <SideItem icon="setups" label="Monthly Setups" current={activeNav === "monthly"} collapsed={sidebarCollapsed} onClick={() => selectNav("monthly")} />
                 <SideItem icon="setups" label="Bottomed Out" current={activeNav === "bottomed"} collapsed={sidebarCollapsed} onClick={() => selectNav("bottomed")} />
+                <SideItem icon="setups" label="Stage 2 Bases" current={activeNav === "bases"} collapsed={sidebarCollapsed} onClick={() => selectNav("bases")} />
+                <SideItem icon="setups" label="Stock Screener" current={activeNav === "screener"} collapsed={sidebarCollapsed} onClick={() => selectNav("screener")} />
+              </ToolSection>
+              <ToolSection label="Breadth & changes" collapsed={sidebarCollapsed}>
+                <SideItem icon="setups" label="Sector Stage 2" current={activeNav === "sectorStage2"} collapsed={sidebarCollapsed} onClick={() => selectNav("sectorStage2")} />
+                <SideItem icon="setups" label="Daily Changes" current={activeNav === "dailyChanges"} collapsed={sidebarCollapsed} onClick={() => selectNav("dailyChanges")} />
+                <SideItem icon="setups" label="Setup Lab" current={activeNav === "setupLab"} collapsed={sidebarCollapsed} onClick={() => selectNav("setupLab")} />
               </ToolSection>
               <ToolSection label="Signals" collapsed={sidebarCollapsed}>
-                <SideItem icon="triggers" label="Trade Triggers" current={scannersView} collapsed={sidebarCollapsed} onClick={() => selectScanner(activeScanner)} />
                 <SideItem icon="rsi" label="RSI Edge Scanners" current={activeNav === "rsi-edge"} collapsed={sidebarCollapsed} onClick={() => selectNav("rsi-edge")} />
                 <SideItem icon="signals" label="RPCI & Oscillators" current={signalsView} collapsed={sidebarCollapsed} onClick={() => selectNav("signals")} />
               </ToolSection>
@@ -555,6 +568,7 @@ export function Dashboard() {
           </details>
 
           <SideGroup label="Learn" collapsed={sidebarCollapsed}>
+            <SideItem icon="about" label="Trading playbook" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/playbook")} />
             <SideItem icon="about" label="About & risk" current={activeNav === "learn"} collapsed={sidebarCollapsed} onClick={() => selectNav("learn")} />
           </SideGroup>
         </nav>
@@ -648,7 +662,7 @@ export function Dashboard() {
           )}
 
       <FyersBanner />
-      <MarketStrip />
+      {activeNav !== "today" && <MarketStrip />}
       {activeNav === "today" && <TodayStrip />}
 
       {activeNav !== "metrics" && <section aria-label="Market index snapshot" className="scroll-mt-36">
@@ -656,6 +670,11 @@ export function Dashboard() {
       </section>}
 
       <div key={activeNav} className="page-enter">
+      {activeNav !== "today" && activeNav !== "metrics" && activeNav !== "directory" && (
+        <button type="button" onClick={() => selectNav("directory")} className="mb-3 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-bold text-foreground">
+          Back to Research
+        </button>
+      )}
       {activeNav === "today" || activeNav === "metrics" || activeNav === "research" || activeNav === "directory" ? (
         <CommandCenter
           view={activeNav}
@@ -674,6 +693,16 @@ export function Dashboard() {
         <MonthlySetups scan={scan} scanError={scanError} keep={universeKeep} />
       ) : activeNav === "bottomed" ? (
         <BottomedOutScreener keep={universeKeep} />
+      ) : activeNav === "bases" ? (
+        <Stage2Bases keep={universeKeep} />
+      ) : activeNav === "setupLab" ? (
+        <SetupLab />
+      ) : activeNav === "dailyChanges" ? (
+        <DailyChanges keep={universeKeep} />
+      ) : activeNav === "sectorStage2" ? (
+        <SectorStage2 />
+      ) : activeNav === "screener" ? (
+        <StockScreener scan={scan} error={scanError} loadingMessage={scanLoadingMessage} keep={universeKeep} />
       ) : activeNav === "picks" ? (
         <TodaysPicks
           data={scanners.data}
@@ -808,6 +837,10 @@ export function Dashboard() {
               <h3 className="text-lg font-black text-slate-900">Words used in the app</h3>
               <p className="mb-3 mt-1 text-sm text-slate-600">Dotted words on other pages explain themselves when tapped. Here they all are in one place.</p>
               <GlossaryList />
+            </div>
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 lg:col-span-3">
+              <h3 className="font-black text-emerald-900">New to the app?</h3>
+              <p className="mt-2 text-sm leading-6 text-emerald-900/80">The <a href="/playbook" className="font-bold underline">Trading playbook</a> walks through a daily routine step by step, from the market check to the exit, and says what is proven and what is not.</p>
             </div>
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 lg:col-span-3">
               <h3 className="font-black text-amber-900">Important risk notice</h3>

@@ -12,6 +12,7 @@ import { BuyingStatusBadge } from "./BuyingStatusBadge";
 import { ShortSellingStatusBadge } from "./ShortSellingStatusBadge";
 import { formatPercent, formatPrice, formatVolume, toneClass } from "@/lib/format";
 import { EmptyState, LoadingState, WorkspaceFrame, WorkspaceHero } from "./WorkspaceShell";
+import { useHeaderSort } from "@/hooks/useHeaderSort";
 
 const ICONS: Record<RsiEdgeScanKey, string> = {
   "daily-bullish": "D",
@@ -47,6 +48,7 @@ export function RsiEdgeScannerSection({
     return !q || `${row.symbol} ${row.name} ${local?.sector ?? ""}`.toLowerCase().includes(q);
   }), [localRows, query, selected]);
   const scannerError = source?.errors[active] ?? null;
+  const { bindTable, rows: sortedRows } = useHeaderSort(rows, (row) => row.symbol);
 
   return (
     <WorkspaceFrame id="rsi-edge">
@@ -146,7 +148,7 @@ export function RsiEdgeScannerSection({
         </EmptyState>
       ) : (
         <div className="max-h-[calc(100vh-260px)] overflow-auto">
-          <table className="min-w-[1120px] w-full border-separate border-spacing-0 text-sm">
+          <table ref={bindTable} className="min-w-[1120px] w-full border-separate border-spacing-0 text-sm">
             <thead className="sticky top-0 z-20">
               <tr className="bg-[#f7f9fa] text-[11px] uppercase tracking-[0.08em] text-slate-400 shadow-[0_1px_0_#e2e8f0]">
                 <th className="sticky left-0 z-30 bg-[#f7f9fa] px-3 py-3 text-center">#</th>
@@ -160,7 +162,7 @@ export function RsiEdgeScannerSection({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, index) => (
+              {sortedRows.map((row, index) => (
                 <RsiEdgeRow
                   key={`${row.symbol}-${index}`}
                   rank={index + 1}
@@ -196,7 +198,7 @@ function RsiEdgeRow({
     ? (facts.dailyClose / facts.dailyPivot - 1) * 100
     : null;
   return (
-    <tr className="odd:bg-white even:bg-[#fafbfc] hover:bg-[#f0f9f4]">
+    <tr data-sort-key={sourceRow.symbol} className="odd:bg-white even:bg-[#fafbfc] hover:bg-[#f0f9f4]">
       <td className="sticky left-0 z-10 border-b border-slate-100 bg-inherit px-3 py-3 text-center font-mono text-xs font-bold text-slate-400">{String(rank).padStart(2, "0")}</td>
       <td className="sticky left-[56px] z-10 border-b border-slate-100 bg-inherit px-3 py-3">
         <StockSymbolButton symbol={sourceRow.symbol} className="block font-black text-slate-900">{sourceRow.symbol}</StockSymbolButton>

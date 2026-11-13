@@ -16,22 +16,228 @@ Check the approximation thresholds with `node --test scripts/rpci-approx.test.mj
 
 ## Interpreting the dashboard
 
-The home dashboard shows only the index snapshot, compact market pulse,
-participation metrics, quick actions and collapsed **Morning brief & global cues**.
-**Stock research** and **Scanner directory** are separate workspaces under
-Scanner tools (also linked from home). Their detailed panels are not mounted
+### Local application research chatbot
+
+Open `/assistant` from the workspace sidebar, the Performance page or
+**Ask about this stock** in the stock drawer. Ask **Which stocks should I keep
+on my radar?**, **How is the market?**, **Which strategy does the app use?**,
+**How are the paper results?** or **Is Fyers/email/paper trading working?**;
+stock selection is optional. Radar uses up to six non-extended, validated
+Top Picks/watch candidates in the app's existing order, not a new ranking.
+Weak breadth means watch only; stale/limited data is labelled research only.
+Type **Analyse SBIN** or **Compare SBIN and ICICIBANK**, or select equities
+using the always-visible stock-name/symbol selectors above the message box
+(selection is optional). Explicit recognised symbols/full names
+override selected context; app-wide questions ignore selected stocks.
+Ask **Is SBIN bullish or bearish?**, **Can I buy Infosys?**, **What are its
+risks?**, **What is its price?**, **Explain its volume**, or **Show support
+and resistance**. Replies start with the requested answer instead of a generic
+research introduction. Bullish/Bearish/Mixed daily trend reuses the drawer's
+50/200-day quick-read logic; missing averages, stale/failed or simulated data
+withhold the verdict. This is separate from liquidity/breadth/setup approval:
+a bullish stock may still be watch-only. SMA/pivot references are not claimed
+as confirmed support/resistance, and intraday requests are explicitly unsupported
+by this daily-data adapter. Company names may omit Limited/Ltd.
+Stock-topic follow-ups such as **Why?** retain their topic and selected symbols.
+Explicit follow-ups such as **Why these stocks?** revisit the last app topic.
+Suggested questions and selected symbols support follow-ups; the last
+10 responses are kept in page memory only and cleared on reload.
+The chat interface shows your message immediately followed by a pending
+indicator and the research reply. Search either stock selector by company name
+or symbol; suggestions show both, and the selected stock remains visible as a
+removable chip. Arrow keys and Enter select a suggestion; Escape dismisses it.
+The message box uses Enter to send and Shift+Enter for a new line. Search
+failures and no matches are explicit. This is a local, bounded research chatbot,
+not a general-purpose language model.
+
+`POST /api/assistant` reads the shared validated universe scan and the same
+deterministic Top Picks builder, plus approved performance/status readers with
+private recorded-position reads disabled. Paper/replay portfolios remain
+separate, unavailable P&L is not zero, and source failures are displayed.
+It makes no model calls, sends no chat to an
+external AI and reads no private holdings or broker credentials. Normal
+market-data refreshes may still occur through the existing snapshot readers.
+Facts, source/fetch/session timestamps, risks, missing information and app
+reference levels are displayed separately. Comparisons use one shared scan,
+not invented rankings or forecasts. News, fundamentals, personal portfolio
+analysis, price predictions and order actions are explicitly unsupported in
+this local version. The assistant does not inspect earnings calendars, so
+its setup context is not a substitute for the complete trading checklist.
+Stale, failed or shortened data suppresses setup-specific levels.
+Warm-up/provider failures remain visible, not success-shaped empty answers.
+Tests: `node --test scripts/research-assistant.test.mjs scripts/application-assistant.test.mjs scripts/performance-summary.test.mjs`.
+
+### Performance & reliability
+
+Open `/performance` from the workspace sidebar or the mobile **Results** tab.
+It consolidates the live stock-strategy check, stock paper portfolio, index
+futures paper portfolio, Nifty/Bank Nifty paper straddles and manually recorded
+real positions. The portfolios are separate accounts: their profits must not
+be added together or treated as a strategy ranking.
+
+Each card identifies its evidence source, capital/deployment where recorded,
+closed and open P&L, closed-trade win rate and expectancy, drawdown basis and
+source timestamp. Real-position P&L is gross and owner-entered, not reconciled
+with the broker. Paper costs/fills remain estimates. Straddles have no funded
+capital recorded, so no return percentage is inferred. The strategy check
+excludes still-open marks from win rate and compares with Nifty over the same
+period; capped trade ledgers withhold incomplete closed-trade statistics.
+Older unresolved straddle days withhold total/open P&L and display a warning,
+rather than presenting expired or incomplete marks as a current result.
+
+The system-status section shows paper-engine heartbeats, straddle recording,
+daily-history freshness, universe coverage/data checks, Fyers/fallback source,
+pre-open/hourly SMTP status and broker dry-run/live/kill-switch mode.
+Market-closed engines are idle, not automatically stale. Heartbeats do not
+verify exchange tick freshness, and SMTP acceptance does not verify inbox
+delivery. Failures are displayed separately, retaining other available sources.
+
+`GET /api/performance` uses existing snapshot readers; it does not send emails,
+approve trades, change settings or backfill option history. Normal universe
+refresh and the existing strategy-check computation can be started by those
+readers. The page separates **Automation status**, **Strategy results**, and
+**System health**. Automation shows enabled modes, last attempts, last successful
+evaluations (when recorded), and blockers independently of engine heartbeats.
+The page reads status every five seconds while visible and resumes immediately
+when returning to it. Its index price monitor reuses the existing SSE quote
+channel (REST fallback), without subscribing to market movers. Stream connection,
+provider trade time, delayed/fallback, stale and unverified quotes are distinct;
+this is not a guaranteed exchange-tick feed. Daily strategy results still use
+completed daily candles, not intraday marks. No real-money execution is enabled.
+Tests: `node --test scripts/performance-summary.test.mjs`.
+
+The paper strategy holdings on `/positions#strategy-check` also register their
+symbols with the shared visible-tab quote poller. Desktop rows and mobile cards
+show latest available quote, indicative gain/P&L, source quality, provider trade
+time and fetch time separately from the completed daily close. An indicative
+holdings-value summary requires quotes for every holding; missing or simulated
+quotes never fall back to daily prices. Refresh failures are visible and retained
+quotes are labelled stale as they age. Each holding includes quantity and recorded
+amount invested; a bottom summary totals shares, invested cost, latest holdings
+value and indicative open profit/loss before costs on desktop and mobile.
+The section is labelled **Practice portfolio**. Its four-number current-holdings
+summary is separate from collapsed last-close account results (including cash).
+The default holdings table has five columns; buy prices, stops, daily exit levels
+and provider trade times live under **Show details**. Sources/delays stay visible.
+Amounts use full rupee figures, missing-price totals explain the count, and
+stop-price observations never imply a sale. Daily decisions retain their source
+date, and deleting practice history requires explicit confirmation.
+Daily account results, risk checks,
+pending signals, stops and trade history remain the original daily replay.
+Fyers quotes may be cached for 15 seconds and delayed fallback is not tick data.
+Tests: `node --test scripts/tracker-valuation.test.mjs`.
+
+### Fyers data reliability
+
+Data requests share a process-wide queue and short read cache. Identical
+concurrent reads use one network call and retain the original fetch timestamp.
+Local daily request counts (including failures), endpoint counts and pauses
+persist in `.cache/fyers-data-usage.json`, without credentials. A conservative
+4,500-data-request budget resets at IST midnight; it is not the broker's
+remaining quota and excludes other applications and requests made before
+tracking was introduced. The Performance page shows these limitations/counts.
+Daily-limit rejections stop data requests until the next IST day; HTTP 429
+and Standard-plan per-second/per-minute rejections back off for 60 seconds, and
+transport/server errors for 30 seconds. Data calls are spaced at least 1,500 ms
+apart within each server process (also capped at 40/minute); separate app
+processes and other applications do not share that pacer. There
+is no immediate automatic retry, and restarting does not clear a saved pause.
+This data policy does not retry, cache or alter broker-order sends.
+
+Failed index auto-paper evaluations are recorded as errors, not successful
+hourly checks. They can retry the same slot after a 60-second cooldown without
+repeating a successful skip or placement. The straddle recorder resumes on server
+startup on trading days and refreshes current/recoverable sessions instead of
+replaying forty days on every tick. Future scheduled expiries are adjusted with
+the shared holiday calendar (including the November 2026 Bank Nifty holiday
+shift), and missing current-session records are explicit recording errors.
+Existing expired/incomplete sessions remain explicitly incomplete; new contracts
+never substitute for their original legs.
+
+Watched Fyers quotes and futures paper polling use 15 seconds; broad universe
+Fyers quotes can be reused for 15 minutes to avoid spending the daily quota on
+full-universe sweeps. Yahoo fallback is retained and labelled per quote.
+The stock drawer displays source, provider/session time and fetch time.
+Fetch time and Fyers' date-only `tt` are never presented as verified trade times:
+new stock/index paper entries require a recent explicit provider trade time.
+This intentionally pauses entries when the feed cannot prove freshness.
+Practice owner-email alerts run server-side every 30 seconds, without an open
+browser, when `PERSONAL_ALERT_EMAIL` and SMTP are configured. They notify newly
+observed replay buys/exits and confirmed next-open signals after daily processing;
+they are not execution-time confirmations or real-order instructions. Initial
+startup/new tracker configuration baselines existing history without emailing it.
+`.cache/tracker-alerts.json` persists queued events and per-email successful-send
+checkpoints; failed sends retry on subsequent checks. A crash between SMTP
+acceptance and saving a checkpoint can still cause a duplicate. Stop-review emails
+run only in real trading sessions and require a verified trade timestamp no more
+than two minutes old; date-only Fyers prices do not qualify. Each holding gets at
+most one successful stop warning per trading day. Stale/unverified-price blockers
+and send failures appear in the practice portfolio alert-status panel. Polling can
+miss brief crossings; daily replay/risk rules and the existing daily summary remain
+unchanged. This does not enable orders, browser push or customer-list email.
+Existing sampled stop/target handling is retained; it is not bid/ask execution.
+No trading signal/risk parameters or live-order enablement settings change.
+
+The straddle desk labels older open days incomplete (expired when appropriate),
+withholds their displayed day P&L and never calls them “open now”.
+Recovery preserves recorded contract symbols/expiry and entry prices;
+expired contracts are not replaced by a later expiry or modelled results.
+Records remain saved for audit. Expired incomplete days cannot be repaired
+through the current live-contract history path.
+Tests: `node --test scripts/fyers-data.test.mjs scripts/fyers-quotes.test.mjs scripts/paper-trading.test.mjs scripts/index-paper.test.mjs scripts/scalp-paper.test.mjs`.
+
+The home dashboard retains its modern navy-and-gold design and original cards:
+position/strategy status, indices, breadth gauge and trend, statistics, Top picks,
+movers, sectors and paper trades. The market banner is omitted on home to avoid
+repeating the gauge and the Top picks setup check; the tested 35% gate still
+appears with Top picks. Redundant navigation shortcuts are removed.
+The market-card grid responds to available content width, not viewport width:
+three equal-height cards on wide screens; gauge/trend plus full-width statistics
+on medium screens; stacked cards on phones. Stock cards size to available space,
+and the sector/paper section uses two columns rather than leaving an empty third.
+Morning brief & global cues remains collapsed. The phone uses bottom navigation only.
+Stock details include a **Support & resistance · daily** text section below the
+chart: up to three support/resistance levels with price zones, swing-touch counts,
+distance from the daily candle close and source/date. It reuses daily Auto S/R on
+the same chart history; other chart timeframes can differ. Missing levels are
+explicit, and these descriptive zones are not additional trade plans.
+The stock drawer shows one primary **Trade plan** (12% stop, 50-day-average
+exit). Its chart entry/stop/optional-profit/exit lines come from that same plan;
+they are absent while the plan is unavailable. Horizon research checks remain,
+but no longer show alternative entry/stop/target grids in the drawer or alter
+its chart. Research tables and watchlists keep their existing reference levels.
+Historical strategy testing sits in a separate collapsed disclosure. No strategy
+eligibility, alert, or trading-engine rules are changed by this presentation.
+**Stock research** and the scanner catalog are available inside **Research**
+(also linked from home). Their detailed panels are not mounted
 on the dashboard, and home no longer polls scanner/RSI feeds for hidden panels.
 Research counts are not the curated Today's Picks list.
 
-The sidebar keeps everyday destinations visible and groups specialist tools
-under **Scanner tools**. **Market overview** contains the five existing market
-tabs; **Trade Triggers** has a grouped selector with match counts. Shared URLs
+Desktop navigation, the command palette and mobile tabs share five destinations:
+**Today, Portfolio, Research, Results, Assistant**.
+Research (`/#scanner-directory`) starts with **Watchlist**, **Stock research** and
+**Market overview**, with the scanner catalog and practice/older tools collapsed
+until requested. Stock-drawer watchlist actions remain available.
+Results (`/performance`) starts with strategy results, with secondary links to
+**Historical backtest** (`/backtest`) and **Email track record** (`/radar`);
+automation status, system health and market-feed diagnostics remain available.
+Portfolio (`/positions`) focuses on real holdings; the real-trade journal,
+order review, paper strategy and email delivery activity are collapsed.
+Existing `#strategy-check`, `#order-approvals` and `#email-activity` links open
+their section automatically, and add-position prefills still work.
+Real, paper and replay balances/results remain separate.
+Navigation regression checks: `node --test scripts/workspace-navigation.test.mjs scripts/app-route.test.mjs`.
+With the built app running, `node scripts/check-navigation.mjs` verifies desktop
+and phone navigation, collapsed sections, deep links, prefills and page overflow
+without changing holdings or sending emails.
+**Market overview** contains the five existing market tabs; **Trade Triggers**
+has a grouped selector with match counts. Shared URLs
 and browser Back/Forward retain the existing destinations. Narrow windows use
 an icon rail (hover for names), a separate search row and internally scrolling
 tabs/tables. Theme, universe filtering and trading rules are unchanged.
-The dashboard uses a dark grid-textured hero, a floating desktop navigation
-rail, tinted quote badges and subtle card interactions. Reduced-motion
-preferences disable decorative movement; no decorative charts imply market data.
+The shared frame retains its floating navy sidebar, tinted background,
+styled cards and restrained gold accents. Detailed tools retain their existing data and controls.
+Reduced-motion preferences disable decorative movement; no decorative charts imply market data.
 Click any of the five dashboard metrics to open a separate stock-list workspace
 with a shareable `#metric-*` URL and **Back to dashboard** action.
 DMA/advancing lists are market-wide; Buy ready/Short ready lists use the current
@@ -244,6 +450,18 @@ so a reader who missed one still sees everything. A separate "Bullish confluence
 section lists the top 10 liquid stocks where 2+ scanner families agree (3+ first),
 labelled **not a buy** because agreement alone had no backtest edge. Stock rules,
 scanners and paper execution are unchanged.
+An **Intraday developments** section checks only the current Buy ready/watch
+stocks for confirmed crosses on completed Yahoo 60-minute candles: prior-day
+high/low closes and an hourly-bar VWAP estimate. It reports each event once per
+bar per trading day, shows data coverage, and labels Yahoo latency as unverified.
+This is hourly context, not a five-minute signal; it never changes daily status,
+Today's Picks or trade plans. Stale/missing candles and daily reference levels
+are reported as unavailable instead of being treated as no signal.
+The same results and coverage are visible in **Research & older tools > Trade
+Triggers > Hourly email**. Use **Refresh** to reload the check or **Preview
+email** to open the full rendered email without sending it. Production code
+changes require `.\scripts\run-app.ps1 rebuild`; restarting alone uses the
+existing build.
 Automatic hourly sends are suppressed on weekends and dates in the built-in NSE
 holiday calendar; keep that calendar updated from each annual exchange circular.
 Weekends, configured holidays and simulated sessions cannot trigger auto sends.
@@ -264,7 +482,7 @@ SMTP acceptance. Failed sends leave that alert eligible for the next scheduled
 check, while successfully accepted alerts in the same batch are not repeated.
 Retries remain subject to the normal trading-day/check window and current
 signal eligibility. SMTP acceptance does not prove inbox delivery.
-Validate with `node --test scripts/alert-delivery.test.mjs scripts/market-email-policy.test.mjs scripts/ready-alert.test.mjs scripts/top5-alert.test.mjs scripts/hourly-email.test.mjs scripts/preopen-email.test.mjs`.
+Validate with `node --test scripts/alert-delivery.test.mjs scripts/market-email-policy.test.mjs scripts/ready-alert.test.mjs scripts/top5-alert.test.mjs scripts/hourly-email.test.mjs scripts/hourly-intraday.test.mjs scripts/preopen-email.test.mjs`.
 
 #### Email Activity
 

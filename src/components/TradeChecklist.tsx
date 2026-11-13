@@ -58,8 +58,7 @@ export function TradeChecklist({ row, candles }: { row: ScanRow; candles: Candle
         ))}
       </ul>
       <p className="mt-3 text-[11px] text-slate-600">
-        Exit: stop at the stop level, then hold while it closes above its <b>{checklist.exitDays}-day average</b>
-        {checklist.exitDays === 100 ? " (the slower exit tested better for Multi-year breakouts)" : ""}. Risk about 1% of capital a trade.
+        Use the single trade plan above for entry, the 12% stop, position size and the <b>50-day-average exit</b>. This checklist does not supply a second plan.
       </p>
       <p className="mt-1 text-[11px] leading-4 text-slate-400">Only 30–40% of trades win; a few big winners pay for the rest. Research output, not advice.</p>
     </section>

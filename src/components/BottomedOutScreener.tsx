@@ -10,6 +10,7 @@ import { EmptyState, LoadingState, WorkspaceFrame, WorkspaceHero, WorkspaceTabs 
 import { DataQualityNotice } from "./DataQualityNotice";
 import { ListChangeNote, NewTag } from "./ListChangeNote";
 import { useListChanges } from "@/hooks/useListChanges";
+import { useHeaderSort } from "@/hooks/useHeaderSort";
 import type { ListChanges } from "@/lib/listChanges";
 
 type Tab = "deep" | "early";
@@ -57,6 +58,7 @@ export function BottomedOutScreener({ keep }: { keep: ((symbol: string) => boole
   // With no deep-base stock the page opens on Early base instead of an empty tab; a click on a tab always wins.
   const tab: Tab = picked ?? (data && count("deep") === 0 && count("early") > 0 ? "early" : "deep");
   const rows = useMemo(() => inView.filter((row) => row.tier === tab), [inView, tab]);
+  const { bindTable, rows: sortedRows } = useHeaderSort(rows, (row) => row.symbol);
   // The live (market-open) and completed-session lists differ, so each keeps its own memory.
   const changes = useListChanges(`bottomed-${tab}-${data?.provisional ? "live" : "done"}`, data ? rows.map((row) => row.symbol) : null);
   return (
@@ -91,11 +93,11 @@ export function BottomedOutScreener({ keep }: { keep: ((symbol: string) => boole
         {!data ? error ? <EmptyState tone="error" title="Bottomed-out scan unavailable">The feed will retry automatically.</EmptyState> : <LoadingState rows={5} message={progress ?? "Scanning for bottomed-out stocks."} /> :
           !rows.length ? <EmptyState title="No bottomed-out stocks in this tier">No stock meets these rules in the selected universe. Empty results are valid; no candidates are manufactured.</EmptyState> :
             <div className="max-h-[650px] overflow-auto rounded-xl border border-border">
-              <table className="w-full min-w-[960px] border-separate border-spacing-0 text-left text-xs">
+              <table ref={bindTable} className="w-full min-w-[960px] border-separate border-spacing-0 text-left text-xs">
                 <thead className="sticky top-0 z-20 bg-raised text-[11px] uppercase tracking-wide text-muted"><tr>
                   <th className="sticky left-0 z-30 bg-raised px-4 py-3">Stock / RS</th><th className="px-3 py-3">Fall</th><th className="px-3 py-3">Base</th><th className="px-3 py-3">Reclaim</th><th className="px-3 py-3">Context</th><th className="px-3 py-3">Tested exit</th>
                 </tr></thead>
-                <tbody>{rows.map((row) => <BottomRow key={row.symbol} row={row} changes={changes} />)}</tbody>
+                <tbody>{sortedRows.map((row) => <BottomRow key={row.symbol} row={row} changes={changes} />)}</tbody>
               </table>
             </div>}
       </div>
@@ -105,7 +107,7 @@ export function BottomedOutScreener({ keep }: { keep: ((symbol: string) => boole
 
 function BottomRow({ row, changes }: { row: BottomedOutPick; changes: ListChanges }) {
   return (
-    <tr className="odd:bg-white even:bg-slate-50 hover:bg-emerald-50">
+    <tr data-sort-key={row.symbol} className="odd:bg-white even:bg-slate-50 hover:bg-emerald-50">
       <td className="sticky left-0 z-10 max-w-[220px] border-b border-border bg-inherit px-4 py-3">
         <StockSymbolButton symbol={row.symbol} className="font-bold">{row.symbol}</StockSymbolButton>
         {changes.added.has(row.symbol) && <NewTag />}

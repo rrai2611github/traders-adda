@@ -32,9 +32,11 @@ import type { ScreenScan } from "@/hooks/useScreenScan";
 import { GET as screenGET } from "@/app/api/market/screen/route";
 import { getTopPicks } from "@/lib/screen/topPicksResults";
 import { withNews } from "@/lib/ai/withNews";
+import { withFirstCalls } from "@/lib/radar/withFirstCalls";
 import type { TopPicksEmailInput } from "./topPicksEmail";
 import { marketEmailBlockReason, marketEmailCalendarWarning, requireMarketEmailDay } from "./marketEmailPolicy";
 import { recordScheduledEmailSkip, scheduledEmailBlockReason } from "./emailScheduleActivity";
+import { collectHourlyDevelopments, withoutPreviouslySentEvents, type IntradayDevelopmentSummary } from "./hourlyIntraday";
 
 export { buildHourlyEmail, emailSlotKey };
 
@@ -58,6 +60,8 @@ export interface EmailAlertState {
   lastBottomed?: string[] | null;
   /** Symbols in the tested-setup section of the last sent email, for the "since the last update" line. */
   lastSetup?: string[] | null;
+  /** Hourly intraday event keys already delivered today. */
+  lastIntradayEventKeys?: string[] | null;
   /** IST date (YYYY-MM-DD) of the last sent list; a new day starts from the pre-open list. */
   lastDay: string | null;
   /** Slot skipped because nothing changed. */
@@ -74,6 +78,7 @@ const initialState = (): EmailAlertState => ({
   lastWatch: null,
   lastBuy: null,
   lastConfluence: null,
+  lastIntradayEventKeys: null,
   lastDay: null,
   lastSkippedSlotKey: null,
   lastIndexes: null,
@@ -205,7 +210,7 @@ async function loadHourlyIndexReads(now: number): Promise<Record<string, HourlyI
 }
 
 export async function hourlyEmailPreview(now: number = Date.now()): Promise<
-  | { ok: true; table: AlertTable; subject: string; html: string; text: string; hasChanges: boolean; indexSnapshot: IndexEmailSnapshot | null; setupSymbols: string[] | null; emailedPicks: TopPicksEmailInput["picks"] | null }
+  | { ok: true; table: AlertTable; subject: string; html: string; text: string; hasChanges: boolean; indexSnapshot: IndexEmailSnapshot | null; setupSymbols: string[] | null; emailedPicks: TopPicksEmailInput["picks"] | null; intradayEventKeys: string[]; intraday: IntradayDevelopmentSummary }
   | { ok: false; reason: string }> {
   const state = getScannerResults("live");
   if (state.status === "warming") return { ok: false, reason: "The NSE universe is still loading." };
@@ -213,6 +218,37 @@ export async function hourlyEmailPreview(now: number = Date.now()): Promise<
   const scan = await loadScreenScan();
   // Last step before formatting: the latest price on every stock listed, so CMP is current when the email is sent.
   const table = await overlayLiveQuotes(addSectorHeat(addBottomedOut(addConfluencePlans(await addConfluence(buildAlertTable(state.payload, backtestLine(), { recommendationsOnly: true }), state.payload, scan))), scan), now);
+  const intradayCandidates = [...new Map(
+    [...table.rows.slice(0, 10), ...(table.watch ?? []).slice(0, 5)]
+      .map((row) => [row.symbol, row] as const),
+  ).keys()];
+  const snapshotState = getUniverseSnapshot();
+  let intraday: IntradayDevelopmentSummary;
+  if (
+    snapshotState.status !== "ready" ||
+    snapshotState.snapshot.sessionDateKey !== istDateKey(now) ||
+    now - snapshotState.snapshot.completedAt > 5 * 60_000
+  ) {
+    intraday = {
+      status: "unavailable",
+      events: [],
+      checked: 0,
+      stale: 0,
+      unavailable: intradayCandidates.length,
+      reason: "Current-session daily reference levels are unavailable.",
+    };
+  } else {
+    intraday = await collectHourlyDevelopments(
+      intradayCandidates.map((symbol) => ({ symbol, dailyCandles: snapshotState.snapshot.histories.get(symbol) ?? [] })),
+      Date.now(),
+      (symbol) => yahooProvider.getHourlyCandles(symbol),
+    );
+  }
+  const savedState = readState();
+  const alreadySent = new Set(savedState.lastDay === istDay(now) ? savedState.lastIntradayEventKeys ?? [] : []);
+  const filteredIntraday = withoutPreviouslySentEvents(intraday, alreadySent);
+  intraday = filteredIntraday.summary;
+  const intradayEventKeys = filteredIntraday.eventKeys;
   const results = await Promise.allSettled([
     getIndexContext("live", now), getIndexContext("completed", now), listIndexOutlookJournal({ tradingDate: istDay(now) }),
   ]);
@@ -236,17 +272,18 @@ export async function hourlyEmailPreview(now: number = Date.now()): Promise<
   let setup: TopPicksEmailInput | null = null;
   try {
     // Hourly emails reuse the notes written for the pre-open email; they never trigger a paid call.
-    const picks = await withNews(await getTopPicks("live"), { cacheOnly: true });
+    const picks = withFirstCalls(await withNews(await getTopPicks("live"), { cacheOnly: true }));
     if (picks) setup = picks;
   } catch (error) {
     console.error("[email] tested-setup section unavailable:", error instanceof Error ? error.message : error);
   }
   // Formatting uses the actual time after fetches, never the request-start time as a quote timestamp.
   const generatedAt = Date.now();
-  return { ok: true, table, ...buildHourlyEmail(table, generatedAt, baseline(now), indexes, setup),
+  return { ok: true, table, ...buildHourlyEmail(table, generatedAt, baseline(now), indexes, setup, intraday),
     indexSnapshot: buildIndexEmailSnapshot(indexes.context, generatedAt),
     setupSymbols: setup ? setup.picks.filter((p) => p.tag === "ready" || p.tag === "broke").map((p) => p.symbol) : null,
-    emailedPicks: setup ? setup.picks : null };
+    emailedPicks: setup ? setup.picks : null,
+    intradayEventKeys, intraday };
 }
 export function hourlyEmailStatus() {
   return {
@@ -280,6 +317,10 @@ export async function sendHourlyEmailNow(): Promise<{ messageId: string; picks: 
     lastDay: istDay(now),
     lastIndexes: preview.indexSnapshot,
     lastSetup: preview.setupSymbols ?? prior.lastSetup ?? null,
+    lastIntradayEventKeys: [
+      ...(prior.lastDay === istDay(now) ? prior.lastIntradayEventKeys ?? [] : []),
+      ...preview.intradayEventKeys,
+    ].slice(-200),
   };
   try {
     requireMarketEmailDay();

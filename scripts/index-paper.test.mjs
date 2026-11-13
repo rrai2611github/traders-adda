@@ -72,6 +72,13 @@ test("a loss or trade limit stops a pending order from filling; an open one keep
   assert.equal(stopped.exitReason, "stop");
 });
 
+test("date-only Fyers quotes block entries but existing sampled stop handling is preserved", () => {
+  const unknown={...q(22702,"10:01"),source:"fyers",tradeTimestamp:null,timestampBasis:"session",fetchedAt:at("10:01")};
+  assert.equal(advanceIndexOrder(make(),unknown,ctx("10:01")).status,"pending");
+  const open=advanceIndexOrder(make(),q(22702,"10:01"),ctx("10:01"));
+  assert.equal(advanceIndexOrder(open,{...unknown,price:22640,timestamp:at("10:02")},ctx("10:02")).exitReason,"stop");
+});
+
 test("intraday orders square off at 15:15 and an untriggered one expires; carry orders stay open", () => {
   const o = advanceIndexOrder(make(), q(22702, "10:01"), ctx("10:01"));
   const sq = advanceIndexOrder(o, q(22710, "15:15"), ctx("15:15"));

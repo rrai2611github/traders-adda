@@ -1,4 +1,5 @@
 import { FyersApiError, FyersAuthError, fyersConnected, fyersQuotes } from "../../fyers/fyersClient";
+import { FyersDataPausedError } from "../../fyers/dataPolicy";
 import { getMarketStatus } from "../marketHours";
 import type { Candle, PricePoint, Quote } from "../types";
 import { getInstrument } from "../universe";
@@ -19,15 +20,16 @@ import { yahooProvider } from "./yahoo";
 
 const MAX_PER_CALL = 50;
 /** A quote fetched this recently is reused, so several tabs or sweeps cannot multiply requests. */
-const CACHE_MS = 2_000;
-const POLL_LIVE_MS = 3_000;
+const CACHE_MS = 15_000;
+const BULK_CACHE_MS = 15 * 60_000;
+const POLL_LIVE_MS = 15_000;
 const POLL_CLOSED_MS = 30_000;
 
 interface FyersStats {
   fyersQuotes: number;
   yahooFallbackQuotes: number;
   lastFyersAt: number | null;
-  /** Age in ms of the freshest trade time among the last Fyers quotes, an upper bound on feed latency. */
+  /** Null if any row has only a session/fetch timestamp. Not a guaranteed latency measure. */
   freshestQuoteAgeMs: number | null;
   lastError: string | null;
 }
@@ -95,10 +97,11 @@ export class FyersProvider implements MarketDataProvider {
     const wanted = [...new Set(symbols.map((s) => s.toUpperCase()))];
     const now = Date.now();
     const result = new Map<string, Quote>();
+    const cacheMs = wanted.length > MAX_PER_CALL ? BULK_CACHE_MS : CACHE_MS;
     const stale: string[] = [];
     for (const symbol of wanted) {
       const hit = store.cache.get(symbol);
-      if (hit && now - hit.at < CACHE_MS) result.set(symbol, hit.quote);
+      if (hit && now - hit.at < cacheMs) result.set(symbol, hit.quote);
       else stale.push(symbol);
     }
     if (stale.length && fyersConnected().connected) {
@@ -106,22 +109,27 @@ export class FyersProvider implements MarketDataProvider {
         const fresh = await quoteFromFyers(stale, now);
         for (const [symbol, quote] of fresh) {
           result.set(symbol, quote);
-          store.cache.set(symbol, { at: now, quote });
+          store.cache.set(symbol, { at: quote.fetchedAt ?? now, quote });
         }
         if (fresh.size) {
-          const newest = Math.max(...[...fresh.values()].map((q) => q.timestamp));
-          Object.assign(store.stats, { lastFyersAt: now, fyersQuotes: store.stats.fyersQuotes + fresh.size, freshestQuoteAgeMs: Math.max(0, now - newest), lastError: null });
+          const times = [...fresh.values()].map((q) => q.tradeTimestamp);
+          Object.assign(store.stats, { lastFyersAt: Math.max(...[...fresh.values()].map((q) => q.fetchedAt ?? now)),
+            fyersQuotes: store.stats.fyersQuotes + fresh.size,
+            freshestQuoteAgeMs: times.every((t) => t != null) ? Math.max(0, now - Math.max(...times.filter((t): t is number => t != null))) : null, lastError: null });
         }
       } catch (error) {
         // Not logged in any more, rate-limited or a network failure: serve Yahoo for this call.
         store.stats.lastError = error instanceof Error ? error.message : String(error);
-        if (!(error instanceof FyersAuthError) && !(error instanceof FyersApiError)) console.error("[fyers] quotes failed, using Yahoo:", error);
+        if (!(error instanceof FyersAuthError) && !(error instanceof FyersApiError) && !(error instanceof FyersDataPausedError)) console.error("[fyers] quotes failed, using Yahoo:", error);
       }
     }
     const missing = wanted.filter((symbol) => !result.has(symbol));
     if (missing.length) {
       const fallback = await yahooProvider.getQuotes(missing);
-      for (const quote of fallback) result.set(quote.symbol, quote);
+      for (const quote of fallback) {
+        result.set(quote.symbol, quote);
+        store.cache.set(quote.symbol, { at: quote.fetchedAt ?? Date.now(), quote });
+      }
       store.stats.yahooFallbackQuotes += fallback.length;
     }
     return wanted.flatMap((symbol) => result.get(symbol) ?? []);

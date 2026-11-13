@@ -27,6 +27,7 @@ test("live check: not started, waiting, no trades, and results with the right co
   assert.equal(liveTile({ config: null, job: { status: "none" } }).big, "Not started");
   const waiting = liveTile({ config: { startDate: "2026-10-31" }, job: { status: "waiting" } });
   assert.equal(waiting.big, "Waiting");
+  assert.equal(waiting.href, "/positions#strategy-check");
   assert.match(waiting.sub, /Following since 2026-10-31/);
   assert.equal(liveTile(done(0, 0, 0)).big, "No trades yet");
   const few = liveTile(done(2, 3, 4.2));
@@ -38,7 +39,7 @@ test("live check: not started, waiting, no trades, and results with the right co
   assert.equal(down.tone, "warn");
   assert.match(down.sub, /−6\.0% since/);
   assert.equal(liveTile({ config: { startDate: "2026-10-31" }, job: { status: "failed" } }).tone, "warn");
-  assert.equal(liveTile(null).big, "Checking…");
+  assert.deepEqual([liveTile(null).big, liveTile(null).href], ["Checking…", "/positions#strategy-check"]);
 });
 
 test("strategy health: each verdict in words and colour; running and failed are quiet", () => {
@@ -48,7 +49,7 @@ test("strategy health: each verdict in words and colour; running and failed are 
   assert.deepEqual([h("watch", "Watch: average trade.").big, h("watch").tone], ["Watch", "warn"]);
   assert.equal(h("watch", "Watch: average trade.").sub, "Watch: average trade.");
   assert.deepEqual([h("review").big, h("review").tone], ["Review", "bad"]);
-  assert.equal(healthTile({ status: "running" }).big, "Checking…");
+  assert.deepEqual([healthTile({ status: "running" }).big, healthTile({ status: "running" }).href], ["Checking…", "/positions#strategy-check"]);
   assert.equal(healthTile({ status: "failed" }).big, "Unavailable");
   assert.equal(healthTile(null).big, "Checking…");
 });

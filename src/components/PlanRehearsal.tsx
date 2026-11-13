@@ -51,10 +51,10 @@ export function PlanRehearsal({ symbol }: { symbol: string }) {
 
   const s = state.summary;
   return (
-    <section aria-label="Plan rehearsal" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <section aria-label="Historical strategy test" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h3 className="text-sm font-black text-slate-900">Plan rehearsal</h3>
+          <h3 className="text-sm font-black text-slate-900">Historical strategy test</h3>
           <p className="text-[11px] text-slate-500">How would the tested plan (12% stop, exit under the 50-day average) have done on {symbol} alone since 2016?</p>
         </div>
         <button type="button" onClick={() => void run()} disabled={state.phase === "running"} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-emerald-500 hover:text-emerald-700 disabled:opacity-60">

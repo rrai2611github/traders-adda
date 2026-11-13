@@ -74,7 +74,10 @@ function useHeldPositions(): Array<{ symbol: string; quantity: number; last: num
   return held;
 }
 
-export function TradePlanCard({ symbol }: { symbol: string }) {
+export function TradePlanCard({ symbol, onPlanChange }: {
+  symbol: string;
+  onPlanChange?: (symbol: string, plan: TradePlan | null) => void;
+}) {
   const [data, setData] = useState<PlanResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   // One account size for the whole app (shared with the position-size calculator and My positions).
@@ -117,12 +120,16 @@ export function TradePlanCard({ symbol }: { symbol: string }) {
   const results = useResultsDates();
   const held = useHeldPositions();
 
+  useEffect(() => {
+    onPlanChange?.(symbol, error ? null : plan);
+  }, [symbol, error, plan, onPlanChange]);
+
   const save = (nextRisk: number | null) => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ risk: nextRisk })); } catch { /* not saved */ }
   };
 
-  if (error) return <section className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-500 shadow-sm"><b className="text-slate-800">Trade plan.</b> {error}</section>;
-  if (!data || !plan) return <section className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-500 shadow-sm">Working out the trade plan…</section>;
+  if (error) return <section aria-label="Trade plan" className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-500 shadow-sm"><p role="alert"><b className="text-slate-800">Trade plan.</b> {error}</p></section>;
+  if (!data || !plan) return <section aria-label="Trade plan" className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-500 shadow-sm"><p role="status">Working out the trade plan…</p></section>;
 
   const s = plan.sizing;
   const marketOk = (() => { const gate = setupStatus(breadth?.latest?.above[50] ?? null, nifty); return gate.breadthOk == null && gate.niftyOk == null ? null : gate.allowed; })();
@@ -137,7 +144,7 @@ export function TradePlanCard({ symbol }: { symbol: string }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="text-sm font-black text-slate-900">Trade plan</h3>
-          <p className="text-[11px] text-slate-500">From the {data.provisional ? "forming candle (market open)" : "last close"}. Buy near the price, never above the skip level.</p>
+          <p className="text-[11px] text-slate-500">Single primary plan · 12% stop and 50-day-average exit. From the {data.provisional ? "forming candle (market open)" : "last close"}. Research only; a plan alone does not qualify a stock for a buy.</p>
         </div>
         <span className={`rounded-full px-3 py-1 text-[11px] font-black ring-1 ${SIZE_STYLE[data.size.key]}`} title={data.size.detail}>{data.size.label}</span>
       </div>
@@ -151,7 +158,7 @@ export function TradePlanCard({ symbol }: { symbol: string }) {
 
       {plan.stopKind === "percent" && plan.atrStopPercent > 12 && (
         <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-[11px] leading-5 text-amber-900">
-          ⚠ This stock swings a lot: its normal daily range puts a 2 × ATR stop {plan.atrStopPercent.toFixed(1)}% away ({inr(plan.atrStop)}), so even the 12% stop can be hit by ordinary moves. Expect more stop-outs, or buy fewer shares.
+          ⚠ This stock swings a lot: ordinary moves can hit the 12% stop. Expect more stop-outs, or buy fewer shares. The stop rule is unchanged.
         </p>
       )}
       {plan.wideStop && (
@@ -160,7 +167,7 @@ export function TradePlanCard({ symbol }: { symbol: string }) {
         </p>
       )}
       <p className="mt-2 text-[11px] leading-5 text-slate-500">
-        Other references: 2 × ATR stop {inr(plan.atrStop)} ({pct(plan.atrStop, plan.entry)}), swing-low stop {inr(plan.swingStop)} ({pct(plan.swingStop, plan.entry)}). The 12% stop is the one the live strategy check follows: in the 10-year test it stopped out less often than 8% and had a shallower worst drop.
+        The 12% stop is the one the live strategy check follows. Support and resistance are descriptive reference zones, not alternative stops or targets.
         {plan.resistance ? ` The 52-week high is ${inr(plan.resistance.price)} (${pct(plan.resistance.price, plan.entry)} away), where sellers may appear.` : " It is at its 52-week high, so there is no old high above it."}
       </p>
 

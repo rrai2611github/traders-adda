@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { isTradingDay } from "../src/lib/market/marketHours.ts";
 import {
   advancePaperOrder,
   cancelPaperOrder,
@@ -36,6 +37,15 @@ const openOrder = () => {
   order = mustAdvance(order, quote("2026-09-29", 98));
   return mustAdvance(order, quote("2026-09-29", 100, 1));
 };
+
+test("unverified Fyers session stamps cannot fill pending orders; explicit trade times still work", () => {
+  const q={...quote("2026-09-29",98),source:"fyers",tradeTimestamp:null,timestampBasis:"session"};
+  const result=advance(makeOrder(),q);
+  assert.equal(result.accepted,false);
+  assert.equal(result.rejection,"unverified-quote");
+  assert.equal(advance(makeOrder(),{...q,tradeTimestamp:q.timestamp,timestampBasis:"trade"}).accepted,true);
+  assert.equal(advance(openOrder(),{...q,price:90,timestamp:quote("2026-09-29",90,2).timestamp}).order.stage,"closed");
+});
 
 test("creates an immutable manual-approval snapshot and validates the plan", () => {
   const order = makeOrder();
@@ -243,7 +253,7 @@ test("exits on the first observed quote after 30 trading sessions", () => {
   let sessions = 0;
   while (sessions < 30) {
     date.setUTCDate(date.getUTCDate() + 1);
-    if (date.getUTCDay() !== 0 && date.getUTCDay() !== 6) sessions += 1;
+    if (isTradingDay(date.getTime())) sessions += 1;
   }
   const dueDate = date.toISOString().slice(0, 10);
   order = mustAdvance(order, quote(dueDate, 105));

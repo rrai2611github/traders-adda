@@ -1,6 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { dailyRegime, hourlySetup } from "../src/lib/paper/indexFramework.ts";
+import { autoEvaluationFailed, dailyRegime, hourlySetup, shouldEvaluateAuto } from "../src/lib/paper/indexFramework.ts";
+
+test("failed evaluations retry the same hourly slot after cooldown; successful skips do not", () => {
+  const failed = { at: 1000, result: "error", message: "Could not evaluate: rate limit" };
+  assert.equal(shouldEvaluateAuto(undefined, "day:1", failed, 60_999), false);
+  assert.equal(shouldEvaluateAuto(undefined, "day:1", failed, 61_000), true);
+  const legacy = { ...failed, result: "skipped" };
+  assert.equal(autoEvaluationFailed(legacy), true);
+  assert.equal(shouldEvaluateAuto("day:1", "day:1", legacy, 61_000), true);
+  const skipped = { ...failed, result: "skipped", message: "Daily regime not aligned." };
+  assert.equal(shouldEvaluateAuto("day:1", "day:1", skipped, 100000), false);
+  assert.equal(shouldEvaluateAuto("day:1", "day:2", skipped, 100000), true);
+  assert.equal(shouldEvaluateAuto("day:1", "day:1", { ...skipped, result: "placed" }, 100000), false);
+});
 
 const series = (n, start, step) => Array.from({ length: n }, (_, i) => ({ close: start + i * step }));
 const bars = (n, start, step, volume = (i) => 100 + i) => Array.from({ length: n }, (_, i) => {

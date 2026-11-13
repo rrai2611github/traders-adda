@@ -6,6 +6,9 @@ import { useNiftyTrend } from "@/hooks/useNiftyTrend";
 import { useResultsDates } from "@/hooks/useResultsDates";
 import { daysUntil } from "@/lib/market/boardMeetings";
 import { useWeeklyTop5 } from "@/hooks/useWeeklyTop5";
+import { usePickCalls } from "@/hooks/usePickCalls";
+import { callProgress, shortDay } from "@/lib/radar/pickCalls";
+import { holdPosition, pickTerm } from "@/lib/screen/pickTerm";
 import type { FeedEvent, ScanRow } from "@/hooks/useScreenScan";
 import { formatPercent, formatPrice } from "@/lib/format";
 import { OVERBOUGHT_PERCENT, OVERSOLD_PERCENT } from "@/lib/screen/breadthHistory";
@@ -230,15 +233,15 @@ function StatList({ statKey, items, outOf, onClose }: { statKey: StatKey; items:
   );
 }
 
-function StatsCard({ lists, open, toggle, advancing, declining, qualifying, above200, onPicks }: {
-  lists: Record<StatKey, StatItem[]>; open: StatKey | null; toggle: (key: StatKey) => void; advancing: number; declining: number; qualifying: number | null; above200: number | null; onPicks: () => void;
+function StatsCard({ lists, open, toggle, advancing, declining, qualifying, above200 }: {
+  lists: Record<StatKey, StatItem[]>; open: StatKey | null; toggle: (key: StatKey) => void; advancing: number; declining: number; qualifying: number | null; above200: number | null;
 }) {
   const total = advancing + declining || 1;
   const nearHigh = lists.nearHigh.length;
   const nearLow = lists.nearLow.length;
   const failedCount = lists.failed.length;
   return (
-    <Card title="Today in numbers" hint="From the latest scan of the liquid NSE universe. Tap any number to see the stocks.">
+    <Card title="Today in numbers" hint="From the latest scan of the liquid NSE universe. Tap any number to see the stocks." className="market-stats-card">
       <div>
         <div className="flex justify-between text-[11px] font-bold">
           <button type="button" onClick={() => toggle("up")} aria-pressed={open === "up"} className="text-emerald-700 hover:underline">{advancing} up</button>
@@ -248,7 +251,7 @@ function StatsCard({ lists, open, toggle, advancing, declining, qualifying, abov
           <div className="bg-emerald-500" style={{ width: `${(advancing / total) * 100}%` }} />
         </div>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="market-stats-items mt-3 grid grid-cols-2 gap-2">
         <Stat label="Near 52-wk high" value={String(nearHigh)} sub="within 5% of the high" tone="text-emerald-700" onClick={() => toggle("nearHigh")} active={open === "nearHigh"} />
         <Stat label="Near 52-wk low" value={String(nearLow)} sub="within 5% of the low" tone={nearLow > nearHigh ? "text-rose-700" : "text-slate-900"} onClick={() => toggle("nearLow")} active={open === "nearLow"} />
         <Stat label="RS 80+" value={String(lists.strong.length)} sub="strongest stocks" onClick={() => toggle("strong")} active={open === "strong"} />
@@ -258,8 +261,7 @@ function StatsCard({ lists, open, toggle, advancing, declining, qualifying, abov
       </div>
       {qualifying != null && (
         <p className="mt-2 text-[11px] text-slate-500">
-          {qualifying} stocks pass the Weekly Top 5 rules.{" "}
-          <button type="button" onClick={onPicks} className="font-bold text-accent hover:underline">See the picks →</button>
+          {qualifying} stocks pass the Weekly Top 5 rules.
         </p>
       )}
     </Card>
@@ -283,12 +285,14 @@ const TAG: Record<PickTag, { label: string; chip: string; note: string }> = {
 };
 
 /** One list: stocks about to break out, stocks that just did, then the strong ones to wait on. */
-function TopPicksSection({ rows, onAll }: { rows: ReadonlyArray<ScanRow>; onAll: () => void }) {
+function TopPicksSection({ rows }: { rows: ReadonlyArray<ScanRow> }) {
   const { data, message, failed } = useWeeklyTop5();
   const results = useResultsDates();
   const nifty = useNiftyTrend();
   const picks = useMemo(() => buildTopPicks(rows, data?.picks ?? []), [rows, data]);
   const buyable = picks.filter((p) => p.tag === "ready" || p.tag === "broke");
+  const { data: callData, failed: callsFailed } = usePickCalls();
+  const term = useMemo(() => pickTerm(), []);
   const gate = setupStatus(data?.breadth50 ?? null, nifty);
   return (
     <section aria-label="Top picks" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -297,8 +301,8 @@ function TopPicksSection({ rows, onAll }: { rows: ReadonlyArray<ScanRow>; onAll:
           <h3 className="text-[15px] font-black text-slate-900">Top picks</h3>
           <p className="text-[11px] text-slate-500">Strong stocks (RS {READY_RULES.minRs}+) in an uptrend. Just-broke-out stocks come first, then ones about to break out; greyed ones have run too far. Click one for its checklist and plan.</p>
         </div>
-        <button type="button" onClick={onAll} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50">All picks →</button>
       </header>
+      {failed && <p role="alert" className="mb-3 text-xs text-rose-700">Top picks refresh failed. {data ? "Previously loaded results may be stale." : "The weekly ranking is unavailable."}</p>}
       {(data?.breadth50 != null || nifty) && (
         <p className={`mb-3 flex items-start gap-2 rounded-xl border px-3 py-2 text-xs leading-5 ${gate.allowed ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-rose-200 bg-rose-50 text-rose-900"}`}>
           <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${gate.allowed ? "bg-emerald-500" : "bg-rose-500"}`} aria-hidden />
@@ -312,11 +316,15 @@ function TopPicksSection({ rows, onAll }: { rows: ReadonlyArray<ScanRow>; onAll:
       ) : (
         <>
           {buyable.length === 0 && <p className="mb-3 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">No stock is under its breakout level or just through it right now. The strong ones below are ones to wait on.</p>}
-          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <ul className="top-picks-grid grid gap-3">
             {picks.map((p) => {
               const waits = p.tag === "watch" || p.tag === "extended";
               const days = results?.dates[p.symbol] ? daysUntil(results.dates[p.symbol], results.today) : null;
               const analysis = analysePick(p, { breadth50: data?.breadth50 ?? null, resultsInDays: results ? days : undefined, niftyAbove200: nifty ? nifty.above : undefined, niftyPercent: nifty?.percent });
+              const isBuyable = p.tag === "ready" || p.tag === "broke";
+              const saved = callData?.calls[p.symbol] ?? null;
+              const call = isBuyable ? saved?.call ?? null : null;
+              const progress = call ? callProgress(call, p.price, PICK_RULES.brokeMaxExt) : null;
               return (
                 <li key={p.symbol} className={`flex min-w-0 flex-col rounded-xl border p-3 transition duration-200 hover:border-emerald-300 hover:bg-white hover:shadow-md ${waits ? "border-slate-200 bg-slate-50/40 opacity-75" : "border-slate-200 bg-slate-50/70"}`}>
                   <div className="flex items-start justify-between gap-2">
@@ -329,14 +337,38 @@ function TopPicksSection({ rows, onAll }: { rows: ReadonlyArray<ScanRow>; onAll:
                     </div>
                   </div>
                   <div className="mt-1.5"><LivePrice symbol={p.symbol} fallbackPrice={p.price} fallbackChange={null} /></div>
+                  {(isBuyable || saved) && (
+                    <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px]">
+                      {isBuyable && <span title={term.detail} className="cursor-help rounded bg-indigo-50 px-1.5 py-0.5 font-black text-indigo-800 ring-1 ring-indigo-200">{term.label}</span>}
+                      {saved && <span className="text-slate-500">On the list since <b className="text-slate-700">{shortDay(saved.onListSince)}</b>{saved.firstTag && saved.firstTag !== p.tag ? ` (first as ${TAG[saved.firstTag as PickTag]?.label ?? saved.firstTag})` : ""}</span>}
+                    </p>
+                  )}
                   <p className="mt-2 text-[11.5px] font-bold leading-4 text-slate-800"><span title={analysis.headline} className={`mr-1.5 rounded px-1.5 py-0.5 text-[11px] font-black uppercase tracking-wide ${VERDICT_STYLE[analysis.verdict].chip}`}>{analysis.status}</span>{analysis.verdict === "paper" ? "Good setup" : analysis.headline}</p>
                   {p.ext != null && (
                     <p className="mt-1 text-[11px] text-slate-600">
                       <b className={p.ext <= 0 ? "text-emerald-700" : p.ext <= PICK_RULES.brokeMaxExt ? "text-sky-700" : "text-amber-700"}>{Math.abs(p.ext).toFixed(1)}%</b> {p.ext <= 0 ? "under" : "past"} its breakout level{p.pivotPrice != null ? ` (₹${formatPrice(p.pivotPrice)})` : ""}
                     </p>
                   )}
+                  {isBuyable && call && (
+                    <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50/70 p-2 text-[11px]" aria-label={`First call on ${p.symbol}`}>
+                      <div className="flex items-center justify-between gap-2"><span className="font-black uppercase tracking-wide text-sky-800">First call · {shortDay(call.day)}</span><span className="text-slate-500">{TAG[call.tag].label}</span></div>
+                      <div className="mt-1 grid grid-cols-4 gap-1 font-mono font-bold text-slate-800">
+                        <div><div className="font-sans text-[10px] font-black uppercase text-sky-700">Buy</div>₹{formatPrice(call.buy)}</div>
+                        <div><div className="font-sans text-[10px] font-black uppercase text-rose-700">Stop</div>{call.stop != null ? `₹${formatPrice(call.stop)}` : "—"}</div>
+                        <div><div className="font-sans text-[10px] font-black uppercase text-emerald-700">T1</div>{call.target1 != null ? `₹${formatPrice(call.target1)}` : "—"}</div>
+                        <div><div className="font-sans text-[10px] font-black uppercase text-emerald-700">T2</div>{call.target2 != null ? `₹${formatPrice(call.target2)}` : "—"}</div>
+                      </div>
+                      {progress && <p className={`mt-1 ${progress.tone === "good" ? "text-emerald-800" : progress.tone === "bad" ? "text-rose-800" : progress.tone === "warn" ? "text-amber-800" : "text-slate-600"}`}><b className="font-mono">{progress.changePercent > 0 ? "+" : progress.changePercent < 0 ? "−" : ""}{Math.abs(progress.changePercent).toFixed(1)}%</b> now against the call&apos;s buy · {progress.label}</p>}
+                      {saved && saved.state !== "too-new" && <p className="mt-1 text-slate-500" title="Finished sessions since the call, against how long the 10-year test's trades lasted. Hover the term chip for the full numbers.">{holdPosition(saved.sessions).text}</p>}
+                      {saved && saved.endedCalls > 0 && <p className="mt-1 text-slate-500">{saved.endedCalls} earlier call{saved.endedCalls === 1 ? "" : "s"} on this stock already hit the stop or exit rule.</p>}
+                    </div>
+                  )}
+                  {isBuyable && !call && (callData || callsFailed) && (
+                    <p className="mt-2 rounded-lg bg-slate-50 px-2 py-1.5 text-[11px] text-slate-500">{callsFailed && !callData ? "First calls could not be loaded." : "No first call saved yet. It is saved the first time an email lists this stock."}</p>
+                  )}
+                  {call && p.buy != null && p.stop != null && <p className="mt-2 text-[10px] font-black uppercase tracking-wide text-slate-400" title="These levels move every day. They are for a new buyer today, with the stop 12% under today's buy.">If you buy today</p>}
                   {p.buy != null && p.stop != null ? (
-                    <div className="mt-2 grid grid-cols-3 gap-2 text-[11px]">
+                    <div className={`${call ? "mt-1" : "mt-2"} grid grid-cols-3 gap-2 text-[11px]`}>
                       <div><div className="font-black uppercase tracking-wide text-sky-700">Buy</div><div className="font-mono font-bold text-slate-800">₹{formatPrice(p.buy)}</div></div>
                       <div><div className="font-black uppercase tracking-wide text-rose-700">Stop</div><div className="font-mono font-bold text-slate-800">₹{formatPrice(p.stop)}</div><div className="text-[11px] text-slate-400">−{PICK_RULES.stopPercent}%</div></div>
                       {analysis.plan?.targets && <div className="text-right"><div className="font-black uppercase tracking-wide text-emerald-700">Target</div><div className="font-mono font-bold text-slate-800">₹{formatPrice(analysis.plan.targets.t1)}</div><div className="text-[11px] text-slate-400">+{analysis.plan.targets.t1Percent}% · T2 +{analysis.plan.targets.t2Percent}%</div></div>}
@@ -351,7 +383,7 @@ function TopPicksSection({ rows, onAll }: { rows: ReadonlyArray<ScanRow>; onAll:
                     {analysis.watchOut.length > 0 && (<><p className="mt-1.5 text-[11px] font-black uppercase tracking-wide text-amber-700">Watch out for</p><ul className="list-disc space-y-0.5 pl-4 text-amber-900">{analysis.watchOut.map((line) => <li key={line}>{line}</li>)}</ul></>)}
                     {analysis.plan && (<><p className="mt-1.5 text-[11px] font-black uppercase tracking-wide text-slate-400">Plan</p>{analysis.plan.tighter && <p className="mb-1"><b>Tighter option:</b> stop ₹{formatPrice(analysis.plan.tighter.stop)} (−{analysis.plan.tighter.percent}%). {analysis.plan.tighter.note}</p>}{analysis.plan.targets && <p className="mb-1"><b>Targets:</b> ₹{formatPrice(analysis.plan.targets.t1)} (+{analysis.plan.targets.t1Percent}%) and ₹{formatPrice(analysis.plan.targets.t2)} (+{analysis.plan.targets.t2Percent}%). {analysis.plan.targets.note}</p>}<p>{analysis.plan.exit}</p>{analysis.plan.example && <p className="mt-1 text-slate-500">Example with ₹{analysis.plan.example.capital.toLocaleString("en-IN")} risking {analysis.plan.example.riskPercent}%: {analysis.plan.example.quantity} shares (₹{analysis.plan.example.invested.toLocaleString("en-IN")}), about ₹{analysis.plan.example.maxLoss.toLocaleString("en-IN")} lost if the stop is hit.</p>}</>)}
                   </details>
-                  <div className="mt-2 flex flex-wrap gap-1">
+                  <div className="mt-auto flex flex-wrap gap-1 pt-2">
                     {p.quiet && <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-200">Volume dried up</span>}
                     {days != null && days <= 14 && <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-bold text-amber-800 ring-1 ring-amber-200" title="A results announcement can gap the price through your stop. Wait for it, or take a smaller position.">⚠ Results in {days} day{days === 1 ? "" : "s"}</span>}
                     {p.sector && <span className="rounded bg-white px-1.5 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">{p.sector}</span>}
@@ -367,7 +399,7 @@ function TopPicksSection({ rows, onAll }: { rows: ReadonlyArray<ScanRow>; onAll:
         </>
       )}
       <p className="mt-3 text-[11px] leading-4 text-slate-400">
-        The tested rule: buy a Blue sky or Multi-year breakout on the day it breaks out, only while at least 35% of stocks are above their 50-day average. Stop about {PICK_RULES.stopPercent}% below the buy price, with a smaller position so the money at risk stays the same; exit when the stock closes under its 50-day average. Hold at most 10 positions and add at most 3 a day. 10-year test: about 46% a year with a worst drop of about 21%, but only about 45% of trades win. The history only includes stocks listed today, so real results are likely lower. Stocks still under their level are the watchlist for tomorrow. Check results dates before buying. Research output, not advice.
+        The tested rule: buy a Blue sky or Multi-year breakout on the day it breaks out, only while at least 35% of stocks are above their 50-day average. Stop about {PICK_RULES.stopPercent}% below the buy price, with a smaller position so the money at risk stays the same; exit when the stock closes under its 50-day average. Hold at most 10 positions and add at most 3 a day. 10-year test: about 46% a year with a worst drop of about 21%, but only about 45% of trades win. The history only includes stocks listed today, so real results are likely lower. Stocks still under their level are the watchlist for tomorrow. Check results dates before buying. <b>First call</b> is the first Ready or Just broke out listing saved by the email track record, with its buy, stop and targets kept fixed while the stock stays on the list; the levels under &quot;If you buy today&quot; move every day. <b>Mid term</b> is how long these rules typically held a stock in the 10-year test (hover it for the numbers), not a time limit. Research output, not advice.
       </p>
     </section>
   );
@@ -575,17 +607,17 @@ export function TodayBoard({ rows, sectors, advancing, declining, breakouts, fai
   const statLists = useMemo(() => Object.fromEntries(STAT_KEYS.map((key) => [key, statItems(key, rows, breakouts, failed)])) as Record<StatKey, StatItem[]>, [rows, breakouts, failed]);
   const toggleStat = (key: StatKey) => setOpenStat((current) => (current === key ? null : key));
   return (
-    <div className="space-y-4">
+    <div className="today-board space-y-4">
       <LiveChip breadth={breadth} />
-      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)_minmax(0,1fr)]">
+      <div className="market-overview-grid grid gap-4">
         <MarketGauge breadth={breadth} />
         <TrendCard breadth={breadth} />
-        <StatsCard lists={statLists} open={openStat} toggle={toggleStat} advancing={advancing} declining={declining} qualifying={top5?.qualifying ?? null} above200={breadth?.latest?.above[200] ?? null} onPicks={() => onNavigate("picks")} />
+        <StatsCard lists={statLists} open={openStat} toggle={toggleStat} advancing={advancing} declining={declining} qualifying={top5?.qualifying ?? null} above200={breadth?.latest?.above[200] ?? null} />
       </div>
       {openStat && <StatList key={openStat} statKey={openStat} items={statLists[openStat]} outOf={openStat === "above200" ? rows.filter((r) => r.vs200 != null).length : undefined} onClose={() => setOpenStat(null)} />}
-      <TopPicksSection rows={rows} onAll={() => onNavigate("picks")} />
+      <TopPicksSection rows={rows} />
       <MoversCard rows={rows} />
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <SectorCard sectors={sectors} onAll={() => onNavigate("sectors")} />
         <PaperCard onOpen={() => onNavigate("journal")} />
       </div>

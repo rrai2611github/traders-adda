@@ -10,6 +10,7 @@ import { buildTopPicks, type TopPick } from "./topPicks.ts";
 import { getWeeklyTop5 } from "./weeklyTop5Results.ts";
 import type { Top5Size } from "./weeklyTop5.ts";
 import type { NewsNote } from "../ai/newsCheck.ts";
+import type { PickCall } from "../radar/pickCalls.ts";
 
 export interface AnalysedPick extends TopPick {
   analysis: PickAnalysis;
@@ -17,6 +18,8 @@ export interface AnalysedPick extends TopPick {
   resultsInDays: number | null;
   /** The AI news check's note from the stock's recent NSE announcements; absent when the check is off. */
   news?: NewsNote | null;
+  /** The first call and time on the list, from the email track record; attached only by the emails (see `withFirstCalls`). */
+  firstCall?: PickCall | null;
 }
 
 export interface TopPicksPayload {

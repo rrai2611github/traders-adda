@@ -4,16 +4,17 @@ import { notifyOwner, ownerAlertAddress } from "@/lib/alerts/personal";
 import { FyersApiError, fyersConnected, fyersHistory, fyersQuotes } from "@/lib/fyers/fyersClient";
 import { getDailyCandles } from "@/lib/market/engine";
 import { getMarketStatus, isTradingDay } from "@/lib/market/marketHours";
-import { tradeTime } from "@/lib/market/providers/fyersQuotes";
+import { fyersQuoteTiming } from "@/lib/market/providers/fyersQuotes";
+import { quoteEntryIssue } from "@/lib/market/quoteQuality";
 import { getUniverseSnapshot } from "@/lib/market/universeSnapshot";
 import { FUTURES_COSTS } from "@/lib/scalp/backtest";
 import { SCALP_INDEXES, parseCandles, type ScalpIndex } from "@/lib/scalp/scalpLogic";
 import { movingAverageBreadth } from "@/lib/screen/breadth";
 import { scanUniverse } from "@/lib/screen/scan";
-import { autoDecision, dailyRegime, hourlySetup } from "./indexFramework";
+import { autoDecision, dailyRegime, hourlySetup, shouldEvaluateAuto } from "./indexFramework";
 import {
   DEFAULT_INDEX_SETTINGS, advanceIndexOrder, cancelIndexOrder, closeIndexOrderNow, createIndexOrder, indexOrderCosts, indexRisk, indexStats, isActive,
-  istDay, marginForLots, pnlAt, sizeLots, type IndexKey, type IndexOrder, type IndexQuote, type IndexSettings, type SquareOff,
+  istDay, marginForLots, MAX_INDEX_QUOTE_AGE_MS, pnlAt, sizeLots, type IndexKey, type IndexOrder, type IndexQuote, type IndexSettings, type SquareOff,
 } from "./indexPaper";
 
 /**
@@ -25,7 +26,7 @@ import {
 const FILE = join(process.cwd(), ".cache", "paper-index.json");
 const DEFAULT_CAPITAL = 1_000_000;
 const INDEXES: IndexKey[] = ["NIFTY", "BANKNIFTY"];
-const TICK_LIVE_MS = 4_000;
+const TICK_LIVE_MS = 15_000;
 const TICK_IDLE_MS = 60_000;
 const SAVE_EVERY_MS = 30_000;
 const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
@@ -35,7 +36,7 @@ const HOUR = 3_600_000;
 export interface AutoLogEntry {
   at: number;
   index: IndexKey;
-  result: "placed" | "skipped";
+  result: "placed" | "skipped" | "blocked" | "error";
   message: string;
 }
 
@@ -128,11 +129,11 @@ const candidates = (index: IndexKey, now: number): string[] => {
   return [0, 1].map((ahead) => `NSE:${prefix}${String((year + Math.floor((month + ahead) / 12)) % 100).padStart(2, "0")}${MONTHS[(month + ahead) % 12]}FUT`);
 };
 
-interface Row { n?: string; s?: string; v?: Record<string, unknown> }
+interface Row { n?: string; s?: string; v?: Record<string, unknown>; fetchedAt?: number }
 const rowQuote = (row: Row | undefined, now: number): (IndexQuote & { volume: number }) | null => {
   const price = Number(row?.v?.lp);
   if (row?.s !== "ok" || !(price > 0)) return null;
-  return { price, timestamp: tradeTime(Number(row.v?.tt) || null, now), contract: row.n ?? "", volume: Number(row.v?.volume) || 0 };
+  return { price, ...fyersQuoteTiming(Number(row.v?.tt) || null, row.fetchedAt ?? now), contract: row.n ?? "", volume: Number(row.v?.volume) || 0 };
 };
 
 /** Near-month futures quote. The front contract is the month with the larger volume, re-checked every 30 minutes. */
@@ -208,18 +209,24 @@ async function tickOnce(now: number) {
 
   const needed = [...new Set(active.map((order) => order.index))];
   const quotes = new Map<IndexKey, IndexQuote & { volume: number }>();
+  const errors: string[] = [];
   for (const index of needed) {
     try {
       const quote = await futuresQuote(index, now);
       quotes.set(index, quote);
       store.quotes[index] = quote;
     } catch (error) {
-      store.engine.lastError = error instanceof Error ? error.message : String(error);
+      errors.push(error instanceof Error ? error.message : String(error));
     }
   }
   if (quotes.size) store.engine.quoteAgeMs = Math.max(0, now - Math.max(...[...quotes.values()].map((q) => q.timestamp)));
   const risk = indexRisk(file.orders, file.capital, file.settings, now);
   store.engine.pausedReason = risk.entryBlocked ? (risk.reasons[0] ?? "Trading limit reached") : null;
+  const blocked = active.filter((o) => o.status === "pending").map((o) => {
+    const q = quotes.get(o.index);
+    return q ? quoteEntryIssue(q, now, MAX_INDEX_QUOTE_AGE_MS) : "Missing futures quote: new paper entries blocked.";
+  }).find((issue) => issue != null);
+  if (blocked) store.engine.pausedReason = blocked;
 
   const alerts: string[] = [];
   let transitioned = false;
@@ -236,6 +243,7 @@ async function tickOnce(now: number) {
   if (alerts.length && process.env.PAPER_ALERTS !== "0") await notifyOwner(`[INDEX PAPER] ${alerts.length === 1 ? alerts[0].replace(/^\S+\s*\[INDEX PAPER\]\s*/, "").slice(0, 70) : `${alerts.length} updates`}`, alerts);
   await autoEntries(now);
   await maybeSummary(now, store.cache ?? updated);
+  if (errors.length) throw new Error(errors.join(" "));
 }
 
 async function maybeSummary(now: number, file: IndexFile) {
@@ -293,6 +301,8 @@ async function placeUnlocked(input: PlaceInput, now: number): Promise<IndexOrder
     const risk = indexRisk(file.orders, file.capital, file.settings, now);
     if (risk.entryBlocked) fail(`New orders are blocked: ${risk.reasons.join(" ")}`);
     const quote = await futuresQuote(input.index, now);
+    const issue = quoteEntryIssue(quote, Date.now(), MAX_INDEX_QUOTE_AGE_MS);
+    if (issue) fail(issue);
     const size = lotSize(input.index);
     const order = createIndexOrder({
       id: `${input.index}-${now}`, index: input.index, side: input.side, lots: Number(input.lots), lotSize: size,
@@ -342,18 +352,17 @@ async function autoEntries(now: number): Promise<void> {
   const key = `${istDay(now)}:${slot}`;
   const alerts: string[] = [];
   for (const index of file.auto.indexes) {
-    if (file.auto.lastKey[index] === key) continue;
+    if (!shouldEvaluateAuto(file.auto.lastKey[index], key, file.auto.log.find((e) => e.index === index), now)) continue;
     let entry: AutoLogEntry;
     try {
       const active = file.orders.some((o) => o.index === index && isActive(o));
       const signal = await frameworkSignal(index);
-      const risk = indexRisk(file.orders, file.capital, file.settings, now);
       const setup = signal.setup;
       const decision = autoDecision({
-        hasActiveOrder: active, limitReason: risk.entryBlocked ? (risk.reasons[0] ?? "A trading limit is reached.") : null,
+        hasActiveOrder: active, limitReason: signal.entryBlocked ? (signal.riskReasons[0] ?? "Entries blocked by data/risk checks.") : null,
         setup, hasProposal: signal.proposal != null, lots: signal.sizing?.lots ?? 0, verdict: signal.verdict,
       });
-      if (decision.action === "skip") entry = { at: now, index, result: "skipped", message: decision.message };
+      if (decision.action === "skip") entry = { at: now, index, result: signal.entryBlocked ? "blocked" : "skipped", message: decision.message };
       else {
         const p = signal.proposal!;
         const order = await placeUnlocked({
@@ -365,10 +374,13 @@ async function autoEntries(now: number): Promise<void> {
         alerts.push(`🤖 [INDEX PAPER AUTO] ${NAMES[index]}: ${entry.message}`);
       }
     } catch (error) {
-      entry = { at: now, index, result: "skipped", message: `Could not evaluate: ${error instanceof Error ? error.message : String(error)}` };
+      entry = { at: now, index, result: "error", message: `Could not evaluate: ${error instanceof Error ? error.message : String(error)}` };
+      console.error(`[index-paper] ${index} evaluation failed:`, entry.message);
     }
     file = load();
-    save({ ...file, auto: { ...file.auto, lastKey: { ...file.auto.lastKey, [index]: key }, log: [entry, ...file.auto.log].slice(0, AUTO_LOG_LIMIT) } }, now);
+    save({ ...file, auto: { ...file.auto,
+      lastKey: entry.result === "error" ? file.auto.lastKey : { ...file.auto.lastKey, [index]: key },
+      log: [entry, ...file.auto.log].slice(0, AUTO_LOG_LIMIT) } }, now);
     file = load();
   }
   if (alerts.length && process.env.PAPER_ALERTS !== "0") await notifyOwner("[INDEX PAPER] Auto order placed", alerts);
@@ -468,6 +480,7 @@ export async function frameworkSignal(index: IndexKey) {
   const sizing = proposal
     ? sizeLots({ capital: file.capital, riskPercent: file.settings.riskPercent, entry: proposal.entry, stop: proposal.stop, lotSize: lotSize(index), freeMargin: file.capital - risk.marginUsed, marginPercent: file.settings.marginPercent })
     : null;
+  const quoteIssue = quoteEntryIssue(quote, Date.now(), MAX_INDEX_QUOTE_AGE_MS);
   return {
     index, asOf: now, live, contract: quote.contract, futuresPrice: quote.price, lastBarAt: last?.t ?? null,
     regime, setup, proposal, sizing, breadthPercent: breadth, vwap,
@@ -477,7 +490,7 @@ export async function frameworkSignal(index: IndexKey) {
           : setup.allPass ? `All conditions pass for a ${side === 1 ? "long" : "short"}.`
             : setup.failed ? `${setup.failed} hourly condition${setup.failed === 1 ? "" : "s"} failing: wait.`
               : `${setup.unmeasured} condition${setup.unmeasured === 1 ? "" : "s"} could not be measured; the rest pass.`,
-    entryBlocked: risk.entryBlocked,
-    riskReasons: risk.reasons,
+    entryBlocked: risk.entryBlocked || quoteIssue != null,
+    riskReasons: [...risk.reasons, ...(quoteIssue ? [quoteIssue] : [])],
   };
 }

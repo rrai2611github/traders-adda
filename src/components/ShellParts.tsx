@@ -5,6 +5,7 @@ import { NavIcon, type NavIconName } from "./NavIcons";
 import { useTheme } from "@/hooks/useTheme";
 import { useNow } from "@/hooks/useNow";
 import type { MarketStatus } from "@/lib/market/types";
+import { NAV_COUNT_HINT, type NavCountDeltas, type NavCountKey, type NavCounts } from "@/lib/navCounts";
 
 /** Pieces shared by the Dashboard and the standalone pages (positions, live check, backtest, email track record). */
 
@@ -94,6 +95,36 @@ export function SideItem({
       {!collapsed && <span className="sidenav-text min-w-0 flex-1 truncate">{label}</span>}
       {!collapsed && trailing && <span className="sidenav-text">{trailing}</span>}
     </button>
+  );
+}
+
+/**
+ * The match count shown beside a sidebar item, with a neutral ▲/▼ when it moved since the last visit.
+ * Returns null while the number is still loading, so the item simply shows no badge.
+ */
+export function navCountTrailing(
+  counts: NavCounts["counts"] | null,
+  deltas: NavCountDeltas,
+  key: NavCountKey,
+): ReactNode {
+  const value = counts?.[key];
+  if (value == null) return null;
+  const delta = deltas[key];
+  const hint = NAV_COUNT_HINT[key];
+  const moved = delta ? `${delta > 0 ? "up" : "down"} ${Math.abs(delta)} since your last visit` : null;
+  return (
+    <span className="sidenav-count sidenav-count-live" title={moved ? `${value}: ${hint} (${moved})` : `${value}: ${hint}`}>
+      {delta ? (
+        <span
+          className={`sidenav-count-arrow ${delta > 0 ? "is-up" : "is-down"}`}
+          data-testid={`nav-count-${key}-${delta > 0 ? "up" : "down"}`}
+          aria-label={moved ?? undefined}
+        >
+          {delta > 0 ? "▲" : "▼"}
+        </span>
+      ) : null}
+      {value}
+    </span>
   );
 }
 

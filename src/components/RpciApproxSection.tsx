@@ -11,6 +11,7 @@ import { currentScanBuyingStatus } from "@/lib/screen/buyingStatus";
 import { movingAverageBreadth } from "@/lib/screen/breadth";
 import { BuyingStatusBadge } from "./BuyingStatusBadge";
 import { EmptyState, LoadingState } from "./WorkspaceShell";
+import { useHeaderSort } from "@/hooks/useHeaderSort";
 
 const STAGE_STYLES: Record<RpciApproxResult["stage"], { label: string; className: string }> = {
   breakout: { label: "Confirmed breakout", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
@@ -60,6 +61,7 @@ export function RpciApproxSection({
   const rows = (scan?.rows ?? [])
     .filter((row): row is ScanRow & { rpciApprox: RpciApproxResult } => row.rpciApprox != null)
     .sort((a, b) => a.rpciApprox.contractionRatio - b.rpciApprox.contractionRatio);
+  const { bindTable, rows: sortedRows } = useHeaderSort(rows, (row) => row.symbol);
   const breadthPercent = movingAverageBreadth(scan?.marketRows ?? scan?.rows ?? [], "vs50").percent;
 
   return (
@@ -112,7 +114,7 @@ export function RpciApproxSection({
         <EmptyState title="No contraction setups">No stocks currently meet all the approximation rules.</EmptyState>
       ) : (
         <div className="mt-5 max-h-[calc(100vh-260px)] overflow-auto rounded-xl border border-slate-200">
-          <table className="w-full min-w-[1180px] border-separate border-spacing-0 text-sm">
+          <table ref={bindTable} className="w-full min-w-[1180px] border-separate border-spacing-0 text-sm">
             <thead className="sticky top-0 z-20">
               <tr className="bg-[#f7f9fa] text-[11px] uppercase tracking-[0.08em] text-slate-400 shadow-[0_1px_0_#e2e8f0]">
                 <th scope="col" className="sticky left-0 z-30 bg-[#f7f9fa] px-3 py-3 text-center">#</th>
@@ -131,7 +133,7 @@ export function RpciApproxSection({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, index) => {
+              {sortedRows.map((row, index) => {
                 const result = row.rpciApprox;
                 const symbol = `NSE:${row.symbol}`;
                 const added = watchlistSymbols.includes(row.symbol);
@@ -149,7 +151,7 @@ export function RpciApproxSection({
                 const planOpen = openPlan === row.symbol;
                 return (
                   <Fragment key={row.symbol}>
-                  <tr className="odd:bg-white even:bg-[#fafbfc] hover:bg-[#f0f9f4]">
+                  <tr data-sort-key={row.symbol} className="odd:bg-white even:bg-[#fafbfc] hover:bg-[#f0f9f4]">
                     <td className={`sticky left-0 z-10 w-[48px] min-w-[48px] text-center font-mono text-xs font-bold text-slate-400 ${ROW_BG} ${cell}`}>{String(index + 1).padStart(2, "0")}</td>
                     <td className={`sticky left-[48px] z-10 shadow-[1px_0_0_#eef2f4] ${ROW_BG} ${cell}`}>
                       <StockSymbolButton symbol={row.symbol} className="block font-black text-slate-900">{row.symbol}</StockSymbolButton>

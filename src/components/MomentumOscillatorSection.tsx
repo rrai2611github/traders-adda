@@ -4,6 +4,7 @@ import { StockSymbolButton } from "./StockDetailContext";
 import { LivePrice } from "./LivePrice";
 import { EmptyState, LoadingState } from "./WorkspaceShell";
 import { useEffect, useState } from "react";
+import { useHeaderSort } from "@/hooks/useHeaderSort";
 import type { ScanRow, ScreenScan } from "@/hooks/useScreenScan";
 import { MOMENTUM_RULES, type MomentumSetup } from "@/lib/screen/oscillators";
 import {
@@ -191,6 +192,7 @@ export function MomentumOscillatorSection({
     .filter((row) => row.oscillatorScore.score >= minScore)
     .sort((a, b) => b.oscillatorScore.score - a.oscillatorScore.score ||
       Number(isFresh(b)) - Number(isFresh(a)) || (b.rs ?? 0) - (a.rs ?? 0));
+  const { bindTable, rows: sortedRows } = useHeaderSort(rows, (row) => row.key);
   const tab = (key: Filter, label: string, n: number) => (
     <button
       key={key}
@@ -306,7 +308,7 @@ export function MomentumOscillatorSection({
         <EmptyState title="No oscillator setups">No stocks currently meet these oscillator rules.</EmptyState>
       ) : (
         <div className="mt-4 max-h-[620px] overflow-auto">
-          <table className="w-full min-w-[1100px] text-left text-sm">
+          <table ref={bindTable} className="pin-table w-full min-w-[1100px] text-left text-sm">
             <thead className="sticky top-0 z-10 border-b border-border bg-white text-xs font-black uppercase tracking-wide text-muted">
               <tr>
                 <th scope="col" className="whitespace-nowrap px-3 py-3">Stock</th>
@@ -325,7 +327,7 @@ export function MomentumOscillatorSection({
               </tr>
             </thead>
             <tbody className="divide-y divide-border/70">
-              {rows.map((row) => {
+              {sortedRows.map((row) => {
                 const o = row.momentum;
                 const s = row.oscillatorScore;
                 const symbol = `NSE:${row.symbol}`;
@@ -340,7 +342,7 @@ export function MomentumOscillatorSection({
                 }, now || scan.updatedAt);
                 const buyingStatus = currentScanBuyingStatus(row, breadth.percent);
                 return (
-                  <tr key={row.key} className="align-top hover:bg-[#f5f8fd]">
+                  <tr key={row.key} data-sort-key={row.key} className="align-top hover:bg-[#f5f8fd]">
                     <td className="px-3 py-3">
                       <StockSymbolButton symbol={row.symbol} className="block font-bold text-foreground">{row.name}</StockSymbolButton>
                       <span className="text-xs text-muted">{symbol}</span>

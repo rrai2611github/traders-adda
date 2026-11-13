@@ -12,6 +12,7 @@ import type { BottomedOutPick } from "../screen/bottomedOut.ts";
 import { entryNoteHtml, entryNoteSuffix } from "./entryState.ts";
 import type { ConfluenceIdea } from "./hourlyConfluence.ts";
 import { decisionBarHtml, emailDecision, topPicksBlock, type TopPicksEmailInput } from "./topPicksEmail.ts";
+import type { IntradayDevelopment, IntradayDevelopmentSummary } from "./hourlyIntraday.ts";
 
 
 const SESSION_START_MINUTES = 9 * 60 + 15;
@@ -106,6 +107,35 @@ export const BOTTOMED_SECTION_NOTE =
 /** Footnote for the "n/5 scanners" tags: what they count and that they are not a signal. */
 export const CONFLUENCE_NOTE = "n/5 scanners = scanner families bullish on the stock. Context only; it never changes the list.";
 
+const INTRADAY_EVENT_LABELS: Record<IntradayDevelopment["kind"], string> = {
+  "prior-high-cross": "Closed above prior-day high",
+  "prior-low-break": "Closed below prior-day low",
+  "vwap-reclaim": "Hourly VWAP reclaim",
+  "vwap-loss": "Hourly VWAP loss",
+};
+
+const istTime = (timestamp: number) => new Intl.DateTimeFormat("en-IN", {
+  timeZone: "Asia/Kolkata",
+  hour: "2-digit",
+  minute: "2-digit",
+}).format(timestamp);
+
+function intradayEventText(event: IntradayDevelopment) {
+  return `${event.symbol} · ${INTRADAY_EVENT_LABELS[event.kind]} ₹${event.level.toLocaleString("en-IN", { maximumFractionDigits: 2 })} · hourly close ₹${event.close.toLocaleString("en-IN", { maximumFractionDigits: 2 })} · ${istTime(event.eventAt)} IST`;
+}
+
+function intradayNote(summary: IntradayDevelopmentSummary): string {
+  const coverage = `${summary.checked} checked${summary.stale ? ` · ${summary.stale} stale` : ""}${summary.unavailable ? ` · ${summary.unavailable} unavailable` : ""}`;
+  return `${coverage}. Based on completed Yahoo 60-minute candles; provider latency is unverified. VWAP is estimated from hourly bars, not five-minute data. Context only: daily status, Picks and trade plans are unchanged.`;
+}
+
+function intradayEmptyText(summary: IntradayDevelopmentSummary): string {
+  if (summary.reason) return summary.reason;
+  return summary.status === "partial"
+    ? "No new confirmed hourly-close crossings among the checked candidates; coverage is incomplete."
+    : "No new confirmed hourly-close crossings among the current Buy ready/watch candidates.";
+}
+
 /**
  * The hourly email repeats the full Buy ready (top 10) and watch (top 5) lists
  * every hour, each row with a Status against the last email (or the pre-open
@@ -119,6 +149,7 @@ export function buildHourlyEmail(
   previous: HourlyBaseline | null = null,
   indexes?: IndexEmailInput,
   setup: TopPicksEmailInput | null = null,
+  intraday?: IntradayDevelopmentSummary,
 ): { subject: string; html: string; text: string; hasChanges: boolean } {
   const time = new Intl.DateTimeFormat("en-IN", {
     timeZone: "Asia/Kolkata",
@@ -238,6 +269,7 @@ export function buildHourlyEmail(
   const bottomedEarly = !!bottomed?.length && bottomed.every((pick) => pick.tier === "early");
   const bottomedName = bottomedEarly ? "early base" : "deep base";
   const sectors = table.sectorHeat?.length ? table.sectorHeat : null;
+  const intradayLines = intraday?.events.length ? intraday.events.map(intradayEventText) : [];
   const bottomedTable = bottomed?.length
     ? bottomed.map((pick) => stockCard({
       symbol: pick.symbol, status: statusPill(bottomedStatus(pick)), sub: `${esc(pick.name)} · RS ${pick.rs ?? "—"}`, price: px(pick.close), change: null,
@@ -281,6 +313,9 @@ ${setupBlock ? `
 ${sectors ? `
   ${heading("▦", "Sector heat", `top ${sectors.length} · hottest first`, "amber")}
   ${block(sectorBars(sectors))}` : ""}
+${intraday ? `
+  ${heading("↕", "Intraday developments", `${intraday.events.length} new · ${intraday.checked} checked · informational`, intraday.events.some((event) => event.kind === "prior-low-break" || event.kind === "vwap-loss") ? "amber" : "blue")}
+  ${block(`<div style="font:400 12px/1.6 ${FONT};color:${BRAND.ink}">${intradayLines.length ? intradayLines.map((event) => `<div>${esc(event)}</div>`).join("") : `<div>${esc(intradayEmptyText(intraday))}</div>`}<div style="padding-top:6px;font:400 10px/1.5 ${FONT};color:${BRAND.muted}">${esc(intradayNote(intraday))}</div></div>`)}` : ""}
 ${buyNow.length || ch.lostBuy.length ? `
   ${heading("↗", "Buy ready now", `${buyNow.length} ${buyNow.length === 1 ? "stock" : "stocks"} · ${ch.newBuys.length} new · ${SWING_LABEL}`, "green")}
   ${block(buyTable)}
@@ -321,6 +356,11 @@ ${changed ? "" : `
     ...(indexSection ? ["", "HOURLY INDEX ANALYSIS — LATEST AVAILABLE / PROVISIONAL", ...indexSection.text] : []),
     ...(setupBlock ? ["", "TESTED SETUP — TOP PICKS NOW", ...(setupChangeLine ? [setupChangeLine] : []), ...setupBlock.text, scannerNote] : []),
     ...(sectors ? ["", `SECTOR HEAT — TOP ${sectors.length}, HOTTEST FIRST`, ...sectors.map(sectorText)] : []),
+    ...(intraday
+      ? ["", `INTRADAY DEVELOPMENTS — ${intraday.events.length} NEW · ${intraday.checked} CHECKED · INFORMATIONAL`,
+          ...(intradayLines.length ? intradayLines : [intradayEmptyText(intraday)]),
+          intradayNote(intraday)]
+      : []),
     ...(buyNow.length || ch.lostBuy.length
       ? [
           "",

@@ -17,8 +17,8 @@ if (!CHROME) { console.error("Google Chrome was not found. Set CHROME_PATH to it
 
 const WIDTHS = [["desktop", 1280, 900], ["phone", 390, 844]];
 const PAGES = [
-  { path: "/", name: "home", wait: 4000, expect: ["my positions", "live strategy check", "strategy health"] },
-  { path: "/positions", name: "positions", wait: 2500, expect: ["portfolio", "add a position", "open positions", "live strategy check"] },
+  { path: "/", name: "home", wait: 4000, expect: ["my positions", "live strategy check", "strategy health", "top picks"] },
+  { path: "/positions", name: "positions", wait: 2500, expect: ["portfolio", "add a position", "open positions", "practice strategy"] },
   { path: "/tracker", name: "tracker", wait: 3500, expect: ["live strategy check"] },
   { path: "/backtest", name: "backtest", wait: 2500, expect: ["backtest"] },
   { path: "/radar", name: "radar", wait: 3000, expect: ["email track record"] },
@@ -73,10 +73,12 @@ try {
       // The bottom tab bar: on phones only, with this page's tab marked as current.
       const bar = page.locator('nav[aria-label="Main tabs"]');
       const barShown = await bar.isVisible();
-      if (barShown !== (wname === "phone")) fail(where, wname === "phone" ? "the bottom tab bar is missing" : "the bottom tab bar shows on a wide screen");
+      const currentPath = new URL(page.url()).pathname;
+      const hasTab = ["/", "/positions", "/backtest", "/radar"].includes(currentPath);
+      if (barShown !== (wname === "phone" && hasTab)) fail(where, wname === "phone" && hasTab ? "the bottom tab bar is missing" : "the bottom tab bar shows where it should be hidden");
       else if (barShown) {
         const current = await bar.locator('a[aria-current="page"]').getAttribute("href");
-        if (current !== p.path) fail(where, `the bottom tab bar marks "${current}" instead of "${p.path}"`); else ok(where, "bottom tab bar shows the right tab");
+        if (current !== currentPath) fail(where, `the bottom tab bar marks "${current}" instead of "${currentPath}"`); else ok(where, "bottom tab bar shows the right tab");
       }
       if (problems.length) fail(where, [...new Set(problems)].slice(0, 4).join(" | "));
       await page.screenshot({ path: join(OUT, `${p.name}-${wname}.png`) });
@@ -110,12 +112,18 @@ try {
       await page.waitForTimeout(2500);
       if (!(await page.getByRole("button", { name: /Switch to (dark|light|auto) theme/ }).count())) fail(shellWhere, "the light/dark switch is missing on the combined positions page");
       else if (wname === "desktop") {
-        await page.locator('summary[aria-label="Research and older tools"]').click();
+        const nav = page.locator('nav[aria-label="Primary navigation"]');
+        for (const label of ["Market overview", "Stock research", "Scanner directory", "Core Setups", "Monthly Setups", "Trade Triggers"]) {
+          if (!(await nav.locator(`button[aria-label="${label}"]`).count())) fail(shellWhere, `${label} is missing from the always-visible menu`);
+        }
+        const moreTools = nav.locator("details.sidenav-tools");
+        if (!(await moreTools.count())) fail(shellWhere, "More tools disclosure is missing");
+        else if (await moreTools.evaluate((element) => element.open)) fail(shellWhere, "More tools should remain collapsed by default");
         await page.getByRole("button", { name: "Scanner directory" }).first().click();
         await page.waitForURL(/\/#scanner-directory/, { timeout: 15_000 }).catch(() => {});
         await page.waitForTimeout(4000);
         const text = (await page.evaluate(() => document.body.innerText)).toLowerCase();
-        if (!text.includes("find a scanner")) fail(shellWhere, "the sidebar link did not open the Scanner directory"); else ok(shellWhere, "switch present; sidebar link opens the Scanner directory");
+        if (!text.includes("find a scanner")) fail(shellWhere, "the always-visible Scanner directory link did not open its page"); else ok(shellWhere, "important sidebar links are visible; Scanner directory opens");
       } else if (await sideways()) fail(shellWhere, "the page scrolls sideways"); else ok(shellWhere, "switch present");
       if (problems.length) fail(shellWhere, [...new Set(problems)].slice(0, 4).join(" | "));
     }
@@ -132,7 +140,7 @@ try {
       else ok(termWhere, `${words} words listed`);
       await page.goto(`${BASE}/positions`, { waitUntil: "domcontentloaded" });
       await page.waitForTimeout(3500);
-      const word = page.locator('button[title^="What is"]').first();
+      const word = page.locator('button[title^="What is"]:visible').first();
       if (!(await word.count())) ok(termWhere, "no explained word on screen today, popover not checked");
       else {
         await word.scrollIntoViewIfNeeded();

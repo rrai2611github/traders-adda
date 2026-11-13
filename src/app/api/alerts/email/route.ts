@@ -24,6 +24,7 @@ export async function GET(request: Request) {
     return Response.json({
       ...hourlyEmailStatus(),
       preview: preview.ok ? preview.table : null,
+      intraday: preview.ok ? preview.intraday : null,
       previewError: preview.ok ? null : preview.reason,
     }, { headers: noStore });
   } catch (error) {

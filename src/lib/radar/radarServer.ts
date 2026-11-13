@@ -6,6 +6,7 @@ import type { TopPickEmailItem } from "../alerts/topPicksEmail.ts";
 import type { Top5Pick } from "../screen/weeklyTop5.ts";
 import { historyLastDay } from "../backtest/historyRefresh.ts";
 import { istDateKey } from "../market/marketHours.ts";
+import { pickCalls, type PickCall } from "./pickCalls.ts";
 import { groupLabel, recordMentions, scoreEntry, summarise, type Bar, type EmailKind, type GroupSummary, type Mention, type RadarEntry, type Score } from "./radar.ts";
 
 const DIR = join(process.cwd(), ".cache");
@@ -148,4 +149,20 @@ export function radarView(): RadarView {
     groups,
     byMarket,
   };
+}
+
+export interface PickCallsView {
+  today: string;
+  /** The last email that was recorded: first calls are saved from the emails, so this says how fresh they are. */
+  lastRecorded: LastRecorded | null;
+  calls: Record<string, PickCall>;
+}
+
+/** The first call of every stock that was on the Top picks list in the last ten days, from the email track record. */
+export function pickCallsView(now = Date.now()): PickCallsView {
+  const today = istDateKey(now);
+  const nifty = loadBars("NIFTY50");
+  const cache = new Map<string, Bar[]>();
+  const bars = (symbol: string) => cache.get(symbol) ?? (cache.set(symbol, loadBars(symbol)), cache.get(symbol)!);
+  return { today, lastRecorded: readMeta(), calls: pickCalls(readAll(), bars, nifty, today) };
 }

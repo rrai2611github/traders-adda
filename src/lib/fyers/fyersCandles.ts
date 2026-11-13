@@ -52,7 +52,7 @@ async function withSeries<T>(symbol: string, fetchFor: (fyersSymbol: string) => 
       return { fyersSymbol, value };
     } catch (error) {
       // Unknown symbol for this series: try the next one; anything else is a real failure.
-      if (error instanceof FyersApiError && error.status < 500 && error.status !== 429) {
+      if (error instanceof FyersApiError && (error.code === -300 || error.code === -99)) {
         lastError = error;
         continue;
       }

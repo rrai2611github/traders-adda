@@ -1,27 +1,31 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { HeaderClock, MarketPill, SideGroup, SideItem, SidebarClock, ThemeToggle, ToolSection } from "./ShellParts";
+import { NavIcon } from "./NavIcons";
 import { SymbolSearch } from "./SymbolSearch";
 import { Toaster } from "./Toaster";
-import { NavIcon } from "./NavIcons";
 import { useNow } from "@/hooks/useNow";
 import { getMarketStatus } from "@/lib/market/marketHours";
 
-export type ShellPage = "positions" | "backtest" | "radar";
+export type ShellPage = "positions" | "backtest" | "radar" | "performance" | "assistant" | "playbook";
 
 const USER_NAME = "Rupesh Rai";
 
 const TITLES: Record<ShellPage, string> = {
-  positions: "Positions & strategy",
+  positions: "Portfolio",
   backtest: "Backtest",
   radar: "Email track record",
+  performance: "Results",
+  assistant: "Assistant",
+  playbook: "Trading playbook",
 };
 
 /**
  * The same frame the Dashboard has (navy sidebar, top bar with search, market status and the light/dark switch) for the pages that are
- * their own routes. The sidebar's older tools open the matching Dashboard view through its address (`/#research` and so on). On a phone
+ * their own routes. Research opens the Dashboard hub through its existing hash. On a phone
  * the sidebar is hidden because the bottom tab bar already does that job.
  */
 export function AppShell({ current, children }: { current: ShellPage; children: ReactNode }) {
@@ -52,26 +56,34 @@ export function AppShell({ current, children }: { current: ShellPage; children: 
             <SideItem icon="watchlist" label="Watchlist" current={false} collapsed={false} onClick={go("/#watchlist")} />
           </SideGroup>
 
+          <SideGroup label="Research & scanners" collapsed={false}>
+            <SideItem icon="breadth" label="Market overview" current={false} collapsed={false} onClick={go("/#market")} />
+            <SideItem icon="signals" label="Stock research" current={false} collapsed={false} onClick={go("/#research")} />
+            <SideItem icon="search" label="Scanner directory" current={false} collapsed={false} onClick={go("/#scanner-directory")} />
+            <SideItem icon="setups" label="Core Setups" current={false} collapsed={false} onClick={go("/#setups")} />
+            <SideItem icon="setups" label="Monthly Setups" current={false} collapsed={false} onClick={go("/#monthly-setups")} />
+            <SideItem icon="triggers" label="Trade Triggers" current={false} collapsed={false} onClick={go("/#scanner-range")} />
+          </SideGroup>
+
           <details className="sidenav-tools">
-            <summary aria-label="Research and older tools" title="Research and older tools" className="sidenav-item cursor-pointer">
+            <summary aria-label="More tools" title="More tools" className="sidenav-item cursor-pointer">
               <NavIcon name="setups" />
-              <span className="sidenav-text flex-1">Research & older tools</span>
+              <span className="sidenav-text flex-1">More tools</span>
               <NavIcon name="chevron-down" size={14} className="sidenav-text sidenav-disclosure" />
             </summary>
             <div className="mt-2 space-y-3">
-              <ToolSection label="Market" collapsed={false}>
-                <SideItem icon="breadth" label="Market overview" current={false} collapsed={false} onClick={go("/#market")} />
-                <SideItem icon="signals" label="Stock research" current={false} collapsed={false} onClick={go("/#research")} />
-                <SideItem icon="search" label="Scanner directory" current={false} collapsed={false} onClick={go("/#scanner-directory")} />
-              </ToolSection>
               <ToolSection label="Stock lists" collapsed={false}>
                 <SideItem icon="picks" label="Older scanner picks" current={false} collapsed={false} onClick={go("/#picks")} />
-                <SideItem icon="setups" label="Core Setups" current={false} collapsed={false} onClick={go("/#setups")} />
-                <SideItem icon="setups" label="Monthly Setups" current={false} collapsed={false} onClick={go("/#monthly-setups")} />
                 <SideItem icon="setups" label="Bottomed Out" current={false} collapsed={false} onClick={go("/#bottomed-out")} />
+                <SideItem icon="setups" label="Stage 2 Bases" current={false} collapsed={false} onClick={go("/#stage-2-bases")} />
+                <SideItem icon="setups" label="Stock Screener" current={false} collapsed={false} onClick={go("/#stock-screener")} />
+              </ToolSection>
+              <ToolSection label="Breadth & changes" collapsed={false}>
+                <SideItem icon="setups" label="Sector Stage 2" current={false} collapsed={false} onClick={go("/#sector-stage-2")} />
+                <SideItem icon="setups" label="Daily Changes" current={false} collapsed={false} onClick={go("/#daily-changes")} />
+                <SideItem icon="setups" label="Setup Lab" current={false} collapsed={false} onClick={go("/#setup-lab")} />
               </ToolSection>
               <ToolSection label="Signals" collapsed={false}>
-                <SideItem icon="triggers" label="Trade Triggers" current={false} collapsed={false} onClick={go("/#scanner-range")} />
                 <SideItem icon="rsi" label="RSI Edge Scanners" current={false} collapsed={false} onClick={go("/#rsi-edge")} />
                 <SideItem icon="signals" label="RPCI & Oscillators" current={false} collapsed={false} onClick={go("/#signals")} />
               </ToolSection>
@@ -83,6 +95,7 @@ export function AppShell({ current, children }: { current: ShellPage; children: 
           </details>
 
           <SideGroup label="Learn" collapsed={false}>
+            <SideItem icon="about" label="Trading playbook" current={current === "playbook"} collapsed={false} onClick={go("/playbook")} />
             <SideItem icon="about" label="About & risk" current={false} collapsed={false} onClick={go("/#about")} />
           </SideGroup>
         </nav>
@@ -108,6 +121,13 @@ export function AppShell({ current, children }: { current: ShellPage; children: 
             <span className="text-[13px] font-bold text-slate-800">{USER_NAME}</span>
           </div>
         </header>
+        {(current === "backtest" || current === "radar") && (
+          <nav aria-label="Results tools" className="flex flex-wrap gap-3 border-b border-border px-4 py-3 text-sm font-bold lg:px-6">
+            <Link href="/performance" className="px-3 py-2 text-emerald-700">Back to Results</Link>
+            <Link href="/backtest" aria-current={current === "backtest" ? "page" : undefined} className="px-3 py-2 text-emerald-700">Historical backtest</Link>
+            <Link href="/radar" aria-current={current === "radar" ? "page" : undefined} className="px-3 py-2 text-emerald-700">Email track record</Link>
+          </nav>
+        )}
         {children}
         <Toaster />
       </main>

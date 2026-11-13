@@ -4,10 +4,11 @@ import { notifyOwner, ownerAlertAddress } from "@/lib/alerts/personal";
 import { getDataSource, getQuotes } from "@/lib/market/engine";
 import { getMarketStatus, isTradingDay } from "@/lib/market/marketHours";
 import type { Quote } from "@/lib/market/types";
+import { quoteEntryIssue } from "@/lib/market/quoteQuality";
 import { computePositionSize } from "@/lib/screen/positionSize";
 import {
   advancePaperOrder, cancelPaperOrder, closePaperOrderNow, createPaperOrder, isDemoPaperOrder, isPaperOrder,
-  istDayKey, tradingSessionsBetween, upgradePaperOrder, type PaperFill, type PaperOrder,
+  istDayKey, MAX_PAPER_QUOTE_AGE_MS, tradingSessionsBetween, upgradePaperOrder, type PaperFill, type PaperOrder,
 } from "@/lib/screen/paperTrading";
 import type { TodaysPick } from "@/lib/screen/todaysPicks";
 import { DEFAULT_PAPER_SETTINGS, committedCash, paperRisk, paperStats, paperTotals, type PaperSettings } from "./paperRules";
@@ -159,6 +160,11 @@ async function tickOnce(now: number): Promise<void> {
   const quotes = new Map<string, Quote>((await getQuotes([...new Set(active.map((order) => order.symbol))])).map((quote) => [quote.symbol, quote]));
   const risk = paperRisk(file.orders, file.initialCapital, file.settings, now);
   store.status.pausedReason = risk.entryBlocked ? risk.reasons.find((r) => r.includes("loss limit")) ?? "Loss limit reached" : null;
+  const blocked = active.filter((o) => o.status === "pending").map((o) => {
+    const q = quotes.get(o.symbol);
+    return q ? quoteEntryIssue(q, now, MAX_PAPER_QUOTE_AGE_MS) : "Missing quote: new paper entries blocked.";
+  }).find((issue) => issue != null);
+  if (blocked) store.status.pausedReason = blocked;
   store.status.quoteAgeMs = quotes.size ? Math.max(0, now - Math.max(...[...quotes.values()].map((quote) => quote.timestamp))) : null;
 
   const alerts: string[] = [];
