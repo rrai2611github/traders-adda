@@ -1,10 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { FYERS_STATE_COOKIE, FyersAuthError, exchangeFyersAuthCode } from "@/lib/fyers/fyersClient";
+import { requireAdminResponse } from "@/lib/auth-session";
 
 export const dynamic = "force-dynamic";
 
 /** Fyers redirects here after login with ?auth_code=…&state=…; exchange it for today's token. */
 export async function GET(request: NextRequest) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   const params = request.nextUrl.searchParams;
   const code = params.get("auth_code") || params.get("code");
   const state = params.get("state");

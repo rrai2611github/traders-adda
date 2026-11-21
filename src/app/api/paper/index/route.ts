@@ -1,11 +1,14 @@
 import { cancelOrder, closeOrder, indexSnapshot, placeOrder, setCapital, startIndexPaperEngine, updateAuto, updateSettings, type PlaceInput } from "@/lib/paper/indexPaperServer";
+import { requireAdminResponse } from "@/lib/auth-session";
 
 export const dynamic = "force-dynamic";
 
 const noStore = { "Cache-Control": "no-store" };
 
 /** The index paper portfolio: orders with P&L after costs, risk limits, stats, latest futures quotes and engine status. */
-export function GET() {
+export async function GET(request: Request) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   startIndexPaperEngine();
   try {
     return Response.json(indexSnapshot(), { headers: noStore });
@@ -30,6 +33,8 @@ interface Body {
 }
 
 export async function POST(request: Request) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   if (!sameOrigin(request)) return Response.json({ error: "Cross-origin requests are not allowed." }, { status: 403, headers: noStore });
   startIndexPaperEngine();
   try {

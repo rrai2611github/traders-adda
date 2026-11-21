@@ -692,3 +692,17 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Railway deployment and accounts
+
+This app uses server routes and persistent `.cache` files, so deploy it as a Railway Node service (not a static site). Add a Railway PostgreSQL service and set these variables on the app service:
+
+- `DATABASE_URL`: Railway's PostgreSQL connection URL.
+- `BETTER_AUTH_SECRET`: a private random value with at least 32 characters.
+- `BETTER_AUTH_URL`: the public origin, for example `https://traderspro.trade`.
+- `ADMIN_EMAIL`: your email address, set before your first registration. Register with this exact address to create the administrator account; other signups are regular accounts.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, and `SMTP_APP_PASSWORD`: SMTP credentials used to send verification and password-reset links. `AUTH_EMAIL_FROM` is optional.
+
+Run `npm run db:migrate` once the PostgreSQL service and variables are available. It creates Better Auth's tables and the per-user watchlist table. In Railway, this can be configured as a pre-deploy command. Keep a persistent volume mounted at `/app/.cache` and use one app replica because other existing application state is also file-backed.
+
+Regular accounts can use research, private watchlists, and private stock paper trading. Broker connections, real positions, alerts, and administrative controls remain administrator-only. See [.env.example](./.env.example) for the variable names (do not put real credentials in that file).

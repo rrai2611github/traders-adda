@@ -2,12 +2,15 @@ import { refreshHistory } from "@/lib/backtest/historyRefresh";
 import { LIVE_RULES, startTracker, stopTracker, trackerState } from "@/lib/backtest/tracker";
 import { getMarketStatus } from "@/lib/market/marketHours";
 import { trackerAlertStatus } from "@/lib/backtest/trackerAlertServer";
+import { requireAdminResponse } from "@/lib/auth-session";
 
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "no-store" };
 
 /** The live strategy check: its configuration, the price-file status and the result so far. */
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   return Response.json({ ...trackerState(), rules: LIVE_RULES, alertStatus: trackerAlertStatus() }, { headers });
 }
 
@@ -19,6 +22,8 @@ function sameOrigin(request: Request): boolean {
 
 /** `{action: "start", capital?, niftyGate?}` begins following the rules from today; `stop` ends it; `refresh` downloads the latest finished session. */
 export async function POST(request: Request) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   if (!sameOrigin(request)) return Response.json({ error: "Cross-origin requests are not allowed." }, { status: 403, headers });
   let body: { action?: string; capital?: number; niftyGate?: boolean; stopPercent?: number } = {};
   try { body = await request.json(); } catch { /* an empty body is a refresh of the view */ }

@@ -1,12 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { FyersAuthError, fyersConnected } from "@/lib/fyers/fyersClient";
 import { getScalpBacktest } from "@/lib/scalp/backtestRun";
+import { requireAdminResponse } from "@/lib/auth-session";
 
 export const dynamic = "force-dynamic";
 
 const noStore = { "Cache-Control": "no-store" };
 
 export async function GET(request: NextRequest) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   const days = Math.max(30, Math.min(730, Math.trunc(Number(request.nextUrl.searchParams.get("days") ?? 365)) || 365));
   const status = fyersConnected();
   if (!status.configured || !status.connected) {

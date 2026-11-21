@@ -1,10 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { FYERS_STATE_COOKIE, FyersAuthError, fyersConfig, fyersLoginUrl, newFyersState } from "@/lib/fyers/fyersClient";
+import { requireAdminResponse } from "@/lib/auth-session";
 
 export const dynamic = "force-dynamic";
 
 /** Starts the daily Fyers login: redirects to Fyers with a one-time state cookie. */
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   const config = fyersConfig();
   if (!config) return NextResponse.redirect(new URL("/scalp?fyers=not-configured", request.url));
   // The state cookie must be set on the same host Fyers redirects back to.

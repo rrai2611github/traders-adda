@@ -1,6 +1,7 @@
 import { buildPreOpenPreview, preOpenEmailStatus, sendPreOpenEmailNow, sendPreOpenTestEmail } from "@/lib/alerts/preOpenEmail";
 import { withPreviewLogo } from "@/lib/alerts/brand";
 import { MarketEmailBlockedError } from "@/lib/alerts/marketEmailPolicy";
+import { requireAdminResponse } from "@/lib/auth-session";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +9,8 @@ const noStore = { "Cache-Control": "no-store" };
 
 /** Status, plus a rendered preview so the brief can be checked before 09:00. */
 export async function GET(request: Request) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   const status = preOpenEmailStatus();
   const params = new URL(request.url).searchParams;
   // `?top5=1` shows the Weekly Top 5 section, which otherwise rides along only on the first trading day of the week.
@@ -36,6 +39,8 @@ function sameOrigin(request: Request): boolean {
 
 /** Sends the pre-open brief immediately, ignoring the 09:00 window; `?test_to=` sends a [TEST] copy to one EMAIL_TO address and leaves state untouched. */
 export async function POST(request: Request) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   if (!sameOrigin(request)) {
     return Response.json({ ok: false, error: "Cross-origin requests are not allowed." }, { status: 403, headers: noStore });
   }

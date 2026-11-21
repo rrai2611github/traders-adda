@@ -3,6 +3,7 @@ import { isIntradayTimeframe } from "@/lib/chart/intraday";
 import { FyersAuthError, fyersConnected } from "@/lib/fyers/fyersClient";
 import { getFyersDailyCandles, getFyersIntradayCandles } from "@/lib/fyers/fyersCandles";
 import { isKnownSymbol } from "@/lib/market/universe";
+import { requireAdminResponse } from "@/lib/auth-session";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,8 @@ const noStore = { "Cache-Control": "no-store" };
  * intraday `1|5|15|60`. 401 when not logged in so the UI falls back to Yahoo.
  */
 export async function GET(request: NextRequest) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   const params = request.nextUrl.searchParams;
   const symbol = (params.get("symbol") ?? "").trim().toUpperCase();
   if (!/^[A-Z0-9&.-]+$/.test(symbol) || !isKnownSymbol(symbol)) {

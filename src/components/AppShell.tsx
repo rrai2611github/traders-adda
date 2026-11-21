@@ -5,14 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { HeaderClock, MarketPill, SideGroup, SideItem, SidebarClock, ThemeToggle, ToolSection } from "./ShellParts";
 import { NavIcon } from "./NavIcons";
+import { AccountMenu } from "./auth/AccountMenu";
 import { SymbolSearch } from "./SymbolSearch";
 import { Toaster } from "./Toaster";
 import { useNow } from "@/hooks/useNow";
 import { getMarketStatus } from "@/lib/market/marketHours";
 
 export type ShellPage = "positions" | "backtest" | "radar" | "performance" | "assistant" | "playbook";
-
-const USER_NAME = "Rupesh Rai";
 
 const TITLES: Record<ShellPage, string> = {
   positions: "Portfolio",
@@ -116,10 +115,7 @@ export function AppShell({ current, children }: { current: ShellPage; children: 
             <SymbolSearch onSelect={(symbol) => router.push(`/?stock=${encodeURIComponent(symbol)}`)} existing={[]} />
           </div>
           <ThemeToggle />
-          <div className="hidden shrink-0 items-center gap-2 border-l border-slate-200 pl-3 xl:flex" title={`${USER_NAME} · live workspace`}>
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f0c14b] text-xs font-black text-[#0b1a34]">{USER_NAME.charAt(0)}</span>
-            <span className="text-[13px] font-bold text-slate-800">{USER_NAME}</span>
-          </div>
+          <AccountMenu />
         </header>
         {(current === "backtest" || current === "radar") && (
           <nav aria-label="Results tools" className="flex flex-wrap gap-3 border-b border-border px-4 py-3 text-sm font-bold lg:px-6">

@@ -7,6 +7,7 @@ import {
 } from "@/lib/alerts/hourlyEmail";
 import { withPreviewLogo } from "@/lib/alerts/brand";
 import { MarketEmailBlockedError } from "@/lib/alerts/marketEmailPolicy";
+import { requireAdminResponse } from "@/lib/auth-session";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,8 @@ const noStore = { "Cache-Control": "no-store" };
 
 /** Status JSON, or the rendered email with `?html=1` (changes against the last email or the pre-open list). */
 export async function GET(request: Request) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   try {
     const preview = await hourlyEmailPreview();
     if (new URL(request.url).searchParams.get("html") === "1") {
@@ -41,6 +44,8 @@ function sameOrigin(request: Request): boolean {
 
 /** Sends now (even with no changes), verifies SMTP with `?verify=1`, or sends a [TEST] copy to one EMAIL_TO address with `?test_to=`, leaving state untouched. */
 export async function POST(request: Request) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   if (!sameOrigin(request)) {
     return Response.json({ ok: false, error: "Cross-origin requests are not allowed." }, { status: 403, headers: noStore });
   }

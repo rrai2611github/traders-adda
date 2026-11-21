@@ -4,11 +4,14 @@ import { emailSlotKey } from "@/lib/alerts/hourlyEmailFormat";
 import { preOpenSlotKey } from "@/lib/alerts/preOpenEmailFormat";
 import { marketEmailCalendarWarning } from "@/lib/alerts/marketEmailPolicy";
 import { emailConfig } from "@/lib/alerts/smtp";
+import { requireAdminResponse } from "@/lib/auth-session";
 
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "no-store" };
 
-export function GET() {
+export async function GET(request: Request) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   try {
     const now = Date.now();
     const configured = emailConfig() != null;

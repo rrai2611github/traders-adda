@@ -2,13 +2,16 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { costOf } from "@/lib/ai/claude";
 import { totalCost, type UsageLog } from "@/lib/ai/usage";
+import { requireAdminResponse } from "@/lib/auth-session";
 
 export const dynamic = "force-dynamic";
 
 const read = <T>(file: string): T | null => { try { return JSON.parse(readFileSync(join(process.cwd(), ".cache", file), "utf8")) as T; } catch { return null; } };
 
 /** What the app's own Claude jobs have used this month and cost at list prices (USD), so the real bill is never a surprise. */
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   const usage = read<UsageLog>("ai-usage.json");
   const news = read<{ month: string; calls: number; inputTokens: number; outputTokens: number }>("news-check.json");
   const jobs: Record<string, { calls: number; inputTokens: number; outputTokens: number; costUsd: number }> = { ...(usage?.jobs ?? {}) };

@@ -2,12 +2,15 @@ import { NextResponse, type NextRequest } from "next/server";
 import { FyersAuthError, fyersConnected } from "@/lib/fyers/fyersClient";
 import { getScalpDesk } from "@/lib/scalp/desk";
 import { SCALP_INDEXES, type ScalpIndex } from "@/lib/scalp/scalpLogic";
+import { requireAdminResponse } from "@/lib/auth-session";
 
 export const dynamic = "force-dynamic";
 
 const noStore = { "Cache-Control": "no-store" };
 
 export async function GET(request: NextRequest) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   const params = request.nextUrl.searchParams;
   const index = (params.get("index") ?? "NIFTY").toUpperCase();
   if (!(index in SCALP_INDEXES)) {

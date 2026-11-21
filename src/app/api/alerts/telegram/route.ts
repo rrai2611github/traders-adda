@@ -1,3 +1,5 @@
+import { requireAdminResponse } from "@/lib/auth-session";
+
 export const dynamic = "force-dynamic";
 
 const noStore = { "Cache-Control": "no-store" };
@@ -6,10 +8,14 @@ const unsupported = () => Response.json(
   { status: 410, headers: noStore },
 );
 
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   return unsupported();
 }
 
-export async function POST() {
+export async function POST(request: Request) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   return unsupported();
 }

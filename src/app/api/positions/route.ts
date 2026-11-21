@@ -1,10 +1,13 @@
 import { addHolding, markSold, positionsView, removeHolding, updateHoldingSource } from "@/lib/positions/positionsServer";
+import { requireAdminResponse } from "@/lib/auth-session";
 
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "no-store" };
 
 /** The user's real positions, each checked against the exit rules, plus the journal of closed trades. */
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   return Response.json(positionsView(), { headers });
 }
 
@@ -16,6 +19,8 @@ function sameOrigin(request: Request): boolean {
 
 /** `{action: "add" | "sell" | "remove" | "source", ...}`. The app only records what the user did; it never places an order. */
 export async function POST(request: Request) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   if (!sameOrigin(request)) return Response.json({ error: "Cross-origin requests are not allowed." }, { status: 403, headers });
   let body: Record<string, unknown>;
   try {

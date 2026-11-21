@@ -1,9 +1,12 @@
 import { frameworkSignal } from "@/lib/paper/indexPaperServer";
+import { requireAdminResponse } from "@/lib/auth-session";
 
 export const dynamic = "force-dynamic";
 
 /** The daily-trend and hourly-entry framework as a live checklist for one index, with a sized proposal when it passes. */
 export async function GET(request: Request) {
+  const denied = await requireAdminResponse(request);
+  if (denied) return denied;
   const index = new URL(request.url).searchParams.get("index")?.toUpperCase();
   if (index !== "NIFTY" && index !== "BANKNIFTY") return Response.json({ error: "index must be NIFTY or BANKNIFTY." }, { status: 400 });
   try {

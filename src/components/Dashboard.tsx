@@ -55,6 +55,8 @@ import { TradeJournal } from "./TradeJournal";
 import { useTradeJournal } from "@/hooks/useTradeJournal";
 import { PaperTrading } from "./PaperTrading";
 import { usePaperTrading } from "@/hooks/usePaperTrading";
+import { AccountMenu } from "./auth/AccountMenu";
+import { authClient } from "@/lib/auth-client";
 import { SectorHeatmap } from "./SectorHeatmap";
 import { NavIcon } from "./NavIcons";
 import { HeaderClock, MarketPill, SideGroup, SideItem, SidebarClock, ThemeToggle, ToolSection } from "./ShellParts";
@@ -63,8 +65,6 @@ import type { MarketStatus } from "@/lib/market/types";
 import { parseRoute, routeHash, routeUrl, type ActiveNavKey, type MarketMenuKey } from "@/lib/appRoute";
 import type { DashboardMetric } from "@/lib/screen/dashboardMetrics";
 import type { BuyHorizon } from "@/lib/screen/horizonSignal";
-
-const USER_NAME = "Rupesh Rai";
 
 const PAGE_TITLES: Record<ActiveNavKey, string> = {
   today: "Today",
@@ -323,7 +323,7 @@ function CopyPageLink() {
 const IST_DATE = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", weekday: "long", day: "numeric", month: "long" });
 const IST_HOUR = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", hour: "numeric", hour12: false });
 
-function Greeting({ status }: { status: MarketStatus | null }) {
+function Greeting({ status, name }: { status: MarketStatus | null; name: string }) {
   const now = useNow(60_000);
   const hour = now == null ? null : Number(IST_HOUR.format(now));
   const part = hour == null ? "" : hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -331,7 +331,7 @@ function Greeting({ status }: { status: MarketStatus | null }) {
     <div className="flex min-h-[52px] flex-wrap items-end justify-between gap-3 px-1">
       <div>
         <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-accent">Your daily edge</p>
-        <h2 className="text-[24px] font-extrabold tracking-[-0.03em] text-slate-900">{part ? `${part}, ${USER_NAME}` : USER_NAME}</h2>
+        <h2 className="text-[24px] font-extrabold tracking-[-0.03em] text-slate-900">{part ? `${part}, ${name}` : name}</h2>
         <p className="mt-0.5 text-xs font-medium text-slate-500">{now == null ? "\u00a0" : IST_DATE.format(now)}{status ? ` · ${status.label}` : ""}</p>
       </div>
     </div>
@@ -367,6 +367,9 @@ function UniversePicker({ value, onChange }: { value: UniverseKey; onChange: (ke
 
 export function Dashboard() {
   const router = useRouter();
+  const { data: session } = authClient.useSession();
+  const isAdmin = session?.user.role === "admin";
+  const displayName = session?.user.name || "Trader";
   const [activeScanner, setActiveScanner] = useState<ScannerKey>("range");
   const [scannerMode, setScannerMode] = useState<ScannerMode>("completed");
   const [activeNav, setActiveNav] = useState<ActiveNavKey>("today");
@@ -381,7 +384,7 @@ export function Dashboard() {
     setDetailSymbol(symbol.toUpperCase());
   }, []);
   const closeStock = useCallback(() => setDetailSymbol(null), []);
-  const { symbols, add, remove, reset } = useWatchlist();
+  const { symbols, add, remove, reset, error: watchlistError } = useWatchlist();
   const journal = useTradeJournal();
   const watchlistView = activeNav === "watchlist";
   const journalView = activeNav === "journal";
@@ -523,9 +526,9 @@ export function Dashboard() {
         <nav aria-label="Primary navigation" className="flex-1 space-y-5 overflow-y-auto overscroll-contain px-3 py-4">
           <SideGroup label="Your workspace" collapsed={sidebarCollapsed}>
             <SideItem icon="today" label="Today" current={activeNav === "today" || activeNav === "metrics"} collapsed={sidebarCollapsed} onClick={() => selectNav("today")} />
-            <SideItem icon="journal" label="Positions & strategy" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/positions")} />
-            <SideItem icon="signals" label="Backtest (10 years)" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/backtest")} />
-            <SideItem icon="picks" label="Email track record" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/radar")} />
+            {isAdmin && <SideItem icon="journal" label="Positions & strategy" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/positions")} />}
+            {isAdmin && <SideItem icon="signals" label="Backtest (10 years)" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/backtest")} />}
+            {isAdmin && <SideItem icon="picks" label="Email track record" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/radar")} />}
             <SideItem icon="watchlist" label="Watchlist" current={activeNav === "watchlist"} collapsed={sidebarCollapsed} onClick={() => selectNav("watchlist")} />
           </SideGroup>
 
@@ -562,7 +565,7 @@ export function Dashboard() {
               </ToolSection>
               <ToolSection label="Practice" collapsed={sidebarCollapsed}>
                 <SideItem icon="journal" label="Paper trades & journal" current={journalView} collapsed={sidebarCollapsed} onClick={() => selectNav("journal")} />
-                <SideItem icon="triggers" label="Index Scalp Desk" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/scalp")} />
+                {isAdmin && <SideItem icon="triggers" label="Index Scalp Desk" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/scalp")} />}
               </ToolSection>
             </div>
           </details>
@@ -601,16 +604,14 @@ export function Dashboard() {
           </button>
           <div className="hidden sm:block"><CopyPageLink /></div>
           <ThemeToggle />
-          <div className="hidden shrink-0 items-center gap-2 border-l border-slate-200 pl-3 xl:flex" title={`${USER_NAME} · live workspace`}>
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f0c14b] text-xs font-black text-[#0b1a34]">{USER_NAME.charAt(0)}</span>
-            <span className="hidden text-[13px] font-bold text-slate-800 xl:inline">{USER_NAME}</span>
-          </div>
+          <AccountMenu />
         </header>
 
+        {watchlistError && <p role="alert" className="mx-4 mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800 lg:mx-6">Your watchlist did not sync: {watchlistError}</p>}
         <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 px-3 py-5 sm:px-6 lg:py-6">
           {universeApplies && (
             <div className="flex flex-wrap items-center justify-between gap-3">
-              {activeNav === "today" ? <Greeting status={status} /> : <p className="text-xs text-muted">Filter scanner results, not market-wide breadth.</p>}
+              {activeNav === "today" ? <Greeting status={status} name={displayName} /> : <p className="text-xs text-muted">Filter scanner results, not market-wide breadth.</p>}
               <UniversePicker value={universe} onChange={setUniverse} />
             </div>
           )}
