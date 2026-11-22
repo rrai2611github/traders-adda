@@ -68,7 +68,7 @@ export function applicationAnswer(intent: ResearchIntent, now: number, report?: 
       })) : []),
       { title: "Reported system checks", lines: report.checks.map((c) => `${c.title}: ${c.state}. ${c.detail} Last event: ${c.lastAt ? new Date(c.lastAt).toISOString() : "not recorded"}.`) },
       ...(report.errors.length ? [{ title: "Source failures", lines: report.errors.map((e) => `${e.source}: ${e.message}. This source may be missing; no result is invented.`) }] : []),
-      { title: "Safety / interpretation", lines: ["SMTP acceptance does not prove inbox delivery; fetch timestamps do not prove exchange tick freshness.", "This answer sends no emails or orders and changes no settings. Private manually recorded positions are not read for chatbot answers."] },
+      { title: "Safety / interpretation", lines: ["Email provider acceptance does not prove inbox delivery; fetch timestamps do not prove exchange tick freshness.", "This answer sends no emails or orders and changes no settings. Private manually recorded positions are not read for chatbot answers."] },
     ],
   };
 }

@@ -64,7 +64,7 @@ export function emailActivityStore(file: string) {
 const store = emailActivityStore(join(process.cwd(), ".cache", "email-activity.json"));
 export const readEmailActivity = () => store.read();
 
-/** Logging must never turn an SMTP success into a send failure (and a duplicate retry). */
+/** Logging must never turn a provider success into a send failure (and a duplicate retry). */
 export function recordEmailActivity(input: EmailActivityInput): void {
   try { store.append(input); } catch (error) {
     console.error("[email-activity] could not save activity:", error instanceof Error ? error.message : error);

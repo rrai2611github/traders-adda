@@ -38,7 +38,7 @@ export function emailScheduleStatus(
     ...base, status: "waiting",
     detail: source === "hourly" ? "Waiting for NSE hours: hourly slots from 09:15 to 15:15 IST." : "Waiting for the 09:00-09:15 IST pre-open window.",
   };
-  if (checkpoint.lastSentSlotKey === slot) return { ...base, status: "accepted", detail: "This slot was already accepted by SMTP. Inbox delivery is not confirmed." };
+  if (checkpoint.lastSentSlotKey === slot) return { ...base, status: "accepted", detail: "This slot was already accepted by the email provider. Inbox delivery is not confirmed." };
   if (checkpoint.lastError && checkpoint.lastAttemptAt != null) {
     const retryAt = checkpoint.lastAttemptAt + (source === "hourly" ? 10 : 5) * 60_000;
     return {

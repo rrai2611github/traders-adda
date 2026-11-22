@@ -247,9 +247,9 @@ export function emailCheck(id: string, title: string, s: {
     id, title, lastAt: s.lastSentAt,
     state: s.lastError ? "error" : !s.configured || !s.autoSend ? "watch"
       : slot && slot !== s.lastSentSlotKey ? "watch" : "ok",
-    detail: s.lastError ?? (!s.configured ? "SMTP/recipients are not configured."
+    detail: s.lastError ?? (!s.configured ? "Email API/recipients are not configured."
       : !s.autoSend ? "Automatic sending is disabled."
       : slot && slot !== s.lastSentSlotKey ? "Current eligible slot has not been recorded as sent yet."
-      : "Automatic sending enabled. Last SMTP-accepted send shown below; inbox delivery is not verified."),
+      : "Automatic sending enabled. Last provider-accepted send shown below; inbox delivery is not verified."),
   };
 }

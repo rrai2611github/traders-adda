@@ -611,7 +611,7 @@ function HourlyEmailPanel() {
       const response = await fetch(`/api/alerts/email${verify ? "?verify=1" : ""}`, { method: "POST" });
       const body = (await response.json()) as { ok: boolean; error?: string; picks?: number };
       setMessage(body.ok
-        ? verify ? "Gmail SMTP connection verified." : `Email sent (${body.picks ?? 0} Buy ready now).`
+        ? verify ? "Email provider connection verified." : `Email sent (${body.picks ?? 0} Buy ready now).`
         : body.error ?? "Email failed.");
       await load();
     } catch {
@@ -664,7 +664,7 @@ function HourlyEmailPanel() {
             onClick={() => void post(true)}
             className="rounded-lg border border-border bg-white px-2.5 py-1.5 font-bold text-[#1f5fbf] disabled:opacity-50"
           >
-            Verify SMTP
+            Verify email provider
           </button>
           <button
             type="button"

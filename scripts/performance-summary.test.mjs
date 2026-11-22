@@ -156,11 +156,11 @@ test("engine status treats closed market as idle, but preserves errors and detec
   assert.equal(engineCheck("p", "Paper", { ...engine, lastError: "No quote" }, false, 1000).state, "error");
 });
 
-test("email statuses distinguish disabled, pending slot and SMTP acceptance from delivery", () => {
+test("email statuses distinguish disabled, pending slot and provider acceptance from delivery", () => {
   const s = { configured: true, autoSend: true, lastSentAt: 1, lastSentSlotKey: "today-10", lastError: null };
   assert.equal(emailCheck("e", "Email", s, "today-11").state, "watch");
   assert.equal(emailCheck("e", "Email", s, null).state, "ok");
   assert.equal(emailCheck("e", "Email", { ...s, autoSend: false }, null).state, "watch");
-  assert.equal(emailCheck("e", "Email", { ...s, lastError: "SMTP failed" }, null).state, "error");
+  assert.equal(emailCheck("e", "Email", { ...s, lastError: "Provider failed" }, null).state, "error");
   assert.match(emailCheck("e", "Email", s, null).detail, /inbox delivery is not verified/);
 });

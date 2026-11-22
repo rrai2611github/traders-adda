@@ -3,7 +3,7 @@ import { emailConfig, sendEmail } from "./smtp";
 /**
  * Alerts meant for the owner only (paper-trading fills and stops, the Fyers login reminder).
  * They go by email to PERSONAL_ALERT_EMAIL, never to the customer list in EMAIL_TO, and are skipped
- * when that address or the SMTP settings are missing. Telegram is not used (blocked on the office laptop).
+ * when that address or the email API settings are missing. Telegram is not used (blocked on the office laptop).
  */
 
 const esc = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

@@ -1,15 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { emailConfig } from "../src/lib/alerts/smtp.ts";
+import { emailProviderConfig } from "../src/lib/emailProvider.ts";
 
 const BASE = {
-  SMTP_HOST: "smtp.gmail.com",
-  SMTP_PORT: "587",
-  SMTP_SECURE: "0",
-  SMTP_USER: "sender@gmail.com",
-  SMTP_APP_PASSWORD: "abcd efgh ijkl mnop",
+  RESEND_API_KEY: "re_test_key",
+  EMAIL_FROM: "no-reply@example.com",
+  EMAIL_REPLY_TO: "tradersaddaofficial@gmail.com",
   EMAIL_TO: "reader@example.com",
-  EMAIL_FROM: "",
   EMAIL_FROM_NAME: "",
 };
 
@@ -46,13 +44,9 @@ test("quotes and newlines cannot break out of the From header", () => {
   assert.doesNotMatch(config.fromName, /["\r\n]/);
 });
 
-test("the From address falls back to the authenticated user", () => {
-  assert.equal(withEnv({}, emailConfig).from, "sender@gmail.com");
-  assert.equal(withEnv({ EMAIL_FROM: "alias@gmail.com" }, emailConfig).from, "alias@gmail.com");
-});
-
-test("app password whitespace is stripped", () => {
-  assert.equal(withEnv({}, emailConfig).password, "abcdefghijklmnop");
+test("the configured From and reply-to addresses are used", () => {
+  assert.equal(withEnv({}, emailConfig).from, "no-reply@example.com");
+  assert.equal(withEnv({}, emailProviderConfig).replyTo, "tradersaddaofficial@gmail.com");
 });
 
 test("repeated recipients are sent to once, ignoring case and spacing", () => {
@@ -61,8 +55,7 @@ test("repeated recipients are sent to once, ignoring case and spacing", () => {
 });
 
 test("missing required settings mean not configured", () => {
-  assert.equal(withEnv({ SMTP_HOST: "" }, emailConfig), null);
+  assert.equal(withEnv({ RESEND_API_KEY: "" }, emailConfig), null);
+  assert.equal(withEnv({ EMAIL_FROM: "" }, emailConfig), null);
   assert.equal(withEnv({ EMAIL_TO: "" }, emailConfig), null);
-  assert.equal(withEnv({ SMTP_APP_PASSWORD: "" }, emailConfig), null);
-  assert.equal(withEnv({ SMTP_PORT: "not-a-port" }, emailConfig), null);
 });

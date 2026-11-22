@@ -374,7 +374,7 @@ async function autoEmailTick() {
  */
 export async function sendHourlyTestEmail(to: string): Promise<{ messageId: string; to: string }> {
   const config = emailConfig();
-  if (!config) throw new Error("Email is not configured: set the SMTP and EMAIL values in .env.local.");
+  if (!config) throw new Error("Email is not configured: set RESEND_API_KEY, EMAIL_FROM, and EMAIL_TO.");
   const target = to.trim().toLowerCase();
   if (!config.to.toLowerCase().split(",").map((a) => a.trim()).includes(target)) throw new Error("Test address must already be in EMAIL_TO.");
   const preview = await hourlyEmailPreview(Date.now());

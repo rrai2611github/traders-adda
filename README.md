@@ -87,9 +87,9 @@ rather than presenting expired or incomplete marks as a current result.
 
 The system-status section shows paper-engine heartbeats, straddle recording,
 daily-history freshness, universe coverage/data checks, Fyers/fallback source,
-pre-open/hourly SMTP status and broker dry-run/live/kill-switch mode.
+pre-open/hourly email-provider status and broker dry-run/live/kill-switch mode.
 Market-closed engines are idle, not automatically stale. Heartbeats do not
-verify exchange tick freshness, and SMTP acceptance does not verify inbox
+verify exchange tick freshness, and provider acceptance does not verify inbox
 delivery. Failures are displayed separately, retaining other available sources.
 
 `GET /api/performance` uses existing snapshot readers; it does not send emails,
@@ -162,12 +162,12 @@ Fetch time and Fyers' date-only `tt` are never presented as verified trade times
 new stock/index paper entries require a recent explicit provider trade time.
 This intentionally pauses entries when the feed cannot prove freshness.
 Practice owner-email alerts run server-side every 30 seconds, without an open
-browser, when `PERSONAL_ALERT_EMAIL` and SMTP are configured. They notify newly
+browser, when `PERSONAL_ALERT_EMAIL` and the email API are configured. They notify newly
 observed replay buys/exits and confirmed next-open signals after daily processing;
 they are not execution-time confirmations or real-order instructions. Initial
 startup/new tracker configuration baselines existing history without emailing it.
 `.cache/tracker-alerts.json` persists queued events and per-email successful-send
-checkpoints; failed sends retry on subsequent checks. A crash between SMTP
+checkpoints; failed sends retry on subsequent checks. A crash between provider
 acceptance and saving a checkpoint can still cause a duplicate. Stop-review emails
 run only in real trading sessions and require a verified trade timestamp no more
 than two minutes old; date-only Fyers prices do not qualify. Each holding gets at
@@ -467,7 +467,7 @@ holiday calendar; keep that calendar updated from each annual exchange circular.
 Weekends, configured holidays and simulated sessions cannot trigger auto sends.
 Normal hourly and pre-open manual sends also reject closed days and simulated
 sessions, with HTTP 409 and an explanation; the guard runs before loading data
-and again just before SMTP sending. Manual sends still bypass the clock window
+and again just before sending. Manual sends still bypass the clock window
 on genuine trading days. Explicit `[TEST]` copies and previews remain available
 outside trading days without updating sent-email state.
 
@@ -478,10 +478,10 @@ that range; it does not automatically fetch annual updates. This is a regular
 session calendar, not a scheduler for special/Muhurat session hours.
 
 Ready-to-run and Weekly Top-5 owner alerts checkpoint each email only after
-SMTP acceptance. Failed sends leave that alert eligible for the next scheduled
+provider acceptance. Failed sends leave that alert eligible for the next scheduled
 check, while successfully accepted alerts in the same batch are not repeated.
 Retries remain subject to the normal trading-day/check window and current
-signal eligibility. SMTP acceptance does not prove inbox delivery.
+signal eligibility. Provider acceptance does not prove inbox delivery.
 Validate with `node --test scripts/alert-delivery.test.mjs scripts/market-email-policy.test.mjs scripts/ready-alert.test.mjs scripts/top5-alert.test.mjs scripts/hourly-email.test.mjs scripts/hourly-intraday.test.mjs scripts/preopen-email.test.mjs`.
 
 #### Email Activity
@@ -493,23 +493,23 @@ Current hourly/pre-open scheduler cards explain paused, waiting, eligible,
 already-accepted and retry-pending states. Retry eligibility is conditional on
 the app running and the send window remaining open, not a delivery guarantee.
 
-All email attempts reaching the shared SMTP transport now record accepted,
-partially accepted or failed results. Automatic hourly/pre-open scheduler skips
+All email attempts reaching the shared email provider now record accepted or
+failed results. Automatic hourly/pre-open scheduler skips
 for holidays, simulation, disabled sending or missing settings are recorded once
-per IST day per source/reason, when that scheduler checks. SMTP acceptance does
+per IST day per source/reason, when that scheduler checks. Provider acceptance does
 not confirm inbox receipt. Test copies are explicitly tagged.
 
 History begins with this feature; existing server logs are not backfilled.
 The latest 200 events persist in `.cache/email-activity.json` (50 matching rows
 shown). It stores subjects, timestamps, categories and outcome summaries, not
-recipient addresses, message bodies or credentials. Raw SMTP errors stay in
+recipient addresses, message bodies or credentials. Provider errors stay in
 server logs. Keep the local file private; subjects may describe trades.
 Writes use atomic replacement for this single app process. Logging failures are
 reported to server logs without changing send outcomes or causing duplicate
 retries; read/corruption failures are shown explicitly rather than reset.
 Special/Muhurat session support remains outside this regular-session calendar.
 
-Validate with `node --test scripts/email-activity.test.mjs scripts/smtp-config.test.mjs`.
+Validate with `node --test scripts/email-activity.test.mjs scripts/smtp-config.test.mjs scripts/email-provider.test.mjs`.
 
 Hourly prices carry provider quote timestamps, change from the previous session
 close, opening gap and session high/low where supplied. Quotes older than five minutes
@@ -701,7 +701,12 @@ This app uses server routes and persistent `.cache` files, so deploy it as a Rai
 - `BETTER_AUTH_SECRET`: a private random value with at least 32 characters.
 - `BETTER_AUTH_URL`: the public origin, for example `https://traderspro.trade`.
 - `ADMIN_EMAIL`: your email address, set before your first registration. Register with this exact address to create the administrator account; other signups are regular accounts.
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, and `SMTP_APP_PASSWORD`: SMTP credentials used to send verification and password-reset links. `AUTH_EMAIL_FROM` is optional.
+- `RESEND_API_KEY`: a Resend API key stored as a server-only secret.
+- `EMAIL_FROM`: a sender address on a domain verified with Resend. `AUTH_EMAIL_FROM` optionally overrides it for verification and password-reset emails and must also use the verified domain.
+- `EMAIL_FROM_NAME`: the sender name (defaults to `Traders Adda`); `EMAIL_REPLY_TO` can be set to `tradersaddaofficial@gmail.com`.
+- `EMAIL_TO`: comma-separated recipients for scheduled alert emails.
+
+For email, create a Resend account, verify a domain you control, add its DNS records, and create an API key. In Railway, set `RESEND_API_KEY`, set `EMAIL_FROM` to an address on that verified domain, and set `EMAIL_REPLY_TO` to `tradersaddaofficial@gmail.com`. Set `EMAIL_TO` for scheduled alerts; `AUTH_EMAIL_FROM` is optional and otherwise uses `EMAIL_FROM`. Remove the old SMTP variables, then redeploy. Gmail addresses cannot be used as the Resend sender unless the provider authorizes them.
 
 Run `npm run db:migrate` once the PostgreSQL service and variables are available. It creates Better Auth's tables and the per-user watchlist table. In Railway, this can be configured as a pre-deploy command. Keep a persistent volume mounted at `/app/.cache` and use one app replica because other existing application state is also file-backed.
 

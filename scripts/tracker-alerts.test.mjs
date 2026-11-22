@@ -49,7 +49,7 @@ test("stop warnings reject stale, missing, simulated and unverified quotes, acce
   assert.match(trackerStopAlerts(result, [quote], now, "2026-11-11").alerts[0].lines.join(" "), /NOT an executed exit/);
 });
 
-test("SMTP failures retain pending events; successes checkpoint separately and avoid resending", async () => {
+test("email provider failures retain pending events; successes checkpoint separately and avoid resending", async () => {
   const state = { version: 1, generation: "a", observedDay: "2026-11-11", sent: [], pending: dailyTrackerAlerts(result) };
   let saved;
   assert.equal(await deliverTrackerAlerts(state, async () => false, () => assert.fail()), false);

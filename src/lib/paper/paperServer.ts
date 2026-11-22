@@ -43,7 +43,7 @@ export interface EngineStatus {
   source: string;
   /** Age of the freshest quote used in the last tick. */
   quoteAgeMs: number | null;
-  /** Owner email alerts are configured (PERSONAL_ALERT_EMAIL and SMTP). */
+  /** Owner email alerts are configured (PERSONAL_ALERT_EMAIL and email API settings). */
   alerts: boolean;
   lastError: string | null;
 }

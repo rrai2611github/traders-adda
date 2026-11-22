@@ -12,13 +12,13 @@ interface Activity {
 }
 
 const STATUS: Record<EmailActivityStatus, { label: string; tone: string }> = {
-  accepted: { label: "SMTP accepted", tone: "bg-emerald-50 text-emerald-800" },
+  accepted: { label: "Provider accepted", tone: "bg-emerald-50 text-emerald-800" },
   partial: { label: "Partially accepted", tone: "bg-amber-50 text-amber-900" },
   failed: { label: "Failed", tone: "bg-rose-50 text-rose-800" },
   skipped: { label: "Skipped", tone: "bg-slate-100 text-slate-600" },
 };
 const SOURCE = { hourly: "Hourly", "pre-open": "Pre-open", owner: "Owner alert", other: "Other email" };
-const SCHEDULE = { paused: "Paused", waiting: "Waiting", accepted: "SMTP accepted", eligible: "Eligible", "retry-pending": "Retry pending" };
+const SCHEDULE = { paused: "Paused", waiting: "Waiting", accepted: "Provider accepted", eligible: "Eligible", "retry-pending": "Retry pending" };
 const timestamp = (at: number) => new Date(at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
 export function EmailActivityPanel() {
@@ -55,7 +55,7 @@ export function EmailActivityPanel() {
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Notification monitor</p>
           <h2 id="email-activity-title" className="mt-1 text-base font-extrabold text-slate-900">Email Activity</h2>
-          <p className="mt-1 text-xs leading-5 text-slate-500">SMTP acceptance is not proof of inbox delivery. History starts when activity logging is enabled.</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">Provider acceptance is not proof of inbox delivery. History starts when activity logging is enabled.</p>
         </div>
         <button type="button" onClick={() => setRefresh((value) => value + 1)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Refresh activity</button>
       </header>

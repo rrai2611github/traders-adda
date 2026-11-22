@@ -21,7 +21,6 @@
     "better-auth": "^1.7.27",
     "lightweight-charts": "^5.2.1",
     "next": "^16.4.6",
-    "nodemailer": "^10.0.11",
     "pg": "^8.23.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -30,7 +29,6 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",

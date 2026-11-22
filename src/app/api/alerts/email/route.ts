@@ -42,7 +42,7 @@ function sameOrigin(request: Request): boolean {
   return !origin || !host || new URL(origin).host === host;
 }
 
-/** Sends now (even with no changes), verifies SMTP with `?verify=1`, or sends a [TEST] copy to one EMAIL_TO address with `?test_to=`, leaving state untouched. */
+/** Sends now (even with no changes), verifies the email API with `?verify=1`, or sends a [TEST] copy to one EMAIL_TO address with `?test_to=`, leaving state untouched. */
 export async function POST(request: Request) {
   const denied = await requireAdminResponse(request);
   if (denied) return denied;

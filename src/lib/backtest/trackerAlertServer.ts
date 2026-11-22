@@ -36,7 +36,7 @@ function save(state: TrackerAlertState) {
 }
 
 export function trackerAlertStatus(): string {
-  return ownerAlertAddress() ? runtime.status : "Practice email alerts blocked: owner email or SMTP is not configured.";
+  return ownerAlertAddress() ? runtime.status : "Practice email alerts blocked: owner email or email API settings are not configured.";
 }
 
 export async function checkTrackerAlerts(now = Date.now()) {

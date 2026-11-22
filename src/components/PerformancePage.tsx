@@ -166,7 +166,7 @@ export function PerformancePage() {
           {section === "health" && <>
           <section aria-labelledby="reliability">
             <h2 id="reliability" className="mb-3 text-base font-extrabold text-slate-900">System reliability</h2>
-            <p className="mb-3 text-xs text-slate-500">Reported status, not an independent uptime check. SMTP acceptance does not prove inbox delivery; a heartbeat does not prove exchange-feed freshness.</p>
+            <p className="mb-3 text-xs text-slate-500">Reported status, not an independent uptime check. Provider acceptance does not prove inbox delivery; a heartbeat does not prove exchange-feed freshness.</p>
             <div className="grid gap-3 md:grid-cols-2">
               {report.checks.map((check) => <article key={check.id} className="rounded-xl border border-slate-200 bg-white p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-bold text-slate-900">{check.title}</h3><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${STATE[check.state].color}`}>{STATE[check.state].label}</span></div>

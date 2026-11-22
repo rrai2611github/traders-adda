@@ -13,7 +13,7 @@ function withStore(check) {
   const file = join(directory, "email-activity.json");
   try { check(emailActivityStore(file), file, directory); } finally { rmSync(directory, { recursive: true, force: true }); }
 }
-const input = (overrides = {}) => ({ source: "hourly", status: "accepted", subject: "Hourly update", detail: "SMTP accepted; inbox unconfirmed.", ...overrides });
+const input = (overrides = {}) => ({ source: "hourly", status: "accepted", subject: "Hourly update", detail: "Provider accepted; inbox unconfirmed.", ...overrides });
 const at = (value) => Date.parse(`${value}+05:30`);
 const checkpoint = { lastSentSlotKey: null, lastAttemptAt: null, lastError: null };
 
@@ -69,7 +69,7 @@ test("filesystem failures are not interpreted as empty history", () => {
   });
 });
 
-test("public failure details contain error codes, never raw SMTP credentials or addresses", () => {
+test("public failure details contain error codes, never credentials or addresses", () => {
   assert.match(emailFailureDetail({ code: "EAUTH", message: "user password secret@example.com" }), /EAUTH/);
   assert.doesNotMatch(emailFailureDetail({ code: "EAUTH", message: "user password secret@example.com" }), /password|secret@/);
   assert.doesNotMatch(emailFailureDetail({ code: "secret@example.com" }), /secret@/);
@@ -100,7 +100,7 @@ test("schedule monitor reflects holiday/disabled states and real retry eligibili
     const slot = "2026-11-11:1";
     assert.equal(emailScheduleStatus("hourly", true, true, slot, checkpoint, trading).status, "eligible");
     assert.equal(emailScheduleStatus("hourly", true, true, slot, { ...checkpoint, lastSentSlotKey: slot }, trading).status, "accepted");
-    const failed = { ...checkpoint, lastAttemptAt: trading, lastError: "SMTP failure" };
+    const failed = { ...checkpoint, lastAttemptAt: trading, lastError: "Provider failure" };
     const retry = emailScheduleStatus("hourly", true, true, slot, failed, trading);
     assert.equal(retry.status, "retry-pending");
     assert.match(retry.detail, /10:26/);
@@ -113,7 +113,7 @@ test("schedule monitor reflects holiday/disabled states and real retry eligibili
   }
 });
 
-test("the SMTP transport records real outcomes and test tags without making network calls", () => {
+test("the email API transport records outcomes and test tags without making network calls", () => {
   withStore((_store, _file, directory) => {
     const smtp = new URL("../src/lib/alerts/smtp.ts", import.meta.url).href;
     const activity = new URL("../src/lib/alerts/emailActivity.ts", import.meta.url).href;
@@ -121,18 +121,19 @@ test("the SMTP transport records real outcomes and test tags without making netw
     const script = `
       import assert from "node:assert/strict";
       import { writeFileSync } from "node:fs";
-      const {default:nodemailer} = await import(${JSON.stringify(import.meta.resolve("nodemailer"))});
       let outcome = "accepted";
-      nodemailer.createTransport = () => ({ sendMail: async () => {
-        if (outcome === "failed") throw Object.assign(new Error("private SMTP details"), {code:"ECONNECTION"});
-        return {messageId:"mock-id", accepted:outcome === "none" ? [] : ["private@example.com"], rejected:outcome === "partial" ? ["rejected@example.com"] : []};
-      }});
-      Object.assign(process.env, {SMTP_HOST:"unused", SMTP_PORT:"587", SMTP_USER:"unused", SMTP_APP_PASSWORD:"unused", EMAIL_TO:"unused@example.com"});
+      Object.assign(process.env, {RESEND_API_KEY:"unused", EMAIL_FROM:"sender@example.com", EMAIL_TO:"unused@example.com"});
+      globalThis.fetch = async (_url, options) => {
+        assert.equal(options.headers.Authorization, "Bearer unused");
+        if (outcome === "failed") throw Object.assign(new Error("private provider details"), {code:"ECONNECTION"});
+        if (outcome === "none") return new Response("{}", {status:422});
+        return new Response(JSON.stringify({id:"mock-id"}), {status:200});
+      };
       const {sendEmail} = await import(${JSON.stringify(smtp)});
       const {readEmailActivity} = await import(${JSON.stringify(activity)});
       const {recordScheduledEmailSkip} = await import(${JSON.stringify(skips)});
       await sendEmail("Hourly", "<p>private body</p>", "private body", [], undefined, "hourly");
-      outcome = "partial";
+      outcome = "accepted";
       await sendEmail("[TEST] Pre-open", "", "", [], undefined, "pre-open");
       outcome = "failed";
       await assert.rejects(sendEmail("Owner", "", "", [], undefined, "owner"));
@@ -141,10 +142,10 @@ test("the SMTP transport records real outcomes and test tags without making netw
       recordScheduledEmailSkip("hourly", "Market holiday", 1794280000000);
       recordScheduledEmailSkip("hourly", "Market holiday", 1794280000000);
       const entries = readEmailActivity();
-      assert.deepEqual(entries.map(e=>e.status), ["skipped","failed","failed","partial","accepted"]);
+      assert.deepEqual(entries.map(e=>e.status), ["skipped","failed","failed","accepted","accepted"]);
       assert.equal(entries[3].test,true);
       assert.equal(entries[4].source,"hourly");
-      assert.doesNotMatch(JSON.stringify(entries), /private@example|rejected@example|private body|private SMTP/);
+      assert.doesNotMatch(JSON.stringify(entries), /private@example|private body|private provider/);
       writeFileSync(".cache/email-activity.json", "corrupt");
       outcome = "accepted";
       assert.equal(await sendEmail("Must not duplicate after logging failure", "", ""), "mock-id");
