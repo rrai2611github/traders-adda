@@ -29,7 +29,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           callbackURL: "/",
         });
         if (result.error) throw new Error(result.error.message || "Could not create your account.");
-        setMessage("Account created. Check your email and verify your address before signing in.");
+        setMessage("Account created. You can now sign in.");
       } else {
         const result = await authClient.signIn.email({
           email: email.trim().toLowerCase(),

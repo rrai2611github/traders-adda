@@ -20,16 +20,8 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 12,
     maxPasswordLength: 128,
-    requireEmailVerification: true,
     sendResetPassword: async ({ user, url }) => {
       await sendAccountEmail(user.email, "Reset your Traders Adda password", "Use this link to reset your password.", url);
-    },
-  },
-  emailVerification: {
-    sendOnSignUp: true,
-    autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, url }) => {
-      await sendAccountEmail(user.email, "Verify your Traders Adda account", "Verify your email address to activate your account.", url);
     },
   },
   databaseHooks: {

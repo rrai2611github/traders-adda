@@ -702,11 +702,13 @@ This app uses server routes and persistent `.cache` files, so deploy it as a Rai
 - `BETTER_AUTH_URL`: the public origin, for example `https://traderspro.trade`.
 - `ADMIN_EMAIL`: your email address, set before your first registration. Register with this exact address to create the administrator account; other signups are regular accounts.
 - `RESEND_API_KEY`: a Resend API key stored as a server-only secret.
-- `EMAIL_FROM`: a sender address on a domain verified with Resend. `AUTH_EMAIL_FROM` optionally overrides it for verification and password-reset emails and must also use the verified domain.
+- `EMAIL_FROM`: a sender address on a domain verified with Resend. `AUTH_EMAIL_FROM` optionally overrides it for password-reset emails and must also use the verified domain.
 - `EMAIL_FROM_NAME`: the sender name (defaults to `Traders Adda`); `EMAIL_REPLY_TO` can be set to `tradersaddaofficial@gmail.com`.
 - `EMAIL_TO`: comma-separated recipients for scheduled alert emails.
 
 For email, create a Resend account, verify a domain you control, add its DNS records, and create an API key. In Railway, set `RESEND_API_KEY`, set `EMAIL_FROM` to an address on that verified domain, and set `EMAIL_REPLY_TO` to `tradersaddaofficial@gmail.com`. Set `EMAIL_TO` for scheduled alerts; `AUTH_EMAIL_FROM` is optional and otherwise uses `EMAIL_FROM`. Remove the old SMTP variables, then redeploy. Gmail addresses cannot be used as the Resend sender unless the provider authorizes them.
+
+Account signup does not require email verification. Email delivery is still used for password resets and scheduled alerts.
 
 Run `npm run db:migrate` once the PostgreSQL service and variables are available. It creates Better Auth's tables and the per-user watchlist table. In Railway, this can be configured as a pre-deploy command. Keep a persistent volume mounted at `/app/.cache` and use one app replica because other existing application state is also file-backed.
 
