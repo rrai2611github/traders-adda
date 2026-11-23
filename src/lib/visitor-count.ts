@@ -6,6 +6,21 @@ export interface VisitorCounts {
   todayUniqueAccounts: number;
 }
 
+export async function lastAccountActivity(userIds: string[]): Promise<Map<string, string>> {
+  if (!userIds.length) return new Map();
+  const result = await requireAuthDb().query<{ user_id: string; last_active_at: Date | string }>(
+    `SELECT user_id, max(last_seen_at) AS last_active_at
+     FROM account_visits
+     WHERE user_id = ANY($1::text[])
+     GROUP BY user_id`,
+    [userIds],
+  );
+  return new Map(result.rows.map((row) => [
+    row.user_id,
+    row.last_active_at instanceof Date ? row.last_active_at.toISOString() : new Date(row.last_active_at).toISOString(),
+  ]));
+}
+
 export async function recordAccountVisit(userId: string, now = Date.now()): Promise<void> {
   await requireAuthDb().query(
     `INSERT INTO account_visits (user_id, visit_date, first_seen_at, last_seen_at)

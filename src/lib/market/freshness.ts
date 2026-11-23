@@ -52,6 +52,18 @@ export function dataFreshness(input: { lastCandleDay: string | null; refreshedDa
   };
 }
 
+export function freshnessAlertDue(input: {
+  now: number;
+  lastAlertDay: string | null;
+  refreshStatus: "idle" | "running" | "failed";
+  dataState: Freshness["state"];
+}): boolean {
+  const shifted = new Date(input.now + IST_MS);
+  const minutes = shifted.getUTCHours() * 60 + shifted.getUTCMinutes();
+  if (minutes < 19 * 60 + 30 || input.lastAlertDay === istDateKey(input.now) || input.refreshStatus === "running") return false;
+  return input.refreshStatus === "failed" || input.dataState === "stale";
+}
+
 /**
  * Should the app refresh the price files now, outside the usual after-the-close run? Only when finished sessions are missing and no
  * refresh has run since they finished (otherwise the gap is a market holiday), at most once an hour.

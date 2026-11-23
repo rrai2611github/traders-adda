@@ -4,7 +4,7 @@ import test from "node:test";
 process.env.DATABASE_URL = process.env.DATABASE_URL ?? "postgres://test:test@localhost:5432/test";
 
 const { authDbPool } = await import("../src/lib/auth-db.ts");
-const { recordAccountVisit, visitorCounts } = await import("../src/lib/visitor-count.ts");
+const { lastAccountActivity, recordAccountVisit, visitorCounts } = await import("../src/lib/visitor-count.ts");
 
 test("counts unique signed-in accounts once per IST day", async () => {
   const visits = new Map();
@@ -41,6 +41,22 @@ test("counts unique signed-in accounts once per IST day", async () => {
       allTimeUniqueAccounts: 2,
       todayUniqueAccounts: 1,
     });
+  } finally {
+    authDbPool.query = originalQuery;
+  }
+});
+
+test("last account activity uses the latest recorded signed-in visit", async () => {
+  const originalQuery = authDbPool.query;
+  const timestamp = new Date("2026-11-23T06:31:00.000Z");
+  authDbPool.query = async (statement, values = []) => {
+    assert.match(statement, /max\(last_seen_at\)/);
+    assert.deepEqual(values, [["member-a", "member-b"]]);
+    return { rows: [{ user_id: "member-a", last_active_at: timestamp }] };
+  };
+  try {
+    assert.deepEqual(await lastAccountActivity(["member-a", "member-b"]), new Map([["member-a", timestamp.toISOString()]]));
+    assert.deepEqual(await lastAccountActivity([]), new Map());
   } finally {
     authDbPool.query = originalQuery;
   }

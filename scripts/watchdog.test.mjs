@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { dataFreshness, expectedLastSession, needsCatchUp, sessionsBehind } from "../src/lib/market/freshness.ts";
+import { dataFreshness, expectedLastSession, freshnessAlertDue, needsCatchUp, sessionsBehind } from "../src/lib/market/freshness.ts";
 import { historyRefreshArgs, historyRefreshDay } from "../src/lib/backtest/historyRefresh.ts";
 import { alertKey, liveAlerts, unsentAlerts } from "../src/lib/positions/liveWatch.ts";
 
@@ -51,6 +51,21 @@ test("catch-up refresh: missing or stale finished sessions, and at most once an 
   // Monday 17:00: the 16:45 grace has passed, so Monday's candle is expected and missing.
   assert.equal(needsCatchUp({ ...base, now: at("2026-11-02T17:00:00") }), true);
   assert.equal(needsCatchUp({ ...base, now: at("2026-11-02T16:00:00") }), false);
+});
+
+test("shared history alerts wait until after close, skip active refreshes, and do not require positions", () => {
+  const stale = {
+    now: at("2026-11-23T19:30:00"),
+    lastAlertDay: null,
+    refreshStatus: "idle",
+    dataState: "stale",
+  };
+  assert.equal(freshnessAlertDue({ ...stale, now: at("2026-11-23T19:29:00") }), false);
+  assert.equal(freshnessAlertDue(stale), true);
+  assert.equal(freshnessAlertDue({ ...stale, refreshStatus: "failed", dataState: "ok" }), true);
+  assert.equal(freshnessAlertDue({ ...stale, refreshStatus: "running" }), false);
+  assert.equal(freshnessAlertDue({ ...stale, lastAlertDay: "2026-11-23" }), false);
+  assert.equal(freshnessAlertDue({ ...stale, dataState: "ok" }), false);
 });
 
 test("missing history triggers a full bootstrap and pre-close refreshes do not mark today's candle complete", () => {

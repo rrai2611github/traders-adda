@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { adminSessionFromRequest } from "@/lib/auth-session";
 import { requireAuthDb } from "@/lib/auth-db";
 import { recordAdminAction } from "@/lib/admin-audit";
+import { lastAccountActivity } from "@/lib/visitor-count";
 
 export const dynamic = "force-dynamic";
 const MAX_PAGE_SIZE = 100;
@@ -17,11 +18,23 @@ export async function GET(request: Request) {
     const rawSearch = url.searchParams.get("searchValue")?.trim() ?? "";
     const rawSearchField = url.searchParams.get("searchField") ?? "email";
     const searchField = rawSearchField === "name" || rawSearchField === "email" ? rawSearchField : null;
+    const rawFilter = url.searchParams.get("filter") ?? "all";
+    const accountFilter = rawFilter === "all" ? undefined
+      : rawFilter === "admins" ? { filterField: "role", filterValue: "admin" }
+      : rawFilter === "members" ? { filterField: "role", filterValue: "user" }
+      : rawFilter === "enabled" ? { filterField: "banned", filterValue: false }
+      : rawFilter === "disabled" ? { filterField: "banned", filterValue: true }
+      : rawFilter === "verified" ? { filterField: "emailVerified", filterValue: true }
+      : rawFilter === "unverified" ? { filterField: "emailVerified", filterValue: false }
+      : null;
     if (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_PAGE_SIZE || !Number.isSafeInteger(offset) || offset < 0) {
       return Response.json({ error: `Use a limit from 1 to ${MAX_PAGE_SIZE} and a non-negative integer offset.` }, { status: 400 });
     }
     if (rawSearch.length > 100 || !searchField) {
       return Response.json({ error: "Search by name or email with a query of at most 100 characters." }, { status: 400 });
+    }
+    if (accountFilter === null) {
+      return Response.json({ error: "Choose a valid account filter." }, { status: 400 });
     }
     const result = await auth.api.listUsers({
       headers: request.headers,
@@ -31,9 +44,14 @@ export async function GET(request: Request) {
         sortBy: "createdAt",
         sortDirection: "desc",
         ...(rawSearch ? { searchValue: rawSearch, searchField, searchOperator: "contains" as const } : {}),
+        ...(accountFilter ? { ...accountFilter, filterOperator: "eq" as const } : {}),
       },
     });
-    return Response.json(result, { headers: { "Cache-Control": "no-store" } });
+    const activity = await lastAccountActivity(result.users.map((user) => user.id));
+    return Response.json({
+      ...result,
+      users: result.users.map((user) => ({ ...user, lastActiveAt: activity.get(user.id) ?? null })),
+    }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("[admin-users] list failed:", error);
     return Response.json({ error: error instanceof Error ? error.message : "Could not load users." }, { status: 500, headers: { "Cache-Control": "no-store" } });

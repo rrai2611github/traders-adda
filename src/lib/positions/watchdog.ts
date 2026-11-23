@@ -2,9 +2,8 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { notifyOwner } from "@/lib/alerts/personal";
 import { historyLastDay, refreshState } from "@/lib/backtest/historyRefresh";
-import { readTracker } from "@/lib/backtest/tracker";
 import { getDataSource, getQuotes } from "@/lib/market/engine";
-import { dataFreshness } from "@/lib/market/freshness";
+import { dataFreshness, freshnessAlertDue } from "@/lib/market/freshness";
 import { getMarketStatus, isTradingDay, istDateKey } from "@/lib/market/marketHours";
 import { alertKey, liveAlerts, unsentAlerts, type LiveQuote } from "./liveWatch";
 import { hasOpenPositions, positionsView } from "./positionsServer";
@@ -13,7 +12,7 @@ import { hasOpenPositions, positionsView } from "./positionsServer";
  * Two small jobs that run while the app is open, both owner-only (PERSONAL_ALERT_EMAIL, never the group list):
  *  - while the market is open, an email the moment a real position's price reaches its stop (and a late-session heads-up when it trades
  *    under its 50-day average), once a day per position;
- *  - after the close, an email when the saved price data is more than a session old, because every exit signal depends on it.
+ *  - after the close, an email when shared history is stale or its refresh failed, even when no one is following a strategy or holding positions.
  */
 const DIR = join(process.cwd(), ".cache");
 const LIVE_FILE = join(DIR, "positions-live.json");
@@ -22,8 +21,6 @@ const TICK_MS = 120_000;
 const FRESHNESS_EVERY_MS = 30 * 60_000;
 /** Late-session heads-ups start at 14:45 IST. */
 const FIFTY_DAY_FROM_MIN = 14 * 60 + 45;
-/** The freshness alarm is not raised before 19:30 IST: the nightly refresh and the catch-up have had their chance by then. */
-const FRESHNESS_FROM_MIN = 19 * 60 + 30;
 
 const store = ((globalThis as { __positionsWatchdog?: { timer: ReturnType<typeof setInterval> | null; lastFreshness: number } }).__positionsWatchdog ??= { timer: null, lastFreshness: 0 });
 
@@ -69,18 +66,23 @@ export async function checkLiveStops(now = Date.now()): Promise<number> {
   return fresh.length;
 }
 
-/** After the close: one email a day if the price files are more than a session behind. Only when something depends on them. */
+/** After 19:30 IST: one owner email a day if shared history is stale or its latest refresh failed. */
 export async function checkFreshnessAlarm(now = Date.now()): Promise<boolean> {
-  if (!isTradingDay(now) || istMinutes(now) < FRESHNESS_FROM_MIN) return false;
-  if (!readTracker() && !hasOpenPositions()) return false;
+  const history = refreshState();
   const today = istDateKey(now);
-  if (readJson<{ day: string }>(FRESH_FILE)?.day === today) return false;
-  const result = dataFreshness({ lastCandleDay: historyLastDay(), refreshedDay: refreshState().lastDay, now });
-  if (result.state !== "stale") return false;
-  const sent = await notifyOwner("Price data is old · exit signals may be late", [
-    result.message,
-    "Nothing has been sold or changed. Until the data catches up, check your positions on your broker app.",
-  ]);
+  const result = dataFreshness({ lastCandleDay: historyLastDay(), refreshedDay: history.lastDay, now });
+  if (!freshnessAlertDue({
+    now,
+    lastAlertDay: readJson<{ day: string }>(FRESH_FILE)?.day ?? null,
+    refreshStatus: history.status,
+    dataState: result.state,
+  })) return false;
+  const lines = [
+    ...(history.status === "failed" ? [`The latest history refresh failed: ${history.message}`] : []),
+    ...(result.state === "stale" ? [result.message] : ["NIFTY history is current, but the refresh reported provider failures; other symbols may not have been updated."]),
+    "Shared price data may be incomplete, so member strategy checks and exit information can be out of date. The app does not place or change orders.",
+  ];
+  const sent = await notifyOwner("Historical price data needs attention", lines);
   if (sent) writeJson(FRESH_FILE, { day: today });
   return sent;
 }

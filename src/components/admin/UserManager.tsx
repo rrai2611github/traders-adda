@@ -12,6 +12,7 @@ interface UserRow {
   banned: boolean;
   emailVerified: boolean;
   createdAt: string;
+  lastActiveAt: string | null;
 }
 
 interface UserResponse {
@@ -25,6 +26,19 @@ interface AppliedSearch {
   field: "name" | "email";
 }
 
+type AccountFilter = "all" | "admins" | "members" | "enabled" | "disabled" | "verified" | "unverified";
+
+function formatAccountDate(value: string | null, includeTime = false) {
+  if (!value) return "No recorded visits";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Unavailable";
+  return new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "medium",
+    ...(includeTime ? { timeStyle: "short" as const } : {}),
+    timeZone: "Asia/Kolkata",
+  }).format(date);
+}
+
 export function UserManager() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -32,6 +46,8 @@ export function UserManager() {
   const [searchInput, setSearchInput] = useState("");
   const [searchField, setSearchField] = useState<AppliedSearch["field"]>("email");
   const [search, setSearch] = useState<AppliedSearch | null>(null);
+  const [filterInput, setFilterInput] = useState<AccountFilter>("all");
+  const [filter, setFilter] = useState<AccountFilter>("all");
   const [refreshKey, setRefreshKey] = useState(0);
   const [loadedRequest, setLoadedRequest] = useState<{ offset: number; refreshKey: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +61,7 @@ export function UserManager() {
       query.set("searchValue", search.value);
       query.set("searchField", search.field);
     }
+    if (filter !== "all") query.set("filter", filter);
     void fetch(`/api/admin/users?${query}`, { cache: "no-store" })
       .then(async (response) => {
         const result = await response.json() as UserResponse;
@@ -62,7 +79,7 @@ export function UserManager() {
         if (active) setLoadedRequest({ offset, refreshKey });
       });
     return () => { active = false; };
-  }, [offset, refreshKey, search]);
+  }, [offset, refreshKey, search, filter]);
 
   async function update(user: UserRow, action: "role" | "ban" | "unban", role?: "user" | "admin") {
     setBusy(user.id);
@@ -116,6 +133,7 @@ export function UserManager() {
           event.preventDefault();
           setOffset(0);
           setSearch(searchInput.trim() ? { value: searchInput.trim(), field: searchField } : null);
+          setFilter(filterInput);
         }}
       >
         <label className="sr-only" htmlFor="admin-user-search">Search registered accounts</label>
@@ -137,28 +155,47 @@ export function UserManager() {
           <option value="email">Email</option>
           <option value="name">Name</option>
         </select>
+        <label className="sr-only" htmlFor="admin-account-filter">Filter accounts</label>
+        <select
+          id="admin-account-filter"
+          value={filterInput}
+          onChange={(event) => {
+            const value = event.target.value;
+            setFilterInput(value === "admins" || value === "members" || value === "enabled" || value === "disabled" || value === "verified" || value === "unverified" ? value : "all");
+          }}
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+        >
+          <option value="all">All accounts</option>
+          <option value="admins">Admins</option>
+          <option value="members">Members</option>
+          <option value="enabled">Enabled</option>
+          <option value="disabled">Disabled</option>
+          <option value="verified">Verified email</option>
+          <option value="unverified">Unverified email</option>
+        </select>
         <button type="submit" disabled={loading} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Search</button>
-        {search && (
-          <button type="button" onClick={() => { setSearchInput(""); setSearch(null); setOffset(0); }} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">
-            Clear search
+        {(search || filter !== "all") && (
+          <button type="button" onClick={() => { setSearchInput(""); setSearch(null); setFilterInput("all"); setFilter("all"); setOffset(0); }} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">
+            Clear filters
           </button>
         )}
       </form>
       {error && <p role="alert" className="m-4 rounded-lg bg-rose-50 p-3 text-sm font-semibold text-rose-800">{error}</p>}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[850px] text-left text-sm">
+        <table className="w-full min-w-[1020px] text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <th className="px-5 py-3">Name / email</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Role</th>
               <th className="px-4 py-3">Joined</th>
+              <th className="px-4 py-3">Last active</th>
               <th className="px-5 py-3 text-right">Manage</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {loading ? (
-              <tr><td colSpan={5} className="px-5 py-8 text-center text-sm text-slate-500">Loading accounts…</td></tr>
+              <tr><td colSpan={6} className="px-5 py-8 text-center text-sm text-slate-500">Loading accounts…</td></tr>
             ) : users.map((user) => (
               <tr key={user.id}>
                 <td className="px-5 py-3">
@@ -171,7 +208,8 @@ export function UserManager() {
                   </span>
                 </td>
                 <td className="px-4 py-3 font-semibold text-slate-700">{user.role}</td>
-                <td className="px-4 py-3 text-xs text-slate-600">{new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" }).format(new Date(user.createdAt))}</td>
+                <td className="px-4 py-3 text-xs text-slate-600">{formatAccountDate(user.createdAt)}</td>
+                <td className="px-4 py-3 text-xs text-slate-600">{formatAccountDate(user.lastActiveAt, true)}{user.lastActiveAt ? " IST" : ""}</td>
                 <td className="px-5 py-3">
                   <div className="flex justify-end gap-2">
                     <button
@@ -195,7 +233,7 @@ export function UserManager() {
               </tr>
             ))}
             {!loading && !users.length && !error && (
-              <tr><td colSpan={5} className="px-5 py-8 text-center text-sm text-slate-500">{search ? "No accounts match this search." : "No accounts have registered yet."}</td></tr>
+              <tr><td colSpan={6} className="px-5 py-8 text-center text-sm text-slate-500">{search || filter !== "all" ? "No accounts match these filters." : "No accounts have registered yet."}</td></tr>
             )}
           </tbody>
         </table>

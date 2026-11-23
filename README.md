@@ -705,8 +705,9 @@ This app uses server routes and persistent `.cache` files, so deploy it as a Rai
 - `EMAIL_FROM`: a sender address on a domain verified with Resend. `AUTH_EMAIL_FROM` optionally overrides it for password-reset emails and must also use the verified domain.
 - `EMAIL_FROM_NAME`: the sender name (defaults to `Traders Adda`); `EMAIL_REPLY_TO` can be set to `tradersaddaofficial@gmail.com`.
 - `EMAIL_TO`: comma-separated recipients for scheduled alert emails.
+- `PERSONAL_ALERT_EMAIL`: owner/admin-only recipient for personal alerts, including stale or failed shared-history refresh notifications.
 
-For email, create a Resend account, verify a domain you control, add its DNS records, and create an API key. In Railway, set `RESEND_API_KEY`, set `EMAIL_FROM` to an address on that verified domain, and set `EMAIL_REPLY_TO` to `tradersaddaofficial@gmail.com`. Set `EMAIL_TO` for scheduled alerts; `AUTH_EMAIL_FROM` is optional and otherwise uses `EMAIL_FROM`. Remove the old SMTP variables, then redeploy. Gmail addresses cannot be used as the Resend sender unless the provider authorizes them.
+For email, create a Resend account, verify a domain you control, add its DNS records, and create an API key. In Railway, set `RESEND_API_KEY`, set `EMAIL_FROM` to an address on that verified domain, and set `EMAIL_REPLY_TO` to `tradersaddaofficial@gmail.com`. Set `EMAIL_TO` for scheduled alerts and `PERSONAL_ALERT_EMAIL` for owner-only alerts; `AUTH_EMAIL_FROM` is optional and otherwise uses `EMAIL_FROM`. Remove the old SMTP variables, then redeploy. Gmail addresses cannot be used as the Resend sender unless the provider authorizes them.
 
 Account signup does not require email verification. Email delivery is still used for password resets and scheduled alerts.
 
@@ -716,4 +717,4 @@ On a Node.js server, the background scheduler seeds the ten-year price history i
 
 Regular accounts can use research, private watchlists, their own private recorded-trade journal, and an independent practice strategy test with the existing rules. The journal and practice settings are stored per account in PostgreSQL; the practice test uses shared completed market history and never places real orders. Broker connections, order approvals, owner-email alerts, and administrative controls remain administrator-only. See [.env.example](./.env.example) for the variable names (do not put real credentials in that file).
 
-The admin page includes searchable, paginated account management with join dates, database and price-history health, and a recent audit trail for role/access changes. It also shows all-time and today’s unique signed-in account visits. Counts are deduplicated per account per IST day; the visitor counter stores no IP address or device identifier.
+The admin page includes searchable, filterable, paginated account management with join dates and last activity, database and price-history health, and a recent audit trail for role/access changes. At or after 7:30 pm IST, stale price data or a failed shared-history refresh sends an owner-only email to `PERSONAL_ALERT_EMAIL`, whether or not a strategy or positions are active. It also shows all-time and today’s unique signed-in account visits. Visitor counts are deduplicated per account per IST day; last-active times use the same signed-in visit records. The visitor counter stores no IP address or device identifier.
