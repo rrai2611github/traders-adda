@@ -11,6 +11,7 @@ import { authClient } from "@/lib/auth-client";
 import { MEMBER_BACKTEST_PRESETS } from "@/lib/backtest/memberPresets";
 
 type Job = { status: "running"; id: string; message: string } | { status: "failed"; id: string; error: string } | { status: "done"; id: string; result: BacktestResult };
+type PresetComparison = { presetId: string; job: Job | null };
 
 const SCREENS = ["Multi-year breakouts", "Blue sky", "VCP", "IPO base"] as const;
 
@@ -257,9 +258,17 @@ export function BacktestPage() {
   const [memberPresetId, setMemberPresetId] = useState(MEMBER_BACKTEST_PRESETS[0].id);
   const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [comparison, setComparison] = useState<PresetComparison[] | null>(null);
+  const [comparisonRunning, setComparisonRunning] = useState(false);
+  const [comparisonPresetId, setComparisonPresetId] = useState<string | null>(null);
+  const [comparisonError, setComparisonError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const comparisonToken = useRef(0);
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }));
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+    comparisonToken.current += 1;
+  }, []);
   // A stock named in the address (from "How would the rules have traded this?") fills the form once the page is on screen.
   useEffect(() => {
     const symbol = new URLSearchParams(window.location.search).get("symbol");
@@ -280,7 +289,7 @@ export function BacktestPage() {
     }, 1500);
   };
   const run = async () => {
-    if (sessionPending) return;
+    if (sessionPending || comparisonRunning) return;
     if (timer.current) clearTimeout(timer.current);
     setError(null); setJob({ status: "running", id: "", message: "starting" });
     const endpoint = isAdmin ? "/api/backtest" : "/api/member/backtest";
@@ -298,6 +307,64 @@ export function BacktestPage() {
     } catch (runError) {
       setError(runError instanceof Error ? runError.message : "Could not start the backtest.");
       setJob(null);
+    }
+  };
+  const comparePresets = async () => {
+    if (sessionPending || isAdmin || job?.status === "running" || comparisonRunning) return;
+    if (timer.current) clearTimeout(timer.current);
+    const token = comparisonToken.current + 1;
+    comparisonToken.current = token;
+    setError(null);
+    setComparisonError(null);
+    setComparisonRunning(true);
+    setComparison(MEMBER_BACKTEST_PRESETS.map((preset) => ({ presetId: preset.id, job: null })));
+
+    let activePresetId: string | null = null;
+    const setPresetJob = (presetId: string, nextJob: Job) => {
+      if (comparisonToken.current !== token) return;
+      setComparison((current) => current?.map((row) => row.presetId === presetId ? { ...row, job: nextJob } : row) ?? null);
+    };
+
+    try {
+      for (const preset of MEMBER_BACKTEST_PRESETS) {
+        if (comparisonToken.current !== token) return;
+        activePresetId = preset.id;
+        setComparisonPresetId(preset.id);
+        const start = await fetch("/api/member/backtest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ presetId: preset.id }),
+        });
+        const startPayload = await start.json() as Job & { error?: string };
+        if (!start.ok) throw new Error(startPayload.error ?? `Could not start ${preset.name}.`);
+        let currentJob = startPayload as Job;
+        setPresetJob(preset.id, currentJob);
+
+        while (currentJob.status === "running") {
+          await new Promise((resolve) => window.setTimeout(resolve, 1500));
+          if (comparisonToken.current !== token) return;
+          const pollResult = await fetch(`/api/member/backtest?id=${currentJob.id}`, { cache: "no-store" });
+          const pollPayload = await pollResult.json() as Job & { error?: string };
+          if (!pollResult.ok) throw new Error(pollPayload.error ?? `Could not load ${preset.name}.`);
+          currentJob = pollPayload as Job;
+          setPresetJob(preset.id, currentJob);
+        }
+      }
+    } catch (compareError) {
+      if (comparisonToken.current === token) {
+        const message = compareError instanceof Error ? compareError.message : "Could not compare the presets.";
+        setComparisonError(message);
+        if (activePresetId) {
+          setComparison((current) => current?.map((row) => row.presetId === activePresetId
+            ? { ...row, job: { status: "failed", id: row.job?.id ?? "", error: message } }
+            : row) ?? null);
+        }
+      }
+    } finally {
+      if (comparisonToken.current === token) {
+        setComparisonRunning(false);
+        setComparisonPresetId(null);
+      }
     }
   };
 
@@ -393,8 +460,47 @@ export function BacktestPage() {
             These tests do not replay your saved screener filters. The history contains stocks listed today, not delisted companies, so results can be optimistic; backtests are research, not forecasts or recommendations.
           </p>
         </div>}
+        {!isAdmin && <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[12.5px] font-extrabold text-slate-900">Compare supported presets</p>
+              <p className="mt-1 text-[11.5px] text-slate-500">Runs each fixed test one at a time. Cached results are reused.</p>
+            </div>
+            <button type="button" onClick={() => void comparePresets()} disabled={sessionPending || job?.status === "running" || comparisonRunning}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 hover:border-emerald-300 disabled:opacity-40">
+              {comparisonRunning ? "Comparing…" : "Compare all three"}
+            </button>
+          </div>
+          {comparisonPresetId && <p role="status" className="text-xs font-semibold text-slate-600">Running {MEMBER_BACKTEST_PRESETS.find((preset) => preset.id === comparisonPresetId)?.name ?? "preset"}…</p>}
+          {comparisonError && <p role="alert" className="text-xs font-semibold text-rose-700">{comparisonError}</p>}
+          {comparison && <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+            <table className="w-full min-w-[760px] text-left text-xs">
+              <thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500">
+                <tr><th className="px-3 py-2">Strategy</th><th className="px-3 py-2">Status</th><th className="px-3 py-2 text-right">Trades</th><th className="px-3 py-2 text-right">Win</th><th className="px-3 py-2 text-right">Avg R</th><th className="px-3 py-2 text-right">CAGR</th><th className="px-3 py-2 text-right">Worst drop</th></tr>
+              </thead>
+              <tbody>
+                {comparison.map((row) => {
+                  const preset = MEMBER_BACKTEST_PRESETS.find((item) => item.id === row.presetId);
+                  const stats = row.job?.status === "done" ? row.job.result.stats : null;
+                  return <tr key={row.presetId} className="border-t border-slate-100">
+                    <th scope="row" className="px-3 py-2 font-bold text-slate-800">{preset?.name ?? row.presetId}</th>
+                    <td className="max-w-[260px] px-3 py-2 text-slate-600">
+                      {!row.job ? "Queued" : row.job.status === "running" ? row.job.message || "Running…" : row.job.status === "failed" ? `Failed: ${row.job.error}` : "Complete"}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">{stats?.trades ?? "—"}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{pct(stats?.winRate ?? null, 0)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{num(stats?.avgR ?? null)}R</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{pct(stats?.cagrPercent ?? null)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{pct(stats?.maxDrawdownPercent ?? null, 0)}</td>
+                  </tr>;
+                })}
+              </tbody>
+            </table>
+          </div>}
+          <p className="text-[11px] text-slate-500">Compare these results as research, not forecasts; they do not replay custom screener filters.</p>
+        </div>}
         <div className="flex flex-wrap items-center gap-3">
-          <button type="button" onClick={run} disabled={sessionPending || job?.status === "running"} className="btn-gold h-10 rounded-xl px-5 text-sm font-extrabold">{job?.status === "running" ? "Running…" : "Run backtest"}</button>
+          <button type="button" onClick={run} disabled={sessionPending || job?.status === "running" || comparisonRunning} className="btn-gold h-10 rounded-xl px-5 text-sm font-extrabold">{job?.status === "running" ? "Running…" : "Run backtest"}</button>
           {job?.status === "running" && <span className="text-xs font-semibold text-slate-500">{job.message || "working"} — the first run builds ranks and can take a minute or two.</span>}
           {error && <span className="text-xs font-semibold text-rose-700">{error}</span>}
           {job?.status === "failed" && <span className="text-xs font-semibold text-rose-700">Failed: {job.error}</span>}
