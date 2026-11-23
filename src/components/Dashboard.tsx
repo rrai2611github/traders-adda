@@ -527,7 +527,7 @@ export function Dashboard() {
           <SideGroup label="Your workspace" collapsed={sidebarCollapsed}>
             <SideItem icon="today" label="Today" current={activeNav === "today" || activeNav === "metrics"} collapsed={sidebarCollapsed} onClick={() => selectNav("today")} />
             <SideItem icon="journal" label="Positions & strategy" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/positions")} />
-            {isAdmin && <SideItem icon="signals" label="Backtest (10 years)" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/backtest")} />}
+            <SideItem icon="signals" label="Historical backtest" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/backtest")} />
             {isAdmin && <SideItem icon="picks" label="Email track record" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/radar")} />}
             <SideItem icon="watchlist" label="Watchlist" current={activeNav === "watchlist"} collapsed={sidebarCollapsed} onClick={() => selectNav("watchlist")} />
           </SideGroup>

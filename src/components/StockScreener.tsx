@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import type { ScreenScan } from "@/hooks/useScreenScan";
 import {
   DEFAULT_SCREENER_FILTER, SCREENER_PRESETS, matchesScreener, parseSavedScans, removeSavedScan, sortScreenerRows, toScreenerCsv,
+  validateSavedScans,
   toTradingViewList, upsertSavedScan, type SavedScan, type ScreenerFilter, type ScreenerSort, type ScreenerSortKey, type ScreenerStage,
 } from "@/lib/screen/stockScreener";
 import { formatPrice, toneClass } from "@/lib/format";
@@ -60,26 +62,81 @@ export function StockScreener({ scan, error, loadingMessage, keep }: {
   const [sort, setSort] = useState<ScreenerSort>({ key: "rs", dir: "desc" });
   const [shown, setShown] = useState(PAGE);
   const [saved, setSaved] = useState<SavedScan[]>([]);
+  const [savedLoading, setSavedLoading] = useState(true);
+  const [savedSaving, setSavedSaving] = useState(false);
+  const [savedError, setSavedError] = useState<string | null>(null);
   const [saveName, setSaveName] = useState("");
   const [note, setNote] = useState<string | null>(null);
 
-  // Saved scans live on this device only; read them after mount so the server and first paint agree.
+  // Import existing device-local scans once when this account has no saved list yet.
   useEffect(() => {
-    // Deliberately synchronous: the first client render must match the server's empty list, so storage is only read after mount.
-    try {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSaved(parseSavedScans(window.localStorage.getItem(STORAGE_KEY)));
-    } catch { /* storage blocked: start empty */ }
+    let active = true;
+    const load = async () => {
+      try {
+        const response = await fetch("/api/user/saved-scans", { cache: "no-store" });
+        const payload = await response.json() as { exists?: boolean; scans?: unknown; error?: string };
+        if (!response.ok) throw new Error(payload.error ?? "Could not load saved scans.");
+        const accountScans = validateSavedScans(payload.scans);
+        if (!accountScans.ok) throw new Error(accountScans.error);
+        let next = accountScans.scans;
+        if (payload.exists === false && next.length === 0) {
+          let legacy: SavedScan[] = [];
+          try { legacy = parseSavedScans(window.localStorage.getItem(STORAGE_KEY)); }
+          catch { if (active) setSavedError("Your account scans loaded, but this browser did not allow importing older device scans."); }
+          if (legacy.length) {
+            const imported = await fetch("/api/user/saved-scans", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ scans: legacy }),
+            });
+            const result = await imported.json() as { scans?: unknown; error?: string };
+            if (!imported.ok) throw new Error(result.error ?? "Could not import device scans.");
+            const validated = validateSavedScans(result.scans);
+            if (!validated.ok) throw new Error(validated.error);
+            next = validated.scans;
+          }
+        }
+        if (active) setSaved(next);
+      } catch (loadError) {
+        if (active) setSavedError(loadError instanceof Error ? loadError.message : "Could not load saved scans.");
+      } finally {
+        if (active) setSavedLoading(false);
+      }
+    };
+    void load();
+    return () => { active = false; };
   }, []);
-  const persist = (next: SavedScan[]) => {
-    setSaved(next);
-    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { setNote("Could not save on this device (storage blocked)."); }
+  const persist = async (next: SavedScan[]): Promise<boolean> => {
+    setSavedSaving(true);
+    setSavedError(null);
+    try {
+      const response = await fetch("/api/user/saved-scans", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scans: next }),
+      });
+      const payload = await response.json() as { scans?: unknown; error?: string };
+      if (!response.ok) throw new Error(payload.error ?? "Could not save scans to your account.");
+      const validated = validateSavedScans(payload.scans);
+      if (!validated.ok) throw new Error(validated.error);
+      setSaved(validated.scans);
+      return true;
+    } catch (saveError) {
+      setSavedError(saveError instanceof Error ? saveError.message : "Could not save scans to your account.");
+      return false;
+    } finally {
+      setSavedSaving(false);
+    }
   };
   const flash = (message: string) => { setNote(message); window.setTimeout(() => setNote(null), 2500); };
 
   const rows = useMemo(() => (scan?.rows ?? []).filter((row) => !keep || keep(row.symbol)), [scan, keep]);
   const sectors = useMemo(() => [...new Set(rows.map((row) => row.sector).filter((s): s is string => !!s))].sort(), [rows]);
   const matched = useMemo(() => sortScreenerRows(rows.filter((row) => matchesScreener(row, filter)), sort), [rows, filter, sort]);
+  const savedMatches = useMemo(
+    () => saved.map((item) => ({ name: item.name, rows: rows.filter((row) => matchesScreener(row, item.filter)) })).filter((item) => item.rows.length > 0),
+    [rows, saved],
+  );
   const visible = matched.slice(0, shown);
   const change = (patch: Partial<ScreenerFilter>) => { setFilter((current) => ({ ...current, ...patch })); setShown(PAGE); };
   const filtered = !sameFilter(filter, DEFAULT_SCREENER_FILTER);
@@ -95,9 +152,10 @@ export function StockScreener({ scan, error, loadingMessage, keep }: {
   return (
     <WorkspaceFrame id="stock-screener" className="scroll-mt-28">
       <WorkspaceHero eyebrow="All stocks" icon="setups" title="Stock Screener"
-        description="Every stock in the scan in one table. Filter, sort, save a scan to rerun later, or export the result. Delivery % is not shown because no data feed here carries it." />
+        description="Every stock in the scan in one table. Filter, sort, save account-level scans, or export the result. Delivery % is not shown because no data feed here carries it." />
       <div className="space-y-4 p-4 sm:p-5">
         {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">Scan refresh failed.{scan ? " Retained results may be stale." : " No results substituted."}</p>}
+        {savedError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">{savedError}</p>}
         <DataQualityNotice health={scan} updatedAt={scan?.updatedAt} />
         {!scan ? (error ? <EmptyState tone="error" title="Screener unavailable">The feed will retry automatically.</EmptyState> : <LoadingState rows={5} message={loadingMessage ?? "Loading the scan."} />) : (<>
           <div className="space-y-3 rounded-xl border border-border bg-raised p-3 text-xs">
@@ -132,19 +190,42 @@ export function StockScreener({ scan, error, loadingMessage, keep }: {
             </div>
             <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
               <span className="font-bold text-foreground">Saved scans</span>
-              {!saved.length && <span className="text-muted">None yet. Set your filters, name the scan and save it. Kept on this device.</span>}
+              {savedLoading && <span className="text-muted">Loading account scans…</span>}
+              {!savedLoading && !saved.length && <span className="text-muted">None yet. Set your filters, name the scan and save it to your account.</span>}
               {saved.map((item) => (
                 <span key={item.name} className="inline-flex overflow-hidden rounded-full border border-border bg-white">
                   <button type="button" onClick={() => { setFilter(item.filter); setShown(PAGE); }} className={`px-3 py-1 hover:bg-emerald-50 ${sameFilter(filter, item.filter) ? "font-bold text-emerald-800" : "text-foreground"}`}>{item.name}</button>
-                  <button type="button" aria-label={`Delete saved scan ${item.name}`} onClick={() => persist(removeSavedScan(saved, item.name))} className="border-l border-border px-2 text-muted hover:bg-rose-50 hover:text-rose-700">×</button>
+                  <button type="button" disabled={savedSaving} aria-label={`Delete saved scan ${item.name}`} onClick={() => { void persist(removeSavedScan(saved, item.name)); }} className="border-l border-border px-2 text-muted hover:bg-rose-50 hover:text-rose-700 disabled:opacity-40">×</button>
                 </span>
               ))}
-              <form className="ml-auto flex gap-2" onSubmit={(e) => { e.preventDefault(); if (!saveName.trim()) return; persist(upsertSavedScan(saved, { name: saveName, filter })); setSaveName(""); flash("Scan saved"); }}>
+              <form className="ml-auto flex gap-2" onSubmit={(e) => {
+                e.preventDefault();
+                if (!saveName.trim() || savedLoading || savedSaving) return;
+                void persist(upsertSavedScan(saved, { name: saveName, filter })).then((ok) => {
+                  if (ok) { setSaveName(""); flash("Scan saved to your account"); }
+                });
+              }}>
                 <input value={saveName} onChange={(e) => setSaveName(e.target.value)} placeholder="Name this scan" aria-label="Name for this scan" maxLength={60} className="w-40 rounded-lg border border-border bg-white px-3 py-1.5" />
-                <button type="submit" disabled={!saveName.trim()} className="rounded-lg border border-border bg-white px-3 py-1.5 font-bold disabled:opacity-40">Save this scan</button>
+                <button type="submit" disabled={!saveName.trim() || savedLoading || savedSaving} className="rounded-lg border border-border bg-white px-3 py-1.5 font-bold disabled:opacity-40">{savedSaving ? "Saving…" : "Save this scan"}</button>
               </form>
             </div>
           </div>
+
+          <section aria-live="polite" aria-label="Saved scan matches" className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="font-extrabold text-emerald-950">In-app saved-scan matches <span className="font-medium text-emerald-800">· refreshed with the market scan</span></p>
+              <p className="text-emerald-800">{scan.source.label} · {new Date(scan.updatedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} IST</p>
+            </div>
+            {savedLoading ? <p className="mt-2 text-emerald-900">Loading your saved criteria…</p>
+              : !saved.length ? <p className="mt-2 text-emerald-900">Save a scan above to see daily matches here.</p>
+                : !savedMatches.length ? <p className="mt-2 text-emerald-900">No saved scans match this scan snapshot.</p>
+                  : <div className="mt-2 space-y-1.5">
+                    {savedMatches.map((item) => <p key={item.name} className="text-emerald-950">
+                      <span className="font-bold">{item.name}</span> · {item.rows.length} {item.rows.length === 1 ? "match" : "matches"}: {item.rows.slice(0, 8).map((row) => row.symbol).join(", ")}{item.rows.length > 8 ? `, +${item.rows.length - 8} more` : ""}
+                    </p>)}
+                  </div>}
+            <p className="mt-2 text-[11px] text-emerald-800">Screening matches are informational, not buy recommendations. <Link href="/backtest" className="font-bold underline">Historical strategy tests</Link> use fixed supported rules, not your custom screener filters.</p>
+          </section>
 
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <p className="text-muted"><b className="text-foreground">{matched.length.toLocaleString("en-IN")}</b> of {rows.length.toLocaleString("en-IN")} stocks · {scan.source.label} · {new Date(scan.updatedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} IST</p>

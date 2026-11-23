@@ -7,6 +7,8 @@ import { AppShell } from "./AppShell";
 import type { BacktestResult, BacktestSettings, TradeStats } from "@/lib/backtest/types";
 import { Term } from "./Term";
 import { TradeCards } from "./TradeCards";
+import { authClient } from "@/lib/auth-client";
+import { MEMBER_BACKTEST_PRESETS } from "@/lib/backtest/memberPresets";
 
 type Job = { status: "running"; id: string; message: string } | { status: "failed"; id: string; error: string } | { status: "done"; id: string; result: BacktestResult };
 
@@ -249,7 +251,10 @@ function Results({ result }: { result: BacktestResult }) {
 }
 
 export function BacktestPage() {
+  const { data: session, isPending: sessionPending } = authClient.useSession();
+  const isAdmin = session?.user.role === "admin";
   const [form, setForm] = useState<Form>(RECOMMENDED);
+  const [memberPresetId, setMemberPresetId] = useState(MEMBER_BACKTEST_PRESETS[0].id);
   const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -263,26 +268,37 @@ export function BacktestPage() {
     return () => clearTimeout(id);
   }, []);
 
-  const poll = (id: string) => {
+  const poll = (id: string, endpoint: string) => {
     timer.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/backtest?id=${id}`, { cache: "no-store" });
+        const res = await fetch(`${endpoint}?id=${id}`, { cache: "no-store" });
         if (!res.ok) { setError("The server forgot this run (it restarted). Run it again."); setJob(null); return; }
         const next = (await res.json()) as Job;
         setJob(next);
-        if (next.status === "running") poll(id);
+        if (next.status === "running") poll(id, endpoint);
       } catch { setError("Could not reach the server."); setJob(null); }
     }, 1500);
   };
   const run = async () => {
+    if (sessionPending) return;
     if (timer.current) clearTimeout(timer.current);
     setError(null); setJob({ status: "running", id: "", message: "starting" });
+    const endpoint = isAdmin ? "/api/backtest" : "/api/member/backtest";
     try {
-      const res = await fetch("/api/backtest", { method: "POST", body: JSON.stringify(toSettings(form)) });
-      const next = (await res.json()) as Job;
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(isAdmin ? toSettings(form) : { presetId: memberPresetId }),
+      });
+      const payload = await res.json() as Job & { error?: string };
+      if (!res.ok) throw new Error(payload.error ?? "Could not start the backtest.");
+      const next = payload as Job;
       setJob(next);
-      if (next.status === "running") poll(next.id);
-    } catch { setError("Could not start the backtest."); setJob(null); }
+      if (next.status === "running") poll(next.id, endpoint);
+    } catch (runError) {
+      setError(runError instanceof Error ? runError.message : "Could not start the backtest.");
+      setJob(null);
+    }
   };
 
   return (
@@ -291,11 +307,12 @@ export function BacktestPage() {
       <header className="flex flex-wrap items-center gap-3">
         <div>
           <h1 className="text-[20px] font-extrabold tracking-[-0.02em] text-slate-900">Backtest</h1>
-          <p className="text-[12.5px] text-slate-500">Replay a stock-picking rule on ten years of NSE prices with one account, real costs and the breadth gate.</p>
+          <p className="text-[12.5px] text-slate-500">{isAdmin ? "Replay a stock-picking rule on ten years of NSE prices with one account, real costs and the breadth gate." : "Compare supported fixed strategy rules on historical NSE prices with real costs and the breadth gate."}</p>
         </div>
       </header>
 
       <section className="space-y-4 rounded-2xl border border-border bg-surface p-4" aria-label="Settings">
+        {isAdmin ? <>
         <div role="group" aria-label="Starting points" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {PRESETS.map((p, index) => (
             <button key={p.name} type="button" onClick={() => setForm({ ...RECOMMENDED, ...p.form })} className={`flex flex-col gap-1 rounded-xl border bg-white px-3.5 py-2.5 text-left transition hover:-translate-y-0.5 hover:shadow-md ${index === 0 ? "border-[#e6b53c] ring-1 ring-[#e6b53c]/40" : "border-slate-200 hover:border-slate-300"}`}>
@@ -361,8 +378,23 @@ export function BacktestPage() {
           </div>
         </details>
         <p className="text-[12px] text-slate-500">Want to see these rules on today&apos;s real prices instead of the past? Follow them with paper money in the <Link href="/positions#strategy-check" className="font-bold text-emerald-700 underline">Live strategy check</Link>.</p>
+        </> : <div className="space-y-3">
+          <p className="text-[12px] text-slate-600">Choose a supported historical test. Members can run these fixed rules only; custom backtest settings remain admin-only.</p>
+          <div role="group" aria-label="Supported backtest strategies" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {MEMBER_BACKTEST_PRESETS.map((preset) => (
+              <button key={preset.id} type="button" aria-pressed={memberPresetId === preset.id} onClick={() => setMemberPresetId(preset.id)}
+                className={`flex flex-col gap-1 rounded-xl border px-3.5 py-2.5 text-left transition hover:shadow-md ${memberPresetId === preset.id ? "border-emerald-600 bg-emerald-50 ring-1 ring-emerald-600/30" : "border-slate-200 bg-white hover:border-slate-300"}`}>
+                <span className="text-[12.5px] font-extrabold text-slate-900">{preset.name}</span>
+                <span className="text-[11.5px] leading-4 text-slate-500">{preset.description}</span>
+              </button>
+            ))}
+          </div>
+          <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11.5px] leading-5 text-amber-950">
+            These tests do not replay your saved screener filters. The history contains stocks listed today, not delisted companies, so results can be optimistic; backtests are research, not forecasts or recommendations.
+          </p>
+        </div>}
         <div className="flex flex-wrap items-center gap-3">
-          <button type="button" onClick={run} disabled={job?.status === "running"} className="btn-gold h-10 rounded-xl px-5 text-sm font-extrabold">{job?.status === "running" ? "Running…" : "Run backtest"}</button>
+          <button type="button" onClick={run} disabled={sessionPending || job?.status === "running"} className="btn-gold h-10 rounded-xl px-5 text-sm font-extrabold">{job?.status === "running" ? "Running…" : "Run backtest"}</button>
           {job?.status === "running" && <span className="text-xs font-semibold text-slate-500">{job.message || "working"} — the first run builds ranks and can take a minute or two.</span>}
           {error && <span className="text-xs font-semibold text-rose-700">{error}</span>}
           {job?.status === "failed" && <span className="text-xs font-semibold text-rose-700">Failed: {job.error}</span>}

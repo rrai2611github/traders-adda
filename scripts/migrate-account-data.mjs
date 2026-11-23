@@ -13,6 +13,13 @@ try {
     )
   `);
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_saved_scans (
+      user_id text PRIMARY KEY REFERENCES "user"(id) ON DELETE CASCADE,
+      scans jsonb NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(scans) = 'array'),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS user_positions (
       user_id text PRIMARY KEY REFERENCES "user"(id) ON DELETE CASCADE,
       holdings jsonb NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(holdings) = 'array'),

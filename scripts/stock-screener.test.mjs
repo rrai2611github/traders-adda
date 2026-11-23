@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   DEFAULT_SCREENER_FILTER, matchesScreener, sortScreenerRows, toScreenerCsv, toTradingViewList,
-  parseSavedScans, upsertSavedScan, removeSavedScan, MAX_SAVED_SCANS,
+  parseSavedScans, upsertSavedScan, removeSavedScan, MAX_SAVED_SCANS, validateSavedScans,
 } from "../src/lib/screen/stockScreener.ts";
 
 const row = (over = {}) => ({
@@ -92,4 +92,16 @@ test("saving under an existing name replaces it, newest first, and the list is c
   for (let i = 0; i < 30; i++) list = upsertSavedScan(list, { name: `s${i}`, filter: f() });
   assert.equal(list.length, MAX_SAVED_SCANS);
   assert.deepEqual(removeSavedScan(list, "s29").some((s) => s.name === "s29"), false);
+});
+
+test("saved scans validate persisted filter bounds and normalize optional fields", () => {
+  const valid = validateSavedScans([{ name: "  Leaders  ", filter: { search: "  TCS ", minRs: 80, stage: "forming" } }]);
+  assert.deepEqual(valid, {
+    ok: true,
+    scans: [{ name: "Leaders", filter: { search: "TCS", sector: null, stage: "forming", minRs: 80, maxFromHigh: null, minTurnoverCr: null, minMcapCr: null, liquidOnly: true } }],
+  });
+  assert.equal(validateSavedScans([{ name: "bad", filter: { minRs: 100 } }]).ok, false);
+  assert.equal(validateSavedScans([{ name: "bad", filter: { stage: "unknown" } }]).ok, false);
+  assert.equal(validateSavedScans([{ name: "same", filter: {} }, { name: "SAME", filter: {} }]).ok, false);
+  assert.equal(validateSavedScans(Array.from({ length: MAX_SAVED_SCANS + 1 }, (_, i) => ({ name: `scan-${i}`, filter: {} }))).ok, false);
 });

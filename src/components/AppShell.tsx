@@ -53,7 +53,7 @@ export function AppShell({ current, children }: { current: ShellPage; children: 
           <SideGroup label="Your workspace" collapsed={false}>
             <SideItem icon="today" label="Today" current={false} collapsed={false} onClick={go("/")} />
             <SideItem icon="journal" label="Positions & strategy" current={current === "positions"} collapsed={false} onClick={go("/positions")} />
-            {isAdmin && <SideItem icon="signals" label="Backtest (10 years)" current={current === "backtest"} collapsed={false} onClick={go("/backtest")} />}
+            <SideItem icon="signals" label="Historical backtest" current={current === "backtest"} collapsed={false} onClick={go("/backtest")} />
             {isAdmin && <SideItem icon="picks" label="Email track record" current={current === "radar"} collapsed={false} onClick={go("/radar")} />}
             <SideItem icon="watchlist" label="Watchlist" current={false} collapsed={false} onClick={go("/#watchlist")} />
           </SideGroup>
@@ -122,9 +122,9 @@ export function AppShell({ current, children }: { current: ShellPage; children: 
         </header>
         {(current === "backtest" || current === "radar") && (
           <nav aria-label="Results tools" className="flex flex-wrap gap-3 border-b border-border px-4 py-3 text-sm font-bold lg:px-6">
-            <Link href="/performance" className="px-3 py-2 text-emerald-700">Back to Results</Link>
+            {isAdmin && <Link href="/performance" className="px-3 py-2 text-emerald-700">Back to Results</Link>}
             <Link href="/backtest" aria-current={current === "backtest" ? "page" : undefined} className="px-3 py-2 text-emerald-700">Historical backtest</Link>
-            <Link href="/radar" aria-current={current === "radar" ? "page" : undefined} className="px-3 py-2 text-emerald-700">Email track record</Link>
+            {isAdmin && <Link href="/radar" aria-current={current === "radar" ? "page" : undefined} className="px-3 py-2 text-emerald-700">Email track record</Link>}
           </nav>
         )}
         {children}

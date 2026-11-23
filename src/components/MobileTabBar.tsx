@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NavIcon, type NavIconName } from "./NavIcons";
+import { authClient } from "@/lib/auth-client";
 
 const TABS: ReadonlyArray<{ href: string; label: string; icon: NavIconName }> = [
   { href: "/", label: "Today", icon: "today" },
@@ -18,9 +19,15 @@ const TABS: ReadonlyArray<{ href: string; label: string; icon: NavIconName }> = 
 export function MobileTabBar() {
   const pathname = usePathname();
   if (!TABS.some((tab) => tab.href === pathname)) return null;
+  return <VisibleMobileTabBar pathname={pathname} />;
+}
+
+function VisibleMobileTabBar({ pathname }: { pathname: string }) {
+  const { data: session } = authClient.useSession();
+  const tabs = session?.user.role === "admin" ? TABS : TABS.filter((tab) => tab.href !== "/radar");
   return (
     <nav aria-label="Main tabs" className="tabbar">
-      {TABS.map((tab) => {
+      {tabs.map((tab) => {
         const current = tab.href === pathname;
         return (
           <Link

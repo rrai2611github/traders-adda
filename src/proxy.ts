@@ -2,9 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { auth, assertAuthEnvironment } from "@/lib/auth";
 
 const PUBLIC_PATHS = ["/login", "/register", "/verify-email", "/forgot-password", "/reset-password"];
-const ADMIN_PAGES = ["/admin", "/backtest", "/performance", "/radar", "/scalp"];
-const USER_PAGES = ["/", "/assistant", "/playbook", "/positions", "/tracker"];
-const USER_API_PREFIXES = ["/api/market", "/api/assistant", "/api/paper", "/api/user/watchlist", "/api/positions", "/api/tracker", "/api/strategy-health"];
+const ADMIN_PAGES = ["/admin", "/performance", "/radar", "/scalp"];
+const USER_PAGES = ["/", "/assistant", "/backtest", "/playbook", "/positions", "/tracker"];
+const USER_API_PREFIXES = ["/api/market", "/api/assistant", "/api/member/backtest", "/api/paper", "/api/user/watchlist", "/api/user/saved-scans", "/api/positions", "/api/tracker", "/api/strategy-health"];
 const ADMIN_API_PREFIXES = ["/api/paper/index", "/api/scalp"];
 
 function matchesPath(path: string, prefixes: string[]): boolean {

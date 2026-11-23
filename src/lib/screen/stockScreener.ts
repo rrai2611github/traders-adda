@@ -120,8 +120,77 @@ export interface SavedScan { name: string; filter: ScreenerFilter }
 
 export const MAX_SAVED_SCANS = 20;
 
+export type SavedScansValidation =
+  | { ok: true; scans: SavedScan[] }
+  | { ok: false; error: string };
+
 const num = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
-const STAGES: ReadonlyArray<string> = ["forming", "breakout", "climbing", "played-out"];
+const STAGES: ReadonlyArray<ScreenerStage> = ["forming", "breakout", "climbing", "played-out"];
+const isStage = (value: unknown): value is ScreenerStage => typeof value === "string" && STAGES.some((stage) => stage === value);
+
+export function validateSavedScans(value: unknown): SavedScansValidation {
+  if (!Array.isArray(value)) return { ok: false, error: "Saved scans must be a list." };
+  if (value.length > MAX_SAVED_SCANS) return { ok: false, error: `Save at most ${MAX_SAVED_SCANS} scans.` };
+
+  const scans: SavedScan[] = [];
+  const names = new Set<string>();
+  for (const item of value) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return { ok: false, error: "A saved scan is malformed." };
+    const saved = item as Record<string, unknown>;
+    if (typeof saved.name !== "string" || !saved.name.trim() || saved.name.trim().length > 60) {
+      return { ok: false, error: "Each scan needs a name of 1 to 60 characters." };
+    }
+    const name = saved.name.trim();
+    const key = name.toLowerCase();
+    if (names.has(key)) return { ok: false, error: "Saved scan names must be unique." };
+    names.add(key);
+    if (!saved.filter || typeof saved.filter !== "object" || Array.isArray(saved.filter)) {
+      return { ok: false, error: `The filters for "${name}" are malformed.` };
+    }
+    const filter = saved.filter as Record<string, unknown>;
+    const search = filter.search ?? "";
+    const sector = filter.sector ?? null;
+    const stage = filter.stage ?? null;
+    const liquidOnly = filter.liquidOnly ?? true;
+    if (typeof search !== "string" || search.trim().length > 100) return { ok: false, error: `Search text for "${name}" must be at most 100 characters.` };
+    if (sector !== null && (typeof sector !== "string" || sector.length > 100)) return { ok: false, error: `Sector for "${name}" is invalid.` };
+    if (stage !== null && !isStage(stage)) return { ok: false, error: `Stage for "${name}" is invalid.` };
+    if (typeof liquidOnly !== "boolean") return { ok: false, error: `The liquid-stock setting for "${name}" is invalid.` };
+
+    type NumericFilterKey = "minRs" | "maxFromHigh" | "minTurnoverCr" | "minMcapCr";
+    const bounds: ReadonlyArray<readonly [NumericFilterKey, number, number]> = [
+      ["minRs", 1, 99],
+      ["maxFromHigh", 0, 1000],
+      ["minTurnoverCr", 0, 1_000_000_000],
+      ["minMcapCr", 0, 1_000_000_000_000],
+    ];
+    const numeric: Record<NumericFilterKey, number | null> = { minRs: null, maxFromHigh: null, minTurnoverCr: null, minMcapCr: null };
+    for (const [field, min, max] of bounds) {
+      const current = filter[field] ?? null;
+      if (current === null) {
+        numeric[field] = null;
+      } else if (typeof current !== "number" || !Number.isFinite(current) || current < min || current > max) {
+        return { ok: false, error: `The ${field} filter for "${name}" is out of range.` };
+      } else {
+        numeric[field] = current;
+      }
+    }
+    scans.push({
+      name,
+      filter: {
+        search: search.trim(),
+        sector: typeof sector === "string" ? sector.trim() || null : null,
+        stage: stage === null ? null : isStage(stage) ? stage : null,
+        minRs: numeric.minRs,
+        maxFromHigh: numeric.maxFromHigh,
+        minTurnoverCr: numeric.minTurnoverCr,
+        minMcapCr: numeric.minMcapCr,
+        liquidOnly,
+      },
+    });
+  }
+  return { ok: true, scans };
+}
 
 /** Reads saved scans from storage text, dropping anything malformed instead of throwing. */
 export function parseSavedScans(raw: string | null): SavedScan[] {
@@ -139,7 +208,7 @@ export function parseSavedScans(raw: string | null): SavedScan[] {
       filter: {
         search: typeof filter.search === "string" ? filter.search : "",
         sector: typeof filter.sector === "string" ? filter.sector : null,
-        stage: typeof filter.stage === "string" && STAGES.includes(filter.stage) ? (filter.stage as ScreenerStage) : null,
+        stage: isStage(filter.stage) ? filter.stage : null,
         minRs: num(filter.minRs),
         maxFromHigh: num(filter.maxFromHigh),
         minTurnoverCr: num(filter.minTurnoverCr),
