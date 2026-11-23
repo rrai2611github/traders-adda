@@ -26,6 +26,16 @@ try {
       updated_at timestamptz NOT NULL DEFAULT now()
     )
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS account_visits (
+      user_id text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+      visit_date date NOT NULL,
+      first_seen_at timestamptz NOT NULL DEFAULT now(),
+      last_seen_at timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (user_id, visit_date)
+    )
+  `);
+  await pool.query("CREATE INDEX IF NOT EXISTS account_visits_visit_date_idx ON account_visits (visit_date)");
   console.log("Account data tables are ready.");
 } finally {
   await pool.end();

@@ -2,11 +2,22 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { authClient } from "@/lib/auth-client";
 
 export function AccountMenu() {
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
+  const userId = session?.user.id;
+
+  useEffect(() => {
+    if (!userId) return;
+    void fetch("/api/visitor", { method: "POST", keepalive: true })
+      .then((response) => {
+        if (!response.ok) throw new Error(`Visitor count request failed (${response.status}).`);
+      })
+      .catch((error: unknown) => console.error("[visitor-count] request failed:", error));
+  }, [userId]);
 
   if (isPending) return null;
   if (!session) {

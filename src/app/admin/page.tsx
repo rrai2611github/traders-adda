@@ -1,4 +1,5 @@
 import { UserManager } from "@/components/admin/UserManager";
+import { VisitorCount } from "@/components/admin/VisitorCount";
 import { AccountMenu } from "@/components/auth/AccountMenu";
 
 export default function AdminPage() {
@@ -16,6 +17,7 @@ export default function AdminPage() {
           <h2 className="text-2xl font-black text-slate-900">Manage members</h2>
           <p className="mt-1 text-sm text-slate-600">Review registrations, change account roles, or disable and restore access.</p>
         </div>
+        <VisitorCount />
         <UserManager />
       </div>
     </main>
