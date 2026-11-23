@@ -1,4 +1,6 @@
 import { UserManager } from "@/components/admin/UserManager";
+import { AdminAuditLog } from "@/components/admin/AdminAuditLog";
+import { ServiceHealth } from "@/components/admin/ServiceHealth";
 import { VisitorCount } from "@/components/admin/VisitorCount";
 import { AccountMenu } from "@/components/auth/AccountMenu";
 
@@ -18,7 +20,9 @@ export default function AdminPage() {
           <p className="mt-1 text-sm text-slate-600">Review registrations, change account roles, or disable and restore access.</p>
         </div>
         <VisitorCount />
+        <ServiceHealth />
         <UserManager />
+        <AdminAuditLog />
       </div>
     </main>
   );

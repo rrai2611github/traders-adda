@@ -36,6 +36,19 @@ try {
     )
   `);
   await pool.query("CREATE INDEX IF NOT EXISTS account_visits_visit_date_idx ON account_visits (visit_date)");
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS admin_audit_events (
+      id bigserial PRIMARY KEY,
+      actor_user_id text NOT NULL,
+      actor_email text NOT NULL,
+      target_user_id text NOT NULL,
+      target_email text NOT NULL,
+      action text NOT NULL CHECK (action IN ('role_changed', 'account_disabled', 'account_enabled')),
+      details jsonb NOT NULL DEFAULT '{}'::jsonb CHECK (jsonb_typeof(details) = 'object'),
+      created_at timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+  await pool.query("CREATE INDEX IF NOT EXISTS admin_audit_events_created_at_idx ON admin_audit_events (created_at DESC, id DESC)");
   console.log("Account data tables are ready.");
 } finally {
   await pool.end();
