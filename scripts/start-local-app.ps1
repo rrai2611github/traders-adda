@@ -20,6 +20,9 @@ try {
         }
         throw "Port $Port is occupied by another application; no process was stopped."
     }
+    $npm = (Get-Command npm.cmd -ErrorAction Stop).Source
+    & $npm run db:migrate
+    if ($LASTEXITCODE -ne 0) { throw "Database migration failed (exit $LASTEXITCODE); the local app was not started." }
     $logDir = Join-Path $root '.cache\startup'
     New-Item -ItemType Directory -Path $logDir -Force | Out-Null
     $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'

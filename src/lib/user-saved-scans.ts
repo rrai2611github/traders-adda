@@ -1,8 +1,11 @@
+import type { Pool } from "pg";
 import { requireAuthDb } from "./auth-db.ts";
 import { validateSavedScans, type SavedScan } from "./screen/stockScreener.ts";
 
-export async function getUserSavedScans(userId: string): Promise<{ exists: boolean; scans: SavedScan[] }> {
-  const result = await requireAuthDb().query<{ scans: unknown }>(
+type SavedScanDatabase = Pick<Pool, "query">;
+
+export async function getUserSavedScans(userId: string, db: SavedScanDatabase = requireAuthDb()): Promise<{ exists: boolean; scans: SavedScan[] }> {
+  const result = await db.query<{ scans: unknown }>(
     "SELECT scans FROM user_saved_scans WHERE user_id = $1",
     [userId],
   );
@@ -13,8 +16,8 @@ export async function getUserSavedScans(userId: string): Promise<{ exists: boole
   return { exists: true, scans: parsed.scans };
 }
 
-export async function saveUserScans(userId: string, scans: SavedScan[]): Promise<void> {
-  await requireAuthDb().query(
+export async function saveUserScans(userId: string, scans: SavedScan[], db: SavedScanDatabase = requireAuthDb()): Promise<void> {
+  await db.query(
     `INSERT INTO user_saved_scans (user_id, scans, updated_at)
      VALUES ($1, $2::jsonb, now())
      ON CONFLICT (user_id) DO UPDATE SET scans = EXCLUDED.scans, updated_at = now()`,

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { MEMBER_BACKTEST_PRESETS, getMemberBacktestPreset } from "../src/lib/backtest/memberPresets.ts";
+import { MEMBER_BACKTEST_PRESETS, getMemberBacktestPreset, getMemberBacktestPresetFromBody } from "../src/lib/backtest/memberPresets.ts";
 
 test("member presets are limited to fixed screen strategies and the tested risk rules", () => {
   assert.equal(MEMBER_BACKTEST_PRESETS.length, 3);
@@ -25,4 +25,12 @@ test("member preset lookup rejects arbitrary settings and unknown identifiers", 
   assert.equal(getMemberBacktestPreset("tested-combination")?.id, "tested-combination");
   assert.equal(getMemberBacktestPreset("custom"), null);
   assert.equal(getMemberBacktestPreset({ strategy: "leaders" }), null);
+});
+
+test("member backtest requests accept only one whitelisted preset identifier", () => {
+  assert.equal(getMemberBacktestPresetFromBody({ presetId: "blue-sky" })?.id, "blue-sky");
+  assert.equal(getMemberBacktestPresetFromBody({ presetId: "custom" }), null);
+  assert.equal(getMemberBacktestPresetFromBody({ presetId: "blue-sky", capital: 1 }), null);
+  assert.equal(getMemberBacktestPresetFromBody({ settings: { symbol: "TCS" } }), null);
+  assert.equal(getMemberBacktestPresetFromBody([]), null);
 });

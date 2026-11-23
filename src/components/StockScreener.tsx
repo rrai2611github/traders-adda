@@ -1,19 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { ScreenScan } from "@/hooks/useScreenScan";
 import {
-  DEFAULT_SCREENER_FILTER, SCREENER_PRESETS, matchesScreener, parseSavedScans, removeSavedScan, sortScreenerRows, toScreenerCsv,
-  validateSavedScans,
-  toTradingViewList, upsertSavedScan, type SavedScan, type ScreenerFilter, type ScreenerSort, type ScreenerSortKey, type ScreenerStage,
+  DEFAULT_SCREENER_FILTER, SCREENER_PRESETS, matchesScreener, removeSavedScan, sortScreenerRows, toScreenerCsv,
+  toTradingViewList, upsertSavedScan, type ScreenerFilter, type ScreenerSort, type ScreenerSortKey, type ScreenerStage,
 } from "@/lib/screen/stockScreener";
 import { formatPrice, toneClass } from "@/lib/format";
+import { useSavedScans } from "@/hooks/useSavedScans";
 import { StockSymbolButton } from "./StockDetailContext";
 import { DataQualityNotice } from "./DataQualityNotice";
 import { EmptyState, LoadingState, WorkspaceFrame, WorkspaceHero } from "./WorkspaceShell";
 
-const STORAGE_KEY = "sa.savedScans.v1";
 const PAGE = 100;
 const STAGES: { key: ScreenerStage; label: string }[] = [
   { key: "forming", label: "Base forming" },
@@ -61,73 +60,10 @@ export function StockScreener({ scan, error, loadingMessage, keep }: {
   const [filter, setFilter] = useState<ScreenerFilter>(DEFAULT_SCREENER_FILTER);
   const [sort, setSort] = useState<ScreenerSort>({ key: "rs", dir: "desc" });
   const [shown, setShown] = useState(PAGE);
-  const [saved, setSaved] = useState<SavedScan[]>([]);
-  const [savedLoading, setSavedLoading] = useState(true);
-  const [savedSaving, setSavedSaving] = useState(false);
-  const [savedError, setSavedError] = useState<string | null>(null);
+  const { saved, savedLoading, savedSaving, savedError, persist } = useSavedScans();
   const [saveName, setSaveName] = useState("");
   const [note, setNote] = useState<string | null>(null);
 
-  // Import existing device-local scans once when this account has no saved list yet.
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        const response = await fetch("/api/user/saved-scans", { cache: "no-store" });
-        const payload = await response.json() as { exists?: boolean; scans?: unknown; error?: string };
-        if (!response.ok) throw new Error(payload.error ?? "Could not load saved scans.");
-        const accountScans = validateSavedScans(payload.scans);
-        if (!accountScans.ok) throw new Error(accountScans.error);
-        let next = accountScans.scans;
-        if (payload.exists === false && next.length === 0) {
-          let legacy: SavedScan[] = [];
-          try { legacy = parseSavedScans(window.localStorage.getItem(STORAGE_KEY)); }
-          catch { if (active) setSavedError("Your account scans loaded, but this browser did not allow importing older device scans."); }
-          if (legacy.length) {
-            const imported = await fetch("/api/user/saved-scans", {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ scans: legacy }),
-            });
-            const result = await imported.json() as { scans?: unknown; error?: string };
-            if (!imported.ok) throw new Error(result.error ?? "Could not import device scans.");
-            const validated = validateSavedScans(result.scans);
-            if (!validated.ok) throw new Error(validated.error);
-            next = validated.scans;
-          }
-        }
-        if (active) setSaved(next);
-      } catch (loadError) {
-        if (active) setSavedError(loadError instanceof Error ? loadError.message : "Could not load saved scans.");
-      } finally {
-        if (active) setSavedLoading(false);
-      }
-    };
-    void load();
-    return () => { active = false; };
-  }, []);
-  const persist = async (next: SavedScan[]): Promise<boolean> => {
-    setSavedSaving(true);
-    setSavedError(null);
-    try {
-      const response = await fetch("/api/user/saved-scans", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scans: next }),
-      });
-      const payload = await response.json() as { scans?: unknown; error?: string };
-      if (!response.ok) throw new Error(payload.error ?? "Could not save scans to your account.");
-      const validated = validateSavedScans(payload.scans);
-      if (!validated.ok) throw new Error(validated.error);
-      setSaved(validated.scans);
-      return true;
-    } catch (saveError) {
-      setSavedError(saveError instanceof Error ? saveError.message : "Could not save scans to your account.");
-      return false;
-    } finally {
-      setSavedSaving(false);
-    }
-  };
   const flash = (message: string) => { setNote(message); window.setTimeout(() => setNote(null), 2500); };
 
   const rows = useMemo(() => (scan?.rows ?? []).filter((row) => !keep || keep(row.symbol)), [scan, keep]);

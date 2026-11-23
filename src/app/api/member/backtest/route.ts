@@ -1,5 +1,5 @@
 import { getBacktest, settingsId, startBacktest } from "@/lib/backtest/jobs";
-import { getMemberBacktestPreset, MEMBER_BACKTEST_PRESETS } from "@/lib/backtest/memberPresets";
+import { getMemberBacktestPresetFromBody, MEMBER_BACKTEST_PRESETS } from "@/lib/backtest/memberPresets";
 import { sessionFromRequest } from "@/lib/auth-session";
 
 export const dynamic = "force-dynamic";
@@ -16,10 +16,7 @@ export async function POST(request: Request) {
   } catch {
     return Response.json({ error: "Request body must be valid JSON." }, { status: 400, headers });
   }
-  if (!body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).length !== 1 || !("presetId" in body)) {
-    return Response.json({ error: "Choose one supported backtest preset." }, { status: 400, headers });
-  }
-  const preset = getMemberBacktestPreset(body.presetId);
+  const preset = getMemberBacktestPresetFromBody(body);
   if (!preset) return Response.json({ error: "That backtest preset is not supported." }, { status: 400, headers });
   const job = startBacktest(preset.settings);
   startedMemberJobIds.add(job.id);

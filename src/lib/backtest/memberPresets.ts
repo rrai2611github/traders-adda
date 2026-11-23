@@ -53,3 +53,10 @@ export const MEMBER_BACKTEST_PRESETS: readonly MemberBacktestPreset[] = [
 export function getMemberBacktestPreset(id: unknown): MemberBacktestPreset | null {
   return typeof id === "string" ? MEMBER_BACKTEST_PRESETS.find((preset) => preset.id === id) ?? null : null;
 }
+
+export function getMemberBacktestPresetFromBody(body: unknown): MemberBacktestPreset | null {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return null;
+  const record = body as Record<string, unknown>;
+  if (Object.keys(record).length !== 1 || !("presetId" in record)) return null;
+  return getMemberBacktestPreset(record.presetId);
+}

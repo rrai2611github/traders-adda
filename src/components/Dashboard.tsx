@@ -47,6 +47,7 @@ import { MonthlySetups } from "./MonthlySetups";
 import { BottomedOutScreener } from "./BottomedOutScreener";
 import { Stage2Bases } from "./Stage2Bases";
 import { StockScreener } from "./StockScreener";
+import { SavedScanMatchesCard } from "./SavedScanMatchesCard";
 import { SectorStage2 } from "./SectorStage2";
 import { DailyChanges } from "./DailyChanges";
 import { SetupLab } from "./SetupLab";
@@ -665,6 +666,7 @@ export function Dashboard() {
       <FyersBanner />
       {activeNav !== "today" && <MarketStrip />}
       {activeNav === "today" && <TodayStrip />}
+      {activeNav === "today" && <SavedScanMatchesCard scan={universeScan} scanError={scanError} />}
 
       {activeNav !== "metrics" && <section aria-label="Market index snapshot" className="scroll-mt-36">
         <IndexStrip quotes={indices.quotes} lastUpdate={indices.lastUpdate} error={indices.error} />

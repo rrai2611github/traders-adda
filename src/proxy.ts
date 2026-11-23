@@ -1,15 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auth, assertAuthEnvironment } from "@/lib/auth";
+import { routeAccess } from "@/lib/routeAccess";
 
 const PUBLIC_PATHS = ["/login", "/register", "/verify-email", "/forgot-password", "/reset-password"];
-const ADMIN_PAGES = ["/admin", "/performance", "/radar", "/scalp"];
-const USER_PAGES = ["/", "/assistant", "/backtest", "/playbook", "/positions", "/tracker"];
-const USER_API_PREFIXES = ["/api/market", "/api/assistant", "/api/member/backtest", "/api/paper", "/api/user/watchlist", "/api/user/saved-scans", "/api/positions", "/api/tracker", "/api/strategy-health"];
-const ADMIN_API_PREFIXES = ["/api/paper/index", "/api/scalp"];
-
-function matchesPath(path: string, prefixes: string[]): boolean {
-  return prefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
-}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -32,20 +25,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(login);
   }
 
-  if (session.user.role === "admin") return NextResponse.next();
-
-  if (matchesPath(pathname, ADMIN_PAGES) || matchesPath(pathname, ADMIN_API_PREFIXES)) {
-    if (isApi) return Response.json({ error: "Admin access is required." }, { status: 403, headers: { "Cache-Control": "no-store" } });
-    return NextResponse.redirect(new URL("/", request.url));
-  }
-
-  if (isApi) {
-    if (matchesPath(pathname, USER_API_PREFIXES)) return NextResponse.next();
-    return Response.json({ error: "This feature is only available to administrators." }, { status: 403, headers: { "Cache-Control": "no-store" } });
-  }
-
-  if (USER_PAGES.includes(pathname)) return NextResponse.next();
-  return NextResponse.redirect(new URL("/", request.url));
+  const access = routeAccess(pathname, isApi, session.user.role ?? "");
+  if (access.kind === "allow") return NextResponse.next();
+  if (access.kind === "redirect") return NextResponse.redirect(new URL("/", request.url));
+  return Response.json({ error: access.error }, { status: 403, headers: { "Cache-Control": "no-store" } });
 }
 
 export const config = {

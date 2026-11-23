@@ -10,6 +10,7 @@ import { GLOSSARY } from "@/lib/glossary";
 import { computePositionSize, DEFAULT_RISK_PERCENT } from "@/lib/screen/positionSize";
 import { SETUP_BREADTH_MIN } from "@/lib/screen/setupGate";
 import { TRADE_STATUS, TRADE_STATUS_ORDER } from "@/lib/screen/tradeStatus";
+import { authClient } from "@/lib/auth-client";
 
 export interface PlaybookRules { name: string; lines: string[] }
 
@@ -31,8 +32,14 @@ const STEPS: Step[] = [
   {
     title: "Find candidates",
     where: [{ label: "Today → Top picks", href: "/" }, { label: "Core Setups", href: "/#setups" }, { label: "Stage 2 Bases", href: "/#stage-2-bases" }, { label: "Stock Screener", href: "/#stock-screener" }],
-    doThis: <>Start with <b>Top picks</b> on Today: it is the tested buy list (Blue sky and Multi-year breakouts). Use Core Setups to see the stocks behind it, Stage 2 Bases to see who broke out and who is close, and the Screener to filter on your own terms and save the scan.</>,
+    doThis: <>Start with <b>Top picks</b> on Today: it is the tested buy list (Blue sky and Multi-year breakouts). Use Core Setups to see the stocks behind it, Stage 2 Bases to see who broke out and who is close, and the Screener to filter on your own terms and save the scan to your account.</>,
     watch: <>A scanner match is only a candidate. It is never a recommendation on its own.</>,
+  },
+  {
+    title: "Review saved-scan matches",
+    where: [{ label: "Stock Screener", href: "/#stock-screener" }],
+    doThis: <>Your saved filters are attached to your account. The <b>In-app saved-scan matches</b> panel compares them with the current screener results and shows matching stocks as the market scan refreshes.</>,
+    watch: <>A match is a snapshot of screening criteria, not a buy signal, email or push alert, or a historical replay. Check the market gate, stock status and trade plan separately.</>,
   },
   {
     title: "Read the status",
@@ -73,7 +80,7 @@ const STEPS: Step[] = [
   {
     title: "Review",
     where: [{ label: "Results", href: "/performance" }, { label: "Email track record", href: "/radar" }, { label: "Backtest (10 years)", href: "/backtest" }],
-    doThis: <>Each week, compare closed trades, win rate and worst drop with what the backtest said is normal. Use the email track record to see how past emailed picks did, and the Results page to confirm the data and automation are healthy.</>,
+    doThis: <>Each week, compare closed trades, win rate and worst drop with what the backtest said is normal. Use the email track record to see how past emailed picks did, and the Results page to confirm the data and automation are healthy. Historical strategy tests use fixed rules; they do not replay your saved screener filters.</>,
     watch: <>A result that sits far outside the normal range is a reason to pause and look, not to change the rules after a few trades.</>,
   },
 ];
@@ -83,9 +90,9 @@ const QUESTIONS: [string, string, string][] = [
   ["Which sectors are strengthening?", "Sector Stage 2", "/#sector-stage-2"],
   ["What changed since yesterday?", "Daily Changes", "/#daily-changes"],
   ["Which stocks just broke out, or are close?", "Stage 2 Bases", "/#stage-2-bases"],
-  ["Find stocks on my own conditions", "Stock Screener (save a scan to rerun it)", "/#stock-screener"],
+  ["Find stocks on my own conditions", "Stock Screener (save filters and review current matches)", "/#stock-screener"],
   ["Has a setup like this worked before?", "Setup Lab", "/#setup-lab"],
-  ["Would these rules have worked over ten years?", "Backtest (10 years)", "/backtest"],
+  ["How did a supported strategy behave historically?", "Historical backtest (fixed presets)", "/backtest"],
   ["How did past emailed picks do?", "Email track record", "/radar"],
   ["What do I hold, and what needs action?", "Positions & strategy", "/positions"],
   ["How is the paper strategy doing?", "Positions & strategy → Live strategy check", "/positions#strategy-check"],
@@ -96,9 +103,10 @@ const QUESTIONS: [string, string, string][] = [
 const EVIDENCE: [string, string, "tested" | "thin" | "none"][] = [
   ["The tested strategy (Blue sky + Multi-year breakouts, 12% stop, exit under the 50-day average)", "Backtested over ten years and followed live on paper. The history only holds stocks listed today, so the backtest is optimistic.", "tested"],
   ["The market check (at least 35% of stocks above their 50-day average)", "The gate the ten-year backtest used. A Nifty 200-day filter was dropped after it proved fragile.", "tested"],
+  ["Supported historical backtests", "Members can compare fixed strategy presets. They do not backtest personal saved-scan thresholds, predict future results, or include delisted stocks.", "none"],
   ["Stage 2 Bases", "Backtested in this project: breakouts on thin volume lost money in both halves of the period; volume-confirmed breakouts were close to breakeven. No proven edge. A watch list.", "thin"],
   ["Bottomed Out", "Only the deep tier (50%+ below the high) held up, with a thin edge. Experimental.", "thin"],
-  ["Sector Stage 2, Daily Changes, Stock Screener", "Descriptive: they report what is true today. Not backtested, and not signals.", "none"],
+  ["Sector Stage 2, Daily Changes, Stock Screener and saved-scan matches", "Descriptive: they report what is true in the current scan. Not historically backtested, and not signals.", "none"],
   ["Setup Lab", "Shows how a combination behaved in past data, with survivorship bias and mostly one regime. Trying many combinations will find some that look good by chance.", "none"],
   ["Older scanner sections and horizon reference levels", "Their own backtests show no proven edge. Reference levels, not recommendations.", "none"],
 ];
@@ -166,12 +174,33 @@ function SizeCalculator() {
 }
 
 export function PlaybookPage({ rules }: { rules: PlaybookRules }) {
+  const { data: session } = authClient.useSession();
+  const isAdmin = session?.user.role === "admin";
+  const steps = isAdmin ? STEPS : STEPS.map((step) => {
+    if (step.title === "Review") {
+      return {
+        ...step,
+        where: [{ label: "Historical backtest (fixed presets)", href: "/backtest" }, { label: "Positions & strategy", href: "/positions" }],
+        doThis: <>Compare the supported fixed strategy tests with your own paper-trading results. These tests use shared historical prices; they do not replay your personal saved screener filters. Use them as research, not forecasts.</>,
+        watch: <>The history contains stocks listed today, not delisted companies, so results can be optimistic. A positive backtest does not guarantee future results.</>,
+      };
+    }
+    if (step.title === "Place the trade yourself, then record it") {
+      return {
+        ...step,
+        where: [{ label: "Positions & strategy → I bought a stock", href: "/positions" }],
+        doThis: <>Place the buy and stop in your own broker; the app never places orders. Record the trade with <b>I bought it →</b> on a Top pick or in <b>My positions</b>, including the losing trades.</>,
+      };
+    }
+    return step;
+  });
+  const questions = isAdmin ? QUESTIONS : QUESTIONS.filter(([, , href]) => href !== "/radar" && href !== "/performance");
   return (
     <AppShell current="playbook">
       <div className="mx-auto max-w-5xl space-y-5 p-4 lg:p-6">
         <WorkspaceFrame id="playbook">
           <WorkspaceHero eyebrow="Playbook" icon="about" title="How to trade with this app"
-            description="A step-by-step routine: check the market, find a candidate, size it, practise it, record it and exit by the rules. It also says plainly what is proven and what is not." />
+            description="A step-by-step routine: check the market, find candidates, review saved-scan matches, size positions, practise and exit by the rules. It also explains the limits of historical tests." />
           <div className="space-y-4 bg-slate-50/60 p-5">
             <div role="note" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-900">
               <h3 className="font-black">Read this first</h3>
@@ -190,7 +219,7 @@ export function PlaybookPage({ rules }: { rules: PlaybookRules }) {
 
             <Section title="Your routine, step by step" note="Do this once a day, after the close or before the open. The scans use finished daily candles, so there is nothing to gain from watching them minute by minute.">
               <ol className="space-y-3">
-                {STEPS.map((step, index) => (
+                {steps.map((step, index) => (
                   <li key={step.title} className="rounded-xl border border-slate-200 p-4">
                     <div className="flex items-start gap-3">
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-sm font-black text-emerald-700" aria-hidden>{index + 1}</span>
@@ -227,7 +256,7 @@ export function PlaybookPage({ rules }: { rules: PlaybookRules }) {
               <div className="overflow-auto rounded-xl border border-slate-200">
                 <table className="w-full min-w-[560px] text-left text-sm">
                   <thead className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-2">Question</th><th className="px-4 py-2">Go to</th></tr></thead>
-                  <tbody>{QUESTIONS.map(([question, page, href]) => (
+                  <tbody>{questions.map(([question, page, href]) => (
                     <tr key={question} className="border-t border-slate-200"><td className="px-4 py-2.5">{question}</td><td className="px-4 py-2.5"><Link href={href} className="font-bold text-emerald-700 hover:underline">{page}</Link></td></tr>
                   ))}</tbody>
                 </table>

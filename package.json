@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "node --use-system-ca node_modules/next/dist/bin/next dev",
     "build": "next build",
+    "prestart": "npm run db:migrate",
     "start": "node --use-system-ca node_modules/next/dist/bin/next start",
     "lint": "eslint",
     "db:auth:migrate": "npx auth@latest migrate --yes",
