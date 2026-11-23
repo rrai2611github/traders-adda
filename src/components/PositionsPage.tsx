@@ -13,6 +13,7 @@ import { Term } from "./Term";
 import { OrdersPanel } from "./OrdersPanel";
 import { TrackerPage } from "./TrackerPage";
 import { EmailActivityPanel } from "./EmailActivityPanel";
+import { authClient } from "@/lib/auth-client";
 
 const px = (v: number) => v.toLocaleString("en-IN", { maximumFractionDigits: 2 });
 const signedMoney = (v: number) => `${v >= 0 ? "+" : "−"}${money(Math.abs(v))}`;
@@ -32,11 +33,11 @@ const STATUS: Record<Status, { label: string; chip: string; card: string }> = {
 const field = "h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-[13px] font-semibold text-slate-900";
 const label = "flex flex-col gap-1 text-[11px] font-bold uppercase tracking-[0.06em] text-slate-500";
 
-async function call(body: Record<string, unknown>): Promise<{ view?: PositionsView; error?: string }> {
+async function call(body: Record<string, unknown>): Promise<{ view?: PositionsView; error?: string; warning?: string }> {
   try {
     const res = await fetch("/api/positions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const json = await res.json();
-    return res.ok ? { view: json as PositionsView } : { error: String(json?.error ?? "That did not work.") };
+    return res.ok ? { view: json.view as PositionsView | undefined, warning: typeof json.warning === "string" ? json.warning : undefined } : { error: String(json?.error ?? "That did not work.") };
   } catch {
     return { error: "Could not reach the server." };
   }
@@ -101,7 +102,7 @@ function PlanEmailSwitch({ accountSize }: { accountSize: number }) {
 /** What a pick passes along when you tap "Add to My positions": its symbol, the planned buy price and the planned stop. */
 interface Prefill { symbol: string; buy: number | null; stop: number | null; source: string | null }
 
-function AddForm({ prefill, onDone, onError }: { prefill: Prefill | null; onDone: (view: PositionsView) => void; onError: (message: string) => void }) {
+function AddForm({ prefill, onDone, onError, isAdmin }: { prefill: Prefill | null; onDone: (view: PositionsView) => void; onError: (message: string) => void; isAdmin: boolean }) {
   const [symbol, setSymbol] = useState(prefill?.symbol ?? "");
   const [qty, setQty] = useState("");
   const [qtyTyped, setQtyTyped] = useState(false);
@@ -131,7 +132,7 @@ function AddForm({ prefill, onDone, onError }: { prefill: Prefill | null; onDone
     const result = await call({ action: "add", symbol, qty: Number(shares), buyPrice: priceNum, buyDate: date, stop: stop === "" ? undefined : Number(stop), plannedPrice: planned ?? undefined, source, note });
     setBusy(false);
     if (result.error || !result.view) { onError(result.error ?? "That did not work."); return; }
-    onError("");
+    onError(result.warning ?? "");
     showToast("Position added");
     onDone(result.view);
     setSymbol(""); setQty(""); setQtyTyped(false); setPrice(""); setStop(""); setSource(""); setNote("");
@@ -160,7 +161,7 @@ function AddForm({ prefill, onDone, onError }: { prefill: Prefill | null; onDone
           {slip != null && Math.abs(slip) >= 0.05 ? <> You are paying <b>{slip >= 0 ? "+" : "−"}{Math.abs(slip).toFixed(2)}%</b> {slip >= 0 ? "above" : "below"} the planned price.</> : null}
         </p>
       </div>
-      <PlanEmailSwitch accountSize={capital} />
+      {isAdmin && <PlanEmailSwitch accountSize={capital} />}
       <p className="text-[11.5px] text-slate-500">Leave the stop empty to use the rules&apos; {DEFAULT_STOP_PERCENT}% under your price{ruleDefault != null ? ` (₹${px(ruleDefault)})` : ""}. The app only records what you did; it never places an order.</p>
     </form>
   );
@@ -177,7 +178,7 @@ function SellForm({ holding, status, onDone, onError, onCancel }: { holding: Hol
     const result = await call({ action: "sell", id: holding.id, price: Number(price), date, reason });
     setBusy(false);
     if (result.error || !result.view) { onError(result.error ?? "That did not work."); return; }
-    onError("");
+    onError(result.warning ?? "");
     showToast("Marked as sold");
     onDone(result.view);
   };
@@ -198,6 +199,8 @@ function SellForm({ holding, status, onDone, onError, onCancel }: { holding: Hol
 
 /** The user's real positions against the exit rules, and a journal of what they did. The app records and warns; it never trades. */
 export function PositionsPage() {
+  const { data: session } = authClient.useSession();
+  const isAdmin = session?.user.role === "admin";
   const [view, setView] = useState<PositionsView | null>(null);
   const [message, setMessage] = useState("");
   const [refreshError, setRefreshError] = useState("");
@@ -263,14 +266,14 @@ export function PositionsPage() {
   const accept = (next: PositionsView) => { setView(next); setSelling(null); setRemoving(null); setEditingSource(null); };
   const remove = async (id: string) => {
     const result = await call({ action: "remove", id });
-    if (result.view) { setMessage(""); showToast("Position removed"); accept(result.view); } else setMessage(result.error ?? "That did not work.");
+    if (result.view) { setMessage(result.warning ?? ""); showToast("Position removed"); accept(result.view); } else setMessage(result.error ?? "That did not work.");
   };
   const saveSource = async (id: string) => {
     setSourceBusy(true);
     const result = await call({ action: "source", id, source: sourceDraft });
     setSourceBusy(false);
     if (result.error || !result.view) { setMessage(result.error ?? "Could not save the strategy or screener."); return; }
-    setMessage("");
+    setMessage(result.warning ?? "");
     showToast("Trade source updated");
     accept(result.view);
   };
@@ -289,7 +292,7 @@ export function PositionsPage() {
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">Trading workspace</p>
           <h1 className="mt-0.5 text-[25px] font-extrabold tracking-[-0.04em] text-slate-900">Portfolio</h1>
-          <p className="mt-1 text-[12px] leading-5 text-slate-500">Your recorded holdings, risk checks and broker order review in one place.</p>
+          <p className="mt-1 text-[12px] leading-5 text-slate-500">Your private trade journal and strategy practice portfolio.</p>
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-800" role="status"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{latestUpdate} · checks every 30s</span>
@@ -358,7 +361,7 @@ export function PositionsPage() {
           <span className="ml-auto hidden text-[11px] font-bold text-slate-500 group-open:inline">Close form</span>
         </summary>
         <div className="border-t border-border p-3 sm:p-4">
-          <AddForm key={prefill ? `from-${prefill.symbol}` : "blank"} prefill={prefill} onDone={accept} onError={setMessage} />
+          <AddForm key={prefill ? `from-${prefill.symbol}` : "blank"} prefill={prefill} onDone={accept} onError={setMessage} isAdmin={isAdmin} />
         </div>
       </details>
 
@@ -437,7 +440,7 @@ export function PositionsPage() {
             <b>Your fills:</b> {view.fills.count} position{view.fills.count === 1 ? "" : "s"} had a planned price. On average you paid <b>{view.fills.avgPercent >= 0 ? "+" : "−"}{Math.abs(view.fills.avgPercent).toFixed(2)}%</b> {view.fills.avgPercent >= 0 ? "above" : "below"} the plan. The reality check on the Backtest page assumed every fill 1% worse; {view.fills.avgPercent <= 1 ? "you are doing at least that well." : "you are doing worse than that, so use limit orders near the open."}{view.fills.count < 5 ? " (Few positions so far: treat it as a first look.)" : ""}
           </p>
         )}
-        <p className="text-[11px] text-slate-500">The rules sell on only two things: the price touching your stop, or a close under the 50-day average (sell at the next open). The stop and the 50-day check use finished daily prices{view?.lastDay ? `, up to ${dayLabel(view.lastDay)}` : ""}, refreshed after about 4:30 pm IST. A stop can be hit during the day, so also set it with your broker. When a position needs a decision, you get an email at your own address (not the group list) after the refresh.</p>
+        <p className="text-[11px] text-slate-500">The rules sell on only two things: the price touching your stop, or a close under the 50-day average (sell at the next open). The stop and the 50-day check use finished daily prices{view?.lastDay ? `, up to ${dayLabel(view.lastDay)}` : ""}, refreshed after about 4:30 pm IST. A stop can be hit during the day, so also set it with your broker. {isAdmin ? "Admin position alerts are emailed after the refresh." : "These records are private to your account and are checked while you use the app."}</p>
       </section>
 
       <details className="space-y-3 rounded-2xl border border-border bg-surface p-4" aria-label="Journal">
@@ -485,18 +488,18 @@ export function PositionsPage() {
       </details>
       </section>
 
-      <details data-portfolio-section="order-approvals" className="scroll-mt-20 rounded-xl border border-border bg-surface p-4">
+      {isAdmin && <details data-portfolio-section="order-approvals" className="scroll-mt-20 rounded-xl border border-border bg-surface p-4">
         <summary className="cursor-pointer text-sm font-bold text-foreground">Order review · optional broker workflow</summary>
         <div className="mt-4"><OrdersPanel /></div>
-      </details>
+      </details>}
       <details data-portfolio-section="strategy-check" className="scroll-mt-20 rounded-xl border border-amber-200 bg-surface p-4">
         <summary className="cursor-pointer text-sm font-bold text-foreground">Practice strategy · paper money, not real holdings</summary>
         <div className="mt-4"><TrackerPage /></div>
       </details>
-      <details data-portfolio-section="email-activity" className="scroll-mt-20 rounded-xl border border-border bg-surface p-4">
+      {isAdmin && <details data-portfolio-section="email-activity" className="scroll-mt-20 rounded-xl border border-border bg-surface p-4">
         <summary className="cursor-pointer text-sm font-bold text-foreground">Email delivery activity</summary>
         <div className="mt-4"><EmailActivityPanel /></div>
-      </details>
+      </details>}
     </div>
     </AppShell>
   );

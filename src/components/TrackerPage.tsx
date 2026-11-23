@@ -25,6 +25,8 @@ interface TrackerPayload {
     | { status: "done"; id: string; result: BacktestResult };
   rules: { name: string; lines: string[] };
   error?: string;
+  warning?: string;
+  isAdmin: boolean;
   alertStatus?: string;
 }
 
@@ -53,7 +55,7 @@ export function TrackerPage() {
       const res = await fetch("/api/tracker", { cache: "no-store", ...init });
       const body = (await res.json()) as TrackerPayload;
       if (!res.ok) setMessage(body.error ?? "That did not work.");
-      else setMessage(null);
+      else setMessage(body.warning ?? null);
       if (body.rules) {
         setData(body);
         setLastCheckedAt(Date.now());
@@ -134,11 +136,12 @@ export function TrackerPage() {
       </header>
 
       {message && <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-800">{message}</p>}
-      <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-950" role="status">
+      {data?.isAdmin && <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-950" role="status">
         <p className="font-bold">Owner-email practice alerts</p>
-        <p>{data?.alertStatus ?? "Checking email alert status..."}</p>
+        <p>{data.alertStatus ?? "Checking email alert status..."}</p>
         <p className="mt-1 text-xs">Checked every 30 seconds while the server runs. Buys, exits and next-open candidates are emailed after daily replay detects them, not at execution time. Intraday stop messages are review warnings only, require recent verified provider trade times, and are limited to one per holding per trading day. No real orders are placed.</p>
-      </div>
+      </div>}
+      {data && !data.isAdmin && <p className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-950">Your practice settings are saved privately to your account. This test uses paper money only and does not place or email orders.</p>}
       <p className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-[11px] leading-5 text-blue-900">
         No real money is used and no real orders are placed. Prices may be delayed; current profit/loss is an estimate before costs.
       </p>
@@ -161,7 +164,7 @@ export function TrackerPage() {
             <span className="hidden shrink-0 text-[11.5px] font-bold text-accent group-open:inline">Hide</span>
           </summary>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-[12.5px] text-slate-700">{data?.rules.lines.map((line) => <li key={line}>{line}</li>)}</ul>
-          <p className="mt-2 text-sm text-slate-500">Trade emails arrive after the daily price refresh and calculation, not instantly. Current quotes do not change the recorded strategy trades.</p>
+          <p className="mt-2 text-sm text-slate-500">{data?.isAdmin ? "Trade emails arrive after the daily price refresh and calculation, not instantly. " : ""}Current quotes do not change the recorded strategy trades.</p>
           <p className="mt-2 text-[11.5px] text-slate-500">In the 10-year backtest these rules made about 46% a year with a worst drop of about 21%, but only about 45% of trades win and the last few years were weaker. The history only includes stocks listed today, so real results are likely lower. A few weeks of live results prove nothing; judge it after at least 30 closed trades.</p>
         </details>
         {!config ? (
@@ -182,7 +185,7 @@ export function TrackerPage() {
         ) : (
           <div className="flex flex-wrap items-center gap-3 border-t border-border pt-3 text-[12.5px] text-slate-600">
             <span><b className="text-slate-900">Following since {dayLabel(config.startDate)}</b> with {exactMoney(config.capital)}{config.niftyGate ? " · Nifty 200-day check on" : ""}{config.stopPercent === 12 ? " · 12% stop" : ""}. Daily strategy data through {data?.history.lastCandleDay ? dayLabel(data.history.lastCandleDay) : "—"}.</span>
-            <button type="button" disabled={busy || data?.history.status === "running"} onClick={() => void act("refresh")} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-emerald-500 disabled:opacity-60">{data?.history.status === "running" ? `Updating… ${data.history.message}` : "Refresh daily history"}</button>
+            {data?.isAdmin && <button type="button" disabled={busy || data?.history.status === "running"} onClick={() => void act("refresh")} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-emerald-500 disabled:opacity-60">{data?.history.status === "running" ? `Updating… ${data.history.message}` : "Refresh daily history"}</button>}
             <button type="button" disabled={busy} onClick={() => { if (window.confirm("Delete this practice portfolio history and stop following? Its recorded trades will be cleared. This does not sell any real holdings.")) void act("stop"); }} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-rose-700 hover:border-rose-400 disabled:opacity-60">Delete practice history</button>
             {data?.history.status === "failed" && <span className="font-semibold text-rose-700">The last update failed: {data.history.message}</span>}
           </div>
@@ -211,7 +214,7 @@ export function TrackerPage() {
         </details>
       )}
 
-      {config && data?.job.status === "waiting" && <p className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-slate-700">{data.job.message} Daily history updates after the close, or press &quot;Refresh daily history&quot; once the market is closed.</p>}
+      {config && data?.job.status === "waiting" && <p className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-slate-700">{data.job.message} {data.isAdmin ? "Daily history updates after the close, or press \"Refresh daily history\" once the market is closed." : "Shared daily history updates after the close."}</p>}
       {config && data?.job.status === "running" && <p className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-slate-700">Working out the positions… {data.job.message}. The first calculation after a price update takes a minute or two.</p>}
       {config && data?.job.status === "failed" && <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">Could not calculate: {data.job.error}</p>}
 

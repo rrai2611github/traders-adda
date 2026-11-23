@@ -5,7 +5,7 @@ import sectorData from "@/lib/market/data/sectors.json";
 import { historyLastDay } from "../backtest/historyRefresh.ts";
 import {
   actionLines, assessHolding, backupsToDelete, closedTrades, fillSummary, holdingsCsv, istToday, NEEDS_ACTION, parseHoldingSource, parseNewHolding, parseSale, sectorConcentration, summariseJournal,
-  type Assessment, type Candle, type ClosedTrade, type FillSummary, type Holding, type Journal, type SectorCrowd,
+  type Assessment, type Candle, type ClosedTrade, type FillSummary, type Holding, type HoldingsChange, type Journal, type SectorCrowd,
 } from "./positions.ts";
 
 const DIR = join(process.cwd(), ".cache");
@@ -77,8 +77,12 @@ export interface PositionsView {
   exposure: { costBasis: number; invested: number; openPnl: number; ifAllStopsHit: number };
 }
 
-export function positionsView(now = Date.now()): PositionsView {
-  const all = readAll();
+/** Keeps the existing admin-only background jobs and daily backups in sync with the database-backed admin portfolio. */
+export function writeLegacyHoldings(holdings: Holding[]): void {
+  writeAll(holdings);
+}
+
+export function positionsViewFor(all: Holding[], now = Date.now()): PositionsView {
   const open = all
     .filter((h) => !h.sold)
     .sort((a, b) => b.buyDate.localeCompare(a.buyDate))
@@ -98,51 +102,78 @@ export function positionsView(now = Date.now()): PositionsView {
   return { lastDay: historyLastDay(), open, crowded: sectorConcentration(open.map((o) => ({ symbol: o.holding.symbol, sector: o.sector }))), fills: fillSummary(all), closed: closed.slice(0, 200), journal: summariseJournal(closed), exposure: { costBasis, invested, openPnl, ifAllStopsHit } };
 }
 
-export type Result = { ok: true; view: PositionsView } | { ok: false; error: string; status: number };
-
-export function addHolding(input: Record<string, unknown>, now = Date.now()): Result {
-  const parsed = parseNewHolding(input, now);
-  if (!parsed.ok) return { ok: false, error: parsed.error, status: 400 };
-  const all = readAll();
-  if (all.length >= MAX_HOLDINGS) return { ok: false, error: "Too many saved positions. Remove old closed ones first.", status: 400 };
-  writeAll([...all, { id: crypto.randomUUID(), ...parsed.value }]);
-  return { ok: true, view: positionsView(now) };
+export function positionsView(now = Date.now()): PositionsView {
+  return positionsViewFor(readAll(), now);
 }
 
-export function updateHoldingSource(id: unknown, source: unknown, now = Date.now()): Result {
-  const all = readAll();
-  const holding = all.find((h) => h.id === id);
+export type Result = { ok: true; view: PositionsView } | { ok: false; error: string; status: number };
+export function addHoldingTo(holdings: Holding[], input: Record<string, unknown>, now = Date.now()): HoldingsChange {
+  const parsed = parseNewHolding(input, now);
+  if (!parsed.ok) return { ok: false, error: parsed.error, status: 400 };
+  if (holdings.length >= MAX_HOLDINGS) return { ok: false, error: "Too many saved positions. Remove old closed ones first.", status: 400 };
+  return { ok: true, holdings: [...holdings, { id: crypto.randomUUID(), ...parsed.value }] };
+}
+
+export function updateHoldingSourceIn(holdings: Holding[], id: unknown, source: unknown): HoldingsChange {
+  const holding = holdings.find((h) => h.id === id);
   if (!holding) return { ok: false, error: "That position was not found.", status: 404 };
   const parsed = parseHoldingSource(source);
   if (!parsed.ok) return { ok: false, error: parsed.error, status: 400 };
-  writeAll(all.map((h) => {
+  return { ok: true, holdings: holdings.map((h) => {
     if (h.id !== id) return h;
     const updated = { ...h };
     if (parsed.value) updated.source = parsed.value;
     else delete updated.source;
     return updated;
-  }));
-  return { ok: true, view: positionsView(now) };
+  }) };
 }
 
-export function markSold(id: unknown, input: Record<string, unknown>, now = Date.now()): Result {
-  const all = readAll();
-  const holding = all.find((h) => h.id === id);
+export function markHoldingSold(holdings: Holding[], id: unknown, input: Record<string, unknown>, now = Date.now()): HoldingsChange {
+  const holding = holdings.find((h) => h.id === id);
   if (!holding) return { ok: false, error: "That position was not found.", status: 404 };
   const parsed = parseSale(input, holding, now);
   if (!parsed.ok) return { ok: false, error: parsed.error, status: 400 };
-  writeAll(all.map((h) => (h.id === id ? { ...h, sold: parsed.value } : h)));
-  return { ok: true, view: positionsView(now) };
+  return { ok: true, holdings: holdings.map((h) => (h.id === id ? { ...h, sold: parsed.value } : h)) };
+}
+
+export function removeHoldingFrom(holdings: Holding[], id: unknown): HoldingsChange {
+  if (!holdings.some((h) => h.id === id)) return { ok: false, error: "That position was not found.", status: 404 };
+  return { ok: true, holdings: holdings.filter((h) => h.id !== id) };
+}
+
+export function addHolding(input: Record<string, unknown>, now = Date.now()): Result {
+  const changed = addHoldingTo(readAll(), input, now);
+  if (!changed.ok) return changed;
+  writeAll(changed.holdings);
+  return { ok: true, view: positionsViewFor(changed.holdings, now) };
+}
+
+export function updateHoldingSource(id: unknown, source: unknown, now = Date.now()): Result {
+  const changed = updateHoldingSourceIn(readAll(), id, source);
+  if (!changed.ok) return changed;
+  writeAll(changed.holdings);
+  return { ok: true, view: positionsViewFor(changed.holdings, now) };
+}
+
+export function markSold(id: unknown, input: Record<string, unknown>, now = Date.now()): Result {
+  const changed = markHoldingSold(readAll(), id, input, now);
+  if (!changed.ok) return changed;
+  writeAll(changed.holdings);
+  return { ok: true, view: positionsViewFor(changed.holdings, now) };
 }
 
 export function removeHolding(id: unknown, now = Date.now()): Result {
-  const all = readAll();
-  if (!all.some((h) => h.id === id)) return { ok: false, error: "That position was not found.", status: 404 };
-  writeAll(all.filter((h) => h.id !== id));
-  return { ok: true, view: positionsView(now) };
+  const changed = removeHoldingFrom(readAll(), id);
+  if (!changed.ok) return changed;
+  writeAll(changed.holdings);
+  return { ok: true, view: positionsViewFor(changed.holdings, now) };
 }
 
 export const hasOpenPositions = () => readAll().some((h) => !h.sold);
+
+export function positionsCsvFor(holdings: Holding[]): string {
+  return holdingsCsv(holdings);
+}
 
 function lastKey(): string | null {
   try { return JSON.parse(readFileSync(NOTE_FILE, "utf8")).key ?? null; } catch { return null; }

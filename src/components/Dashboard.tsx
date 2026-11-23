@@ -526,7 +526,7 @@ export function Dashboard() {
         <nav aria-label="Primary navigation" className="flex-1 space-y-5 overflow-y-auto overscroll-contain px-3 py-4">
           <SideGroup label="Your workspace" collapsed={sidebarCollapsed}>
             <SideItem icon="today" label="Today" current={activeNav === "today" || activeNav === "metrics"} collapsed={sidebarCollapsed} onClick={() => selectNav("today")} />
-            {isAdmin && <SideItem icon="journal" label="Positions & strategy" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/positions")} />}
+            <SideItem icon="journal" label="Positions & strategy" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/positions")} />
             {isAdmin && <SideItem icon="signals" label="Backtest (10 years)" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/backtest")} />}
             {isAdmin && <SideItem icon="picks" label="Email track record" current={false} collapsed={sidebarCollapsed} onClick={() => router.push("/radar")} />}
             <SideItem icon="watchlist" label="Watchlist" current={activeNav === "watchlist"} collapsed={sidebarCollapsed} onClick={() => selectNav("watchlist")} />

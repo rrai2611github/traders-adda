@@ -58,26 +58,53 @@ export function trackerSettings(config: TrackerConfig): BacktestSettings {
 
 export function readTracker(): TrackerConfig | null {
   try {
-    const c = JSON.parse(readFileSync(FILE, "utf8")) as Partial<TrackerConfig>;
-    if (typeof c.startDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(c.startDate)) return null;
-    return { startDate: c.startDate, startedAt: Number(c.startedAt) || 0, capital: Number(c.capital) > 0 ? Number(c.capital) : 1_000_000, niftyGate: c.niftyGate === true, stopPercent: c.stopPercent === 12 ? 12 : 8 };
+    return parseTrackerConfig(JSON.parse(readFileSync(FILE, "utf8")));
   } catch {
     return null;
   }
 }
 
-/** Starts following the rules from today's close (or from `startDate`). Replaces any earlier check. */
-export function startTracker(options: { capital?: number; niftyGate?: boolean; stopPercent?: number; startDate?: string; now?: number } = {}): TrackerConfig {
+export function parseTrackerConfig(value: unknown): TrackerConfig | null {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
+  const c = value as Partial<TrackerConfig>;
+  if (typeof c.startDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(c.startDate)) return null;
+  return { startDate: c.startDate, startedAt: Number(c.startedAt) || 0, capital: Number(c.capital) > 0 ? Number(c.capital) : 1_000_000, niftyGate: c.niftyGate === true, stopPercent: c.stopPercent === 12 ? 12 : 8 };
+}
+
+/** Imports the old admin-only config once when that account first opens its database-backed strategy test. */
+export function legacyTrackerForImport(): TrackerConfig | null {
+  if (!existsSync(FILE)) return null;
+  const config = parseTrackerConfig(JSON.parse(readFileSync(FILE, "utf8")));
+  if (!config) throw new Error("The existing strategy tracker file is invalid and could not be imported.");
+  return config;
+}
+
+/** Keeps the existing admin-only server jobs in sync with the database-backed admin tracker. */
+export function writeLegacyTracker(config: TrackerConfig | null): void {
+  if (!config) {
+    if (existsSync(FILE)) unlinkSync(FILE);
+    return;
+  }
+  mkdirSync(join(process.cwd(), ".cache"), { recursive: true });
+  writeFileSync(FILE, JSON.stringify(config));
+}
+
+/** Creates the saved rule settings without writing them to process-wide storage. */
+export function createTrackerConfig(options: { capital?: number; niftyGate?: boolean; stopPercent?: number; startDate?: string; now?: number } = {}): TrackerConfig {
   const now = options.now ?? Date.now();
-  const config: TrackerConfig = {
+  return {
     startDate: options.startDate && /^\d{4}-\d{2}-\d{2}$/.test(options.startDate) ? options.startDate : istDateKey(now),
     startedAt: now,
     capital: options.capital && options.capital >= 10_000 && options.capital <= 1e9 ? Math.round(options.capital) : 1_000_000,
     niftyGate: options.niftyGate === true,
     stopPercent: options.stopPercent === 12 ? 12 : 8,
   };
-  mkdirSync(join(process.cwd(), ".cache"), { recursive: true });
-  writeFileSync(FILE, JSON.stringify(config));
+}
+
+/** Starts following the rules from today's close (or from `startDate`). Replaces any earlier check. */
+export function startTracker(options: { capital?: number; niftyGate?: boolean; stopPercent?: number; startDate?: string; now?: number } = {}): TrackerConfig {
+  const config = createTrackerConfig(options);
+  writeLegacyTracker(config);
   return config;
 }
 
@@ -94,7 +121,10 @@ export interface TrackerState {
 
 /** The tracker's configuration and its current result (starting the computation if it is not running). */
 export function trackerState(): TrackerState {
-  const config = readTracker();
+  return trackerStateFor(readTracker());
+}
+
+export function trackerStateFor(config: TrackerConfig | null): TrackerState {
   const history = { ...refreshState(), lastCandleDay: historyLastDay() };
   if (!config) return { config, history, job: { status: "none" } };
   if (!history.lastCandleDay || history.lastCandleDay < config.startDate) {

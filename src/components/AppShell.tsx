@@ -10,6 +10,7 @@ import { SymbolSearch } from "./SymbolSearch";
 import { Toaster } from "./Toaster";
 import { useNow } from "@/hooks/useNow";
 import { getMarketStatus } from "@/lib/market/marketHours";
+import { authClient } from "@/lib/auth-client";
 
 export type ShellPage = "positions" | "backtest" | "radar" | "performance" | "assistant" | "playbook";
 
@@ -29,6 +30,8 @@ const TITLES: Record<ShellPage, string> = {
  */
 export function AppShell({ current, children }: { current: ShellPage; children: ReactNode }) {
   const router = useRouter();
+  const { data: session } = authClient.useSession();
+  const isAdmin = session?.user.role === "admin";
   const now = useNow(30_000);
   const status = now == null ? null : getMarketStatus(now);
   const go = (href: string) => () => router.push(href);
@@ -50,8 +53,8 @@ export function AppShell({ current, children }: { current: ShellPage; children: 
           <SideGroup label="Your workspace" collapsed={false}>
             <SideItem icon="today" label="Today" current={false} collapsed={false} onClick={go("/")} />
             <SideItem icon="journal" label="Positions & strategy" current={current === "positions"} collapsed={false} onClick={go("/positions")} />
-            <SideItem icon="signals" label="Backtest (10 years)" current={current === "backtest"} collapsed={false} onClick={go("/backtest")} />
-            <SideItem icon="picks" label="Email track record" current={current === "radar"} collapsed={false} onClick={go("/radar")} />
+            {isAdmin && <SideItem icon="signals" label="Backtest (10 years)" current={current === "backtest"} collapsed={false} onClick={go("/backtest")} />}
+            {isAdmin && <SideItem icon="picks" label="Email track record" current={current === "radar"} collapsed={false} onClick={go("/radar")} />}
             <SideItem icon="watchlist" label="Watchlist" current={false} collapsed={false} onClick={go("/#watchlist")} />
           </SideGroup>
 

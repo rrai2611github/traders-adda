@@ -20,6 +20,36 @@ export interface Holding {
   sold?: { date: string; price: number; reason: ExitReason };
 }
 
+export type HoldingsChange = { ok: true; holdings: Holding[] } | { ok: false; error: string; status: number };
+
+export function parseStoredHoldings(value: unknown): Holding[] {
+  if (!Array.isArray(value)) throw new Error("Saved positions do not contain a holdings list.");
+  for (const item of value) {
+    if (item === null || typeof item !== "object" || Array.isArray(item)) throw new Error("Saved positions contain an invalid holding.");
+    const holding = item as Record<string, unknown>;
+    const sold = holding.sold;
+    let validSold = sold == null;
+    if (sold !== null && typeof sold === "object" && !Array.isArray(sold)) {
+      const record = sold as Record<string, unknown>;
+      validSold = typeof record.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(record.date)
+        && typeof record.price === "number" && Number.isFinite(record.price) && record.price > 0
+        && (record.reason === "stop" || record.reason === "fifty-day" || record.reason === "own-call");
+    }
+    if (
+      typeof holding.id !== "string" || !holding.id
+      || typeof holding.symbol !== "string" || !/^[A-Z0-9&_-]{1,20}$/.test(holding.symbol)
+      || typeof holding.qty !== "number" || !Number.isInteger(holding.qty) || holding.qty < 1
+      || typeof holding.buyPrice !== "number" || !Number.isFinite(holding.buyPrice) || holding.buyPrice <= 0
+      || typeof holding.buyDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(holding.buyDate)
+      || typeof holding.stop !== "number" || !Number.isFinite(holding.stop) || holding.stop <= 0
+      || !validSold
+    ) {
+      throw new Error("Saved positions contain an invalid holding.");
+    }
+  }
+  return value as Holding[];
+}
+
 export interface Candle {
   /** IST day, "2026-10-30". */
   date: string;

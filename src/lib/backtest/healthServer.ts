@@ -4,7 +4,7 @@ import { notifyOwner, ownerAlertAddress } from "@/lib/alerts/personal";
 import { isTradingDay } from "../market/marketHours.ts";
 import { assessHealth, healthLines, isLastSessionOfMonth, type HealthReport } from "./health.ts";
 import { getBacktest, startBacktest } from "./jobs.ts";
-import { readTracker, trackerSettings, trackerState } from "./tracker.ts";
+import { readTracker, trackerSettings, trackerStateFor, type TrackerConfig } from "./tracker.ts";
 
 const FILE = join(process.cwd(), ".cache", "health-note.json");
 
@@ -14,21 +14,24 @@ export type HealthState =
   | { status: "done"; report: HealthReport; lastDay: string; liveTrades: number | null };
 
 /** The rules' own backtest from the start of the history, with the live check's settings (Nifty gate, 12% stop) when one is running. */
-function baselineSettings() {
-  const config = readTracker();
-  return trackerSettings({ startDate: "2016-12-01", startedAt: 0, capital: config?.capital ?? 1_000_000, niftyGate: config?.niftyGate ?? false, stopPercent: config?.stopPercent ?? 8 });
+function baselineSettings(config: TrackerConfig | null) {
+  // Keep the historical baseline shared across accounts; health compares percentage returns and R, not rupee scale.
+  return trackerSettings({ startDate: "2016-12-01", startedAt: 0, capital: 1_000_000, niftyGate: config?.niftyGate ?? false, stopPercent: config?.stopPercent ?? 8 });
 }
 
 /** Starts (or reads) the baseline backtest and the live check, and compares them. Cheap to call: both are cached per price update. */
 export function currentHealth(): HealthState {
-  const job = startBacktest(baselineSettings());
+  return currentHealthFor(readTracker());
+}
+
+export function currentHealthFor(config: TrackerConfig | null): HealthState {
+  const job = startBacktest(baselineSettings(config));
   const base = job.status === "done" ? job : getBacktest(job.id);
   if (!base || base.status === "running") return { status: "running", message: base && base.status === "running" ? base.message : "starting" };
   if (base.status === "failed") return { status: "failed", message: base.error };
-  const config = readTracker();
   let live: Parameters<typeof assessHealth>[0]["live"] = null;
   if (config) {
-    const state = trackerState();
+    const state = trackerStateFor(config);
     if (state.job.status === "done") {
       const r = state.job.result;
       live = { trades: r.trades.filter((t) => t.exitReason !== "end"), maxDrawdownPercent: r.stats.maxDrawdownPercent, sessions: r.data.sessions, startDate: config.startDate };

@@ -2,9 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { auth, assertAuthEnvironment } from "@/lib/auth";
 
 const PUBLIC_PATHS = ["/login", "/register", "/verify-email", "/forgot-password", "/reset-password"];
-const ADMIN_PAGES = ["/admin", "/positions", "/backtest", "/performance", "/radar", "/tracker", "/scalp"];
-const USER_PAGES = ["/", "/assistant", "/playbook"];
-const USER_API_PREFIXES = ["/api/market/", "/api/assistant", "/api/paper", "/api/user/watchlist"];
+const ADMIN_PAGES = ["/admin", "/backtest", "/performance", "/radar", "/scalp"];
+const USER_PAGES = ["/", "/assistant", "/playbook", "/positions", "/tracker"];
+const USER_API_PREFIXES = ["/api/market", "/api/assistant", "/api/paper", "/api/user/watchlist", "/api/positions", "/api/tracker", "/api/strategy-health"];
 const ADMIN_API_PREFIXES = ["/api/paper/index", "/api/scalp"];
 
 function matchesPath(path: string, prefixes: string[]): boolean {
@@ -40,7 +40,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isApi) {
-    if (USER_API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix))) return NextResponse.next();
+    if (matchesPath(pathname, USER_API_PREFIXES)) return NextResponse.next();
     return Response.json({ error: "This feature is only available to administrators." }, { status: 403, headers: { "Cache-Control": "no-store" } });
   }
 
