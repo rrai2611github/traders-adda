@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { notifyOwner, ownerAlertAddress } from "@/lib/alerts/personal";
 import { isTradingDay } from "../market/marketHours.ts";
+import { historyReady, refreshState } from "./historyRefresh.ts";
 import { assessHealth, healthLines, isLastSessionOfMonth, type HealthReport } from "./health.ts";
 import { getBacktest, startBacktest } from "./jobs.ts";
 import { readTracker, trackerSettings, trackerStateFor, type TrackerConfig } from "./tracker.ts";
@@ -25,6 +26,12 @@ export function currentHealth(): HealthState {
 }
 
 export function currentHealthFor(config: TrackerConfig | null): HealthState {
+  const history = refreshState();
+  if (history.status === "running") return { status: "running", message: history.message || "Updating saved price history" };
+  if (!historyReady()) {
+    if (history.status === "failed") return { status: "failed", message: `Price history could not be initialized. ${history.message}` };
+    return { status: "running", message: "Waiting for the initial ten-year price-history download" };
+  }
   const job = startBacktest(baselineSettings(config));
   const base = job.status === "done" ? job : getBacktest(job.id);
   if (!base || base.status === "running") return { status: "running", message: base && base.status === "running" ? base.message : "starting" };

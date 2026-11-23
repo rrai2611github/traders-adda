@@ -49,7 +49,9 @@ test("strategy health: each verdict in words and colour; running and failed are 
   assert.deepEqual([h("watch", "Watch: average trade.").big, h("watch").tone], ["Watch", "warn"]);
   assert.equal(h("watch", "Watch: average trade.").sub, "Watch: average trade.");
   assert.deepEqual([h("review").big, h("review").tone], ["Review", "bad"]);
-  assert.deepEqual([healthTile({ status: "running" }).big, healthTile({ status: "running" }).href], ["Checking…", "/positions#strategy-check"]);
+  const running = healthTile({ status: "running", message: "Updating saved price history" });
+  assert.deepEqual([running.big, running.href, running.sub], ["Checking…", "/positions#strategy-check", "Updating saved price history"]);
   assert.equal(healthTile({ status: "failed" }).big, "Unavailable");
+  assert.equal(healthTile({ status: "failed", message: "Yahoo refresh failed." }).sub, "Yahoo refresh failed.");
   assert.equal(healthTile(null).big, "Checking…");
 });

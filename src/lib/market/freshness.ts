@@ -57,7 +57,9 @@ export function dataFreshness(input: { lastCandleDay: string | null; refreshedDa
  * refresh has run since they finished (otherwise the gap is a market holiday), at most once an hour.
  */
 export function needsCatchUp(input: { lastCandleDay: string | null; refreshedDay: string | null; lastRunAt: number | null; now: number }): boolean {
-  if (input.lastCandleDay == null) return false;
+  if (input.lastCandleDay == null) {
+    return input.lastRunAt == null || input.now - input.lastRunAt >= 3_600_000;
+  }
   // A session counts as finished (and fetchable) from 16:45 IST.
   const expected = expectedLastSession(input.now, 16 * 60 + 45);
   if (sessionsBehind(input.lastCandleDay, expected) === 0) return false;

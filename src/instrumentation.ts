@@ -31,6 +31,6 @@ export async function register() {
   const { sendTomorrowPlanIfDue } = await import("./lib/positions/planServer");
   // Live stop alerts for real positions while the market is open, and an alarm if the saved prices fall behind.
   startPositionsWatchdog();
-  // The price files are also refreshed while the user holds open positions, so the exit rules can be checked each evening.
+  // Keep the ten-year history initialized and current; run trade-related follow-ups only when they are needed.
   startHistoryRefreshScheduler(() => { trackerState(); void sendTrackerNote().then(() => sendWeeklyReviewIfDue()).then(() => sendHealthIfDue()).catch((error) => console.error("[weekly-review] failed:", error instanceof Error ? error.message : error)); void sendPositionsNoteIfDue().catch((error) => console.error("[positions] note failed:", error instanceof Error ? error.message : error)); void sendTomorrowPlanIfDue().catch((error) => console.error("[positions] plan failed:", error instanceof Error ? error.message : error)); }, () => readTracker() != null || hasOpenPositions());
 }

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { dataFreshness, expectedLastSession, needsCatchUp, sessionsBehind } from "../src/lib/market/freshness.ts";
+import { historyRefreshArgs, historyRefreshDay } from "../src/lib/backtest/historyRefresh.ts";
 import { alertKey, liveAlerts, unsentAlerts } from "../src/lib/positions/liveWatch.ts";
 
 const at = (iso) => Date.parse(`${iso}+05:30`);
@@ -37,19 +38,31 @@ test("fresh data is ok; old data is stale with a plain message; a refresh that r
   assert.match(never.message, /missing/);
 });
 
-test("catch-up refresh: only when finished sessions are missing, and at most once an hour", () => {
+test("catch-up refresh: missing or stale finished sessions, and at most once an hour", () => {
   const tue = at("2026-11-03T10:00:00");
   const base = { lastCandleDay: "2026-10-30", refreshedDay: "2026-10-30", lastRunAt: null, now: tue };
   assert.equal(needsCatchUp(base), true);
   assert.equal(needsCatchUp({ ...base, lastRunAt: tue - 30 * 60_000 }), false);
   assert.equal(needsCatchUp({ ...base, lastRunAt: tue - 61 * 60_000 }), true);
   assert.equal(needsCatchUp({ ...base, lastCandleDay: "2026-11-02" }), false);
-  assert.equal(needsCatchUp({ ...base, lastCandleDay: null }), false);
+  assert.equal(needsCatchUp({ ...base, lastCandleDay: null }), true);
   // A refresh already ran on Monday after the close and found nothing new: Monday was a market holiday, so do not keep retrying.
   assert.equal(needsCatchUp({ ...base, refreshedDay: "2026-11-02" }), false);
   // Monday 17:00: the 16:45 grace has passed, so Monday's candle is expected and missing.
   assert.equal(needsCatchUp({ ...base, now: at("2026-11-02T17:00:00") }), true);
   assert.equal(needsCatchUp({ ...base, now: at("2026-11-02T16:00:00") }), false);
+});
+
+test("missing history triggers a full bootstrap and pre-close refreshes do not mark today's candle complete", () => {
+  const monday = at("2026-11-23T11:00:00");
+  const missing = { lastCandleDay: null, refreshedDay: null, lastRunAt: null, now: monday };
+  assert.equal(needsCatchUp(missing), true);
+  assert.equal(needsCatchUp({ ...missing, lastRunAt: monday - 30 * 60_000 }), false);
+  assert.equal(needsCatchUp({ ...missing, lastRunAt: monday - 61 * 60_000 }), true);
+  assert.deepEqual(historyRefreshArgs(false), []);
+  assert.deepEqual(historyRefreshArgs(true), ["--recent"]);
+  assert.equal(historyRefreshDay(monday, "2026-11-20"), "2026-11-20");
+  assert.equal(historyRefreshDay(at("2026-11-23T17:00:00"), "2026-11-23"), "2026-11-23");
 });
 
 const NOW = at("2026-11-03T11:00:00");

@@ -86,3 +86,4 @@ async function worker() {
 }
 await Promise.all(Array.from({ length: CONCURRENCY }, worker));
 console.log(`Finished in ${Math.round((Date.now() - started) / 1000)}s: ${JSON.stringify(tally)}${problems.length ? `\nFailures (first 20): ${problems.slice(0, 20).join("; ")}` : ""}`);
+if (tally.other > 0) process.exitCode = 1;

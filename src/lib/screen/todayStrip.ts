@@ -67,6 +67,7 @@ export function liveTile(payload: TrackerSlice | null | undefined): StripTile {
 
 export interface HealthSlice {
   status: "running" | "failed" | "done";
+  message?: string;
   report?: { verdict: "on-track" | "early" | "watch" | "review"; headline: string };
 }
 
@@ -76,8 +77,9 @@ const HEALTH_TONE: Record<keyof typeof HEALTH_BIG, StripTone> = { "on-track": "g
 /** Is the strategy's edge still there? */
 export function healthTile(payload: HealthSlice | null | undefined): StripTile {
   const href = "/positions#strategy-check";
-  if (!payload || payload.status === "running") return loading("health", "Strategy health", href);
-  if (payload.status === "failed" || !payload.report) return { key: "health", title: "Strategy health", big: "Unavailable", sub: "The check could not run right now.", tone: "neutral", href };
+  if (!payload) return loading("health", "Strategy health", href);
+  if (payload.status === "running") return { key: "health", title: "Strategy health", big: "Checking…", sub: payload.message || "Running the ten-year baseline.", tone: "neutral", href };
+  if (payload.status === "failed" || !payload.report) return { key: "health", title: "Strategy health", big: "Unavailable", sub: payload.message || "The check could not run right now.", tone: "neutral", href };
   const v = payload.report.verdict;
   return { key: "health", title: "Strategy health", big: HEALTH_BIG[v], sub: payload.report.headline, tone: HEALTH_TONE[v], href };
 }
