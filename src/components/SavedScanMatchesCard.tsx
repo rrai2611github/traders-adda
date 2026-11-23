@@ -6,7 +6,11 @@ import type { ScreenScan } from "@/hooks/useScreenScan";
 import { useSavedScans } from "@/hooks/useSavedScans";
 import { matchesScreener } from "@/lib/screen/stockScreener";
 
-export function SavedScanMatchesCard({ scan, scanError }: { scan: ScreenScan | null; scanError: boolean }) {
+export function SavedScanMatchesCard({ scan, scanError, onOpenStock }: {
+  scan: ScreenScan | null;
+  scanError: boolean;
+  onOpenStock: (symbol: string) => void;
+}) {
   const { saved, savedLoading, savedError } = useSavedScans();
   const rows = scan?.rows;
   const matches = useMemo(
@@ -42,7 +46,14 @@ export function SavedScanMatchesCard({ scan, scanError }: { scan: ScreenScan | n
               : <ul className="mt-2 space-y-1.5">
                 {matches.map((item) => (
                   <li key={item.name} className="text-xs text-emerald-950">
-                    <b>{item.name}</b> · {item.symbols.length} {item.symbols.length === 1 ? "match" : "matches"}: {item.symbols.slice(0, 5).join(", ")}{item.symbols.length > 5 ? `, +${item.symbols.length - 5} more` : ""}
+                    <b>{item.name}</b> · {item.symbols.length} {item.symbols.length === 1 ? "match" : "matches"}:
+                    <span className="ml-1 inline-flex flex-wrap gap-1">
+                      {item.symbols.slice(0, 5).map((symbol) => (
+                        <button key={symbol} type="button" onClick={() => onOpenStock(symbol)} aria-label={`Open ${symbol} stock details`}
+                          className="rounded border border-emerald-200 bg-white px-1.5 py-0.5 font-bold text-emerald-800 hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">{symbol}</button>
+                      ))}
+                      {item.symbols.length > 5 && <span className="px-1 py-0.5">+{item.symbols.length - 5} more</span>}
+                    </span>
                   </li>
                 ))}
               </ul>}

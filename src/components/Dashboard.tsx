@@ -666,7 +666,7 @@ export function Dashboard() {
       <FyersBanner />
       {activeNav !== "today" && <MarketStrip />}
       {activeNav === "today" && <TodayStrip />}
-      {activeNav === "today" && <SavedScanMatchesCard scan={universeScan} scanError={scanError} />}
+      {activeNav === "today" && <SavedScanMatchesCard scan={universeScan} scanError={scanError} onOpenStock={openStock} />}
 
       {activeNav !== "metrics" && <section aria-label="Market index snapshot" className="scroll-mt-36">
         <IndexStrip quotes={indices.quotes} lastUpdate={indices.lastUpdate} error={indices.error} />
